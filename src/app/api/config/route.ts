@@ -37,6 +37,7 @@ type SecretConfig = {
   nxctlEnabled: boolean
   nxctlApiUrl: string
   nxctlApiToken: string
+  nxctlApiAdminSecret: string
 }
 
 type ConfigResponse = {
@@ -135,15 +136,17 @@ function readSecretConfig(source: string): SecretConfig {
   const turnstileSiteKey = readEnvEntry(source, 'NEXT_PUBLIC_TURNSTILE_SITE_KEY', process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '')
   const nxctlApiUrl = readEnvEntry(source, 'NXCTL_API_URL', process.env.NXCTL_API_URL || '')
   const nxctlApiToken = readEnvEntry(source, 'NXCTL_API_TOKEN', process.env.NXCTL_API_TOKEN || '')
+  const nxctlApiAdminSecret = readEnvEntry(source, 'NXCTL_API_ADMIN_SECRET', process.env.NXCTL_API_ADMIN_SECRET || '')
 
   return {
     supabaseUrl: supabaseUrl.value,
     supabaseAnonKey: supabaseAnonKey.value,
     turnstileSiteKey: turnstileSiteKey.value,
     turnstileSiteKeyEnabled: turnstileSiteKey.enabled,
-    nxctlEnabled: nxctlApiUrl.enabled || nxctlApiToken.enabled,
+    nxctlEnabled: nxctlApiUrl.enabled || nxctlApiToken.enabled || nxctlApiAdminSecret.enabled,
     nxctlApiUrl: nxctlApiUrl.value,
     nxctlApiToken: nxctlApiToken.value,
+    nxctlApiAdminSecret: nxctlApiAdminSecret.value,
   }
 }
 
@@ -262,6 +265,10 @@ function updateSecret(source: string, secret: SecretConfig) {
   const nxctlTokenToWrite = (secret.nxctlApiToken?.trim() || existingNxctlToken || '')
   updated = setEnvKey(updated, 'NXCTL_API_TOKEN', nxctlTokenToWrite, Boolean(secret.nxctlEnabled))
 
+  const existingNxctlAdminSecret = readEnvEntry(updated, 'NXCTL_API_ADMIN_SECRET').value
+  const nxctlAdminSecretToWrite = (secret.nxctlApiAdminSecret?.trim() || existingNxctlAdminSecret || '')
+  updated = setEnvKey(updated, 'NXCTL_API_ADMIN_SECRET', nxctlAdminSecretToWrite, Boolean(secret.nxctlEnabled))
+
   return updated
 }
 
@@ -295,9 +302,10 @@ function normalizeSecret(input: Partial<SecretConfig>): SecretConfig {
     supabaseAnonKey: input.supabaseAnonKey?.trim() || '',
     turnstileSiteKey: input.turnstileSiteKey?.trim() || '',
     turnstileSiteKeyEnabled: input.turnstileSiteKeyEnabled ?? Boolean(input.turnstileSiteKey?.trim()),
-    nxctlEnabled: input.nxctlEnabled ?? Boolean(input.nxctlApiUrl?.trim() || input.nxctlApiToken?.trim()),
+    nxctlEnabled: input.nxctlEnabled ?? Boolean(input.nxctlApiUrl?.trim() || input.nxctlApiToken?.trim() || input.nxctlApiAdminSecret?.trim()),
     nxctlApiUrl: input.nxctlApiUrl?.trim() || '',
     nxctlApiToken: input.nxctlApiToken?.trim() || '',
+    nxctlApiAdminSecret: input.nxctlApiAdminSecret?.trim() || '',
   }
 }
 
@@ -377,6 +385,7 @@ export async function PUT(request: Request) {
       'nxctlEnabled',
       'nxctlApiUrl',
       'nxctlApiToken',
+      'nxctlApiAdminSecret',
     ])
 
     const config = hasConfigPayload ? normalizeConfig({ ...currentConfig, ...configInput }) : currentConfig

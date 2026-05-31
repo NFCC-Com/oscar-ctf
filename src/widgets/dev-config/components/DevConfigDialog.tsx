@@ -56,6 +56,7 @@ type SecretConfig = {
   nxctlEnabled: boolean
   nxctlApiUrl: string
   nxctlApiToken: string
+  nxctlApiAdminSecret: string
 }
 
 const emptyConfig: SetupConfig = {
@@ -86,6 +87,7 @@ const emptySecret: SecretConfig = {
   nxctlEnabled: false,
   nxctlApiUrl: '',
   nxctlApiToken: '',
+  nxctlApiAdminSecret: '',
 }
 
 interface DevConfigDialogProps {
@@ -441,6 +443,10 @@ export default function DevConfigDialog({ open, onOpenChange }: DevConfigDialogP
                     <div>
                       <Label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Access Token</Label>
                       <Input type="password" value={secret.nxctlApiToken} onChange={(e) => updateSecretField('nxctlApiToken', e.target.value)} className={SURFACE_GLASS_INPUT_CLASS + " h-10 px-4 font-mono text-[11px]"} />
+                    </div>
+                    <div>
+                      <Label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Admin Secret</Label>
+                      <Input type="password" value={secret.nxctlApiAdminSecret} onChange={(e) => updateSecretField('nxctlApiAdminSecret', e.target.value)} className={SURFACE_GLASS_INPUT_CLASS + " h-10 px-4 font-mono text-[11px]"} />
                     </div>
                   </div>
                 </div>
