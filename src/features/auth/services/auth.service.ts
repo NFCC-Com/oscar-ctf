@@ -111,10 +111,6 @@ export const AuthService = {
    */
   async signUp(email: string, password: string, username: string, captchaToken?: string): Promise<AuthResponse> {
     try {
-      if (!email.toLowerCase().endsWith('@gmail.com')) {
-        return { user: null, error: 'Only @gmail.com emails are allowed for registration' }
-      }
-
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
