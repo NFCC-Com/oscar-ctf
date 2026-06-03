@@ -46,7 +46,7 @@ export default function AdminOverviewPage() {
         <OverviewStatsCards siteInfo={siteInfo} challenges={challenges} />
 
         <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-          <Card className="bg-white pt-4 dark:bg-gray-800">
+          <Card className="pt-4">
             <CardContent>
               <StatsGraph
                 data={activityData}

@@ -1,17 +1,23 @@
+import {
+  SURFACE_GLASS_BASE_CLASS,
+  SURFACE_GLASS_CARD_CLASS,
+} from '@/shared/styles'
+
 export const ADMIN_CARD_CLASS =
-  "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm"
+  SURFACE_GLASS_CARD_CLASS
 
 export const ADMIN_CARD_PLAIN_CLASS =
-  "bg-white dark:bg-gray-800"
+  SURFACE_GLASS_CARD_CLASS
 
 export const ADMIN_CARD_TITLE_CLASS =
   "text-gray-900 dark:text-white"
 
 export const ADMIN_PANEL_CLASS =
-  "border border-gray-200 dark:border-gray-700 rounded-md"
+  `border border-gray-200/80 dark:border-gray-700/80 rounded-2xl ${SURFACE_GLASS_BASE_CLASS}`
 
 export const ADMIN_LIST_PANEL_CLASS =
   `${ADMIN_PANEL_CLASS} overflow-hidden`
 
 export const ADMIN_STAT_TILE_CLASS =
-  "p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm"
+  `p-4 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 bg-white/70 dark:bg-[#111622]/80 backdrop-blur-md shadow-sm`
+

@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import { ShieldCheck } from 'lucide-react'
 import { Loader } from '@/shared/components'
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/shared/ui'
+import { Button } from '@/shared/ui'
 import { cn } from '@/shared/lib/utils'
 import { formatRelativeDate } from '@/shared/lib'
 import { getAuditLogs } from '@/features/logs/lib/audit-service'
 import type { AuditLogEntry } from '@/features/logs/lib/audit-service'
 import type { ActionType } from '../types'
 import { EmailWithUsernameTooltip } from './AuditLog/EmailWithUsernameTooltip'
+import { AdminPanel } from '../../ui'
 
 interface AuditLogListProps {
   logs?: AuditLogEntry[]
@@ -81,26 +83,29 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
   }, [])
 
   if (isLoading) return (
-    <Card className="bg-white dark:bg-gray-800 pt-5">
-      <CardHeader><CardTitle className="text-lg font-semibold">Audit Logs</CardTitle></CardHeader>
-      <CardContent className="flex justify-center py-8"><Loader /></CardContent>
-    </Card>
+    <AdminPanel title="Audit Logs" icon={ShieldCheck}>
+      <div className="flex justify-center py-8"><Loader /></div>
+    </AdminPanel>
+  )
+
+  const actionSelector = (
+    <select
+      value={limit}
+      onChange={e => setLimit(Number(e.target.value))}
+      className="text-xs bg-transparent border border-gray-200/80 dark:border-gray-800/80 rounded-xl px-2.5 py-1.5 outline-none font-semibold text-gray-700 dark:text-gray-200 transition-all hover:border-blue-500/40"
+    >
+      {[50, 100, 250, 500, 1000].map(v => <option key={v} value={v} className="dark:bg-[#111622]">Last {v}</option>)}
+    </select>
   )
 
   return (
-    <Card className="bg-white dark:bg-gray-800">
-      <CardHeader className="space-y-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">Audit Logs</CardTitle>
-          <select
-            value={limit}
-            onChange={e => setLimit(Number(e.target.value))}
-            className="text-xs bg-transparent border rounded-md px-2 py-1 outline-none"
-          >
-            {[50, 100, 250, 500, 1000].map(v => <option key={v} value={v}>Last {v}</option>)}
-          </select>
-        </div>
-
+    <AdminPanel
+      title="Audit Logs"
+      icon={ShieldCheck}
+      action={actionSelector}
+      contentClassName="px-0 pt-0"
+    >
+      <div className="space-y-4 px-5 pb-5 border-b border-gray-200/50 dark:border-gray-800/60 mb-2">
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
             {ACTION_OPTIONS.map(opt => (
@@ -109,7 +114,7 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
                 variant={selectedActions.includes(opt.value) ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSelectedActions(prev => prev.includes(opt.value) ? prev.filter(a => a !== opt.value) : [...prev, opt.value])}
-                className="h-8 text-[10px] uppercase font-black tracking-widest"
+                className="h-8 text-[10px] uppercase font-black tracking-widest rounded-xl"
               >
                 {opt.label}
               </Button>
@@ -120,48 +125,54 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Filter by email..."
-            className="text-sm px-3 py-2 rounded-lg border bg-transparent outline-none focus:ring-1 ring-orange-500/50"
+            className="w-full text-sm px-4 py-2 rounded-xl border border-gray-200/80 bg-white/70 dark:border-gray-700/80 dark:bg-[#111622]/80 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 shadow-sm outline-none transition-all hover:border-blue-500/40 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/30"
           />
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="px-0">
-        <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {filteredLogs.map((log, idx) => {
-            const isUserDeleted = log.payload.action === 'user_deleted'
-            const userEmail = isUserDeleted ? log.payload.traits?.user_email : log.payload.actor_username
-            const style = getActionStyle(log.payload.action)
+      <div>
+        {filteredLogs.length === 0 ? (
+          <div className="px-5 py-8 text-center text-sm font-medium text-muted-foreground">
+            No audit logs match the current filters.
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {filteredLogs.map((log, idx) => {
+              const isUserDeleted = log.payload.action === 'user_deleted'
+              const userEmail = isUserDeleted ? log.payload.traits?.user_email : log.payload.actor_username
+              const style = getActionStyle(log.payload.action)
 
-            return (
-              <motion.div key={log.id || idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-6 py-3 hover:bg-gray-50/50 dark:hover:bg-gray-900/10">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 min-w-[140px]">
-                    <span className={cn(style.color, "font-black text-lg")}>{style.icon}</span>
-                    <span className={cn(style.color, "text-[10px] font-black uppercase tracking-widest")}>
-                      {formatActionLabel(log.payload.action)}
+              return (
+                <motion.div key={log.id || idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-6 py-3.5 hover:bg-gray-50/50 dark:hover:bg-gray-900/10 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 min-w-[140px]">
+                      <span className={cn(style.color, "font-black text-lg")}>{style.icon}</span>
+                      <span className={cn(style.color, "text-[10px] font-black uppercase tracking-widest")}>
+                        {formatActionLabel(log.payload.action)}
+                      </span>
+                    </div>
+
+                    <div className="flex-1 flex items-center gap-2">
+                      {userEmail ? (
+                        <EmailWithUsernameTooltip
+                          email={userEmail}
+                          cachedUsername={usernameCache.get(userEmail)}
+                          onUsernameLoaded={handleUsernameLoaded}
+                        />
+                      ) : <span className="text-gray-500 italic text-sm">Unknown</span>}
+                    </div>
+
+                    <span className="text-[10px] text-gray-500 font-mono">
+                      {formatRelativeDate(log.created_at)}
                     </span>
                   </div>
-
-                  <div className="flex-1 flex items-center gap-2">
-                    {userEmail ? (
-                      <EmailWithUsernameTooltip
-                        email={userEmail}
-                        cachedUsername={usernameCache.get(userEmail)}
-                        onUsernameLoaded={handleUsernameLoaded}
-                      />
-                    ) : <span className="text-gray-500 italic text-sm">Unknown</span>}
-                  </div>
-
-                  <span className="text-[10px] text-gray-500 font-mono">
-                    {formatRelativeDate(log.created_at)}
-                  </span>
-                </div>
-              </motion.div>
-            )
-          })}
-        </div>
-      </CardContent>
-    </Card>
+                </motion.div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </AdminPanel>
   )
 }
 
