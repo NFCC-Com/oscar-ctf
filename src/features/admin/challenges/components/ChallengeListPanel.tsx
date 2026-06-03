@@ -48,7 +48,7 @@ const ChallengeListPanel: React.FC<ChallengeListPanelProps> = ({
   onToggleMaintenance,
 }) => {
   return (
-    <motion.div className="lg:col-span-3 order-1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+    <motion.div className="order-1 xl:col-span-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <Card className="h-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">

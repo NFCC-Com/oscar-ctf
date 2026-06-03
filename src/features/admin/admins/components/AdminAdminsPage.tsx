@@ -6,7 +6,7 @@ import EventAdminsCard from './EventAdminsCard'
 import GlobalAdminsCard from './GlobalAdminsCard'
 import RemoveEventAdminConfirmDialog from './RemoveEventAdminConfirmDialog'
 import { useAdminAdminsData } from '../hooks/useAdminAdminsData'
-import { AdminPageShell } from '../../ui'
+import { AdminContentLoading, AdminPageShell } from '../../ui'
 
 export default function AdminAdminsPage() {
   const {
@@ -37,12 +37,26 @@ export default function AdminAdminsPage() {
     resetGrantForm,
   } = useAdminAdminsData()
 
-  if (authLoading || isLoading) return <Loader fullscreen />
+  if (authLoading || (isLoading && !isAllowed)) return <Loader fullscreen />
   if (!user || !isAllowed) return null
+
+  if (isLoading) {
+    return (
+      <AdminPageShell
+        title="Admins"
+        subtitle="Manage global and event-scoped admin roles."
+      >
+        <AdminContentLoading variant="admins" />
+      </AdminPageShell>
+    )
+  }
 
   return (
     <>
-      <AdminPageShell>
+      <AdminPageShell
+        title="Admins"
+        subtitle="Manage global and event-scoped admin roles."
+      >
         <div className="space-y-5">
           <GlobalAdminsCard admins={globalAdmins} />
 

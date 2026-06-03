@@ -19,6 +19,8 @@ export function useAdminOverviewData() {
   const [timeRange, setTimeRange] = useState<TimeRange>('7d')
   const [activityData, setActivityData] = useState<ActivityPoint[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [accessReady, setAccessReady] = useState(false)
+  const [isAllowed, setIsAllowed] = useState(false)
 
   const refreshStats = useCallback(async (newRange: TimeRange) => {
     setTimeRange(newRange)
@@ -33,12 +35,15 @@ export function useAdminOverviewData() {
       if (authLoading) return
 
       if (!user) {
+        setAccessReady(true)
         router.push('/challenges')
         return
       }
 
       const adminCheck = await AuthService.isGlobalAdmin()
       if (!mounted) return
+      setIsAllowed(adminCheck)
+      setAccessReady(true)
       if (!adminCheck) {
         router.push('/challenges')
         return
@@ -64,6 +69,8 @@ export function useAdminOverviewData() {
   return {
     user,
     authLoading,
+    accessReady,
+    isAllowed,
     isLoading,
     challenges,
     siteInfo,

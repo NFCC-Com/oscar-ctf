@@ -19,7 +19,7 @@ const ChallengeSidebar: React.FC<ChallengeSidebarProps> = ({
   onViewAllSolvers,
 }) => {
   return (
-    <aside className="lg:col-span-1 order-2 lg:order-none space-y-6 sticky top-0">
+    <aside className="order-2 space-y-6 xl:order-none xl:col-span-1 xl:sticky xl:top-32">
       <ChallengeOverviewCard
         challenges={challenges}
         info={isGlobalAdmin ? (siteInfo || undefined) : undefined}

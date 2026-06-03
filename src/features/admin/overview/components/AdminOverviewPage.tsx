@@ -6,12 +6,14 @@ import AuditLogList from './AuditLogList'
 import OverviewStatsCards from './OverviewStatsCards'
 import StatsGraph from './StatsGraph'
 import { useAdminOverviewData } from '../hooks/useAdminOverviewData'
-import { AdminPageShell } from '../../ui'
+import { AdminContentLoading, AdminPageShell } from '../../ui'
 
 export default function AdminOverviewPage() {
   const {
     user,
     authLoading,
+    accessReady,
+    isAllowed,
     isLoading,
     challenges,
     siteInfo,
@@ -20,11 +22,25 @@ export default function AdminOverviewPage() {
     refreshStats,
   } = useAdminOverviewData()
 
-  if (authLoading || isLoading) return <Loader fullscreen />
-  if (!user) return null
+  if (authLoading || !accessReady) return <Loader fullscreen />
+  if (!user || !isAllowed) return null
+
+  if (isLoading) {
+    return (
+      <AdminPageShell
+        title="Overview"
+        subtitle="Review platform metrics, activity, and audit logs."
+      >
+        <AdminContentLoading variant="overview" />
+      </AdminPageShell>
+    )
+  }
 
   return (
-    <AdminPageShell>
+    <AdminPageShell
+      title="Overview"
+      subtitle="Review platform metrics, activity, and audit logs."
+    >
       <div className="space-y-5">
         <OverviewStatsCards siteInfo={siteInfo} challengeCount={challenges.length} />
 

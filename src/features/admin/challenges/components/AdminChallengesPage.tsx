@@ -18,6 +18,7 @@ import { useAdminChallengesData } from '../hooks/useAdminChallengesData'
 import { useChallengeForm } from '../hooks/useChallengeForm'
 import { getFilteredAdminChallenges } from '../lib'
 import type { AdminChallengeEventId, AdminChallengeFilterState, Challenge } from '../types'
+import { AdminContentLoading, AdminPageShell } from '../../ui'
 
 export default function AdminChallengesPage() {
   const router = useRouter()
@@ -173,13 +174,27 @@ export default function AdminChallengesPage() {
     })
   }, [challenges, adminScope, isGlobalAdmin, eventId, filters])
 
-  if (authLoading || dataLoading) return <Loader fullscreen />
+  if (authLoading || (dataLoading && !adminScope)) return <Loader fullscreen />
   if (!user) return null
 
+  if (dataLoading) {
+    return (
+      <AdminPageShell
+        title="Challenges"
+        subtitle="Manage challenge catalog, services, visibility, and flags."
+      >
+        <AdminContentLoading variant="challenges" />
+      </AdminPageShell>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <main className="mx-auto w-full max-w-7xl px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-4">
+    <>
+      <AdminPageShell
+        title="Challenges"
+        subtitle="Manage challenge catalog, services, visibility, and flags."
+      >
+        <div className="grid min-w-0 grid-cols-1 items-start gap-4 xl:grid-cols-4">
           <ChallengeListPanel
             challenges={challenges}
             filteredChallenges={filteredChallenges}
@@ -208,7 +223,7 @@ export default function AdminChallengesPage() {
             onViewAllSolvers={() => router.push('/admin/solvers')}
           />
         </div>
-      </main>
+      </AdminPageShell>
 
       <ChallengeFormDialogHost
         open={openForm}
@@ -238,6 +253,6 @@ export default function AdminChallengesPage() {
         }}
         fetchedFlag={fetchedFlag}
       />
-    </div>
+    </>
   )
 }

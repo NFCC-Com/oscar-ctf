@@ -9,7 +9,7 @@ import EventListCard from './EventListCard'
 import EventMembersCard from './EventMembersCard'
 import JoinRequestsCard from './JoinRequestsCard'
 import { useAdminEventData } from '../hooks/useAdminEventData'
-import { AdminPageShell } from '../../ui'
+import { AdminContentLoading, AdminPageShell } from '../../ui'
 
 export default function AdminEventPage() {
   const {
@@ -71,12 +71,30 @@ export default function AdminEventPage() {
     handleReviewRequest,
   } = useAdminEventData()
 
-  if (authLoading || isLoading) return <Loader fullscreen />
+  if (authLoading || (isLoading && !isAdminUser)) return <Loader fullscreen />
   if (!user || !isAdminUser) return null
+
+  if (isLoading) {
+    return (
+      <AdminPageShell
+        title="Events"
+        subtitle="Manage events, members, joins, and challenge assignment."
+        mainClassName="space-y-5"
+        backButtonClassName=""
+      >
+        <AdminContentLoading variant="event" />
+      </AdminPageShell>
+    )
+  }
 
   return (
     <>
-      <AdminPageShell mainClassName="space-y-5" backButtonClassName="">
+      <AdminPageShell
+        title="Events"
+        subtitle="Manage events, members, joins, and challenge assignment."
+        mainClassName="space-y-5"
+        backButtonClassName=""
+      >
         <EventListCard
           events={sortedEvents}
           onAdd={openAdd}
