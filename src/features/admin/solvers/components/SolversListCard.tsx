@@ -37,7 +37,7 @@ const SolversListCard: React.FC<SolversListCardProps> = ({
   return (
     <Card className="bg-white dark:bg-gray-800">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <CardTitle>All Solvers</CardTitle>
+        <CardTitle>All Solves</CardTitle>
 
         <div className="flex gap-2">
           <input
@@ -64,7 +64,7 @@ const SolversListCard: React.FC<SolversListCardProps> = ({
         {solvers.length === 0 ? (
           <EmptyState
             icon={<Search className="w-full h-full" />}
-            title="No solvers found"
+            title="No solves found"
             description="No one has solved this challenge yet or matches your search."
             containerHeight="py-8"
           />
@@ -99,8 +99,8 @@ const SolversListCard: React.FC<SolversListCardProps> = ({
                   variant="ghost"
                   size="icon"
                   onClick={() => onAskDelete(s.solve_id)}
-                  aria-label="Delete Solver"
-                  title="Delete Solver"
+                  aria-label="Delete Solve"
+                  title="Delete Solve"
                   className="text-red-600 dark:text-red-400"
                 >
                   <Trash2 size={16} />

@@ -416,6 +416,75 @@ END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION get_info() TO authenticated;
+CREATE OR REPLACE FUNCTION public.get_admin_users()
+RETURNS TABLE (
+  id UUID,
+  username TEXT,
+  email TEXT,
+  score BIGINT,
+  rank BIGINT,
+  is_admin BOOLEAN,
+  solve_count BIGINT,
+  last_solve_at TIMESTAMPTZ,
+  last_sign_in_at TIMESTAMPTZ,
+  email_confirmed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+) AS $$
+BEGIN
+  IF NOT is_admin() THEN
+    RAISE EXCEPTION 'Only global admin can list admin users';
+  END IF;
+  RETURN QUERY
+  WITH solve_stats AS (
+    SELECT
+      s.user_id,
+      COALESCE(SUM(c.points), 0)::BIGINT AS score,
+      COUNT(s.id)::BIGINT AS solve_count,
+      MAX(s.created_at) AS last_solve_at
+    FROM public.solves s
+    JOIN public.challenges c ON c.id = s.challenge_id
+    GROUP BY s.user_id
+  ),
+  ranked_users AS (
+    SELECT
+      u.id,
+      ROW_NUMBER() OVER (
+        ORDER BY
+          COALESCE(ss.score, 0) DESC,
+          ss.last_solve_at ASC NULLS LAST,
+          u.created_at ASC,
+          u.username ASC
+      )::BIGINT AS rank
+    FROM public.users u
+    LEFT JOIN solve_stats ss ON ss.user_id = u.id
+  )
+  SELECT
+    u.id,
+    u.username::TEXT,
+    au.email::TEXT,
+    COALESCE(ss.score, 0)::BIGINT,
+    ru.rank,
+    COALESCE(u.is_admin, FALSE),
+    COALESCE(ss.solve_count, 0)::BIGINT,
+    ss.last_solve_at,
+    au.last_sign_in_at,
+    au.email_confirmed_at,
+    u.created_at,
+    u.updated_at
+  FROM public.users u
+  LEFT JOIN auth.users au ON au.id = u.id
+  LEFT JOIN solve_stats ss ON ss.user_id = u.id
+  JOIN ranked_users ru ON ru.id = u.id
+  ORDER BY
+    COALESCE(ss.score, 0) DESC,
+    ss.last_solve_at ASC NULLS LAST,
+    u.username ASC;
+END;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth;
+GRANT EXECUTE ON FUNCTION public.get_admin_users() TO authenticated;
 CREATE OR REPLACE FUNCTION get_solve_info(
   p_user_id UUID,
   p_challenge_id UUID
@@ -689,9 +758,9 @@ BEGIN
   RETURN QUERY
   SELECT
     ea.user_id,
-    u.username,
+    u.username::TEXT,
     ea.event_id,
-    e.name,
+    e.name::TEXT,
     ea.created_at
   FROM public.event_admins ea
   JOIN public.users u ON u.id = ea.user_id

@@ -1,6 +1,5 @@
 "use client"
 
-import { Loader } from '@/shared/components'
 import AddEventAdminCard from './AddEventAdminCard'
 import EventAdminsCard from './EventAdminsCard'
 import GlobalAdminsCard from './GlobalAdminsCard'
@@ -37,13 +36,13 @@ export default function AdminAdminsPage() {
     resetGrantForm,
   } = useAdminAdminsData()
 
-  if (authLoading || (isLoading && !isAllowed)) return <Loader fullscreen />
+  if (authLoading || (isLoading && !isAllowed)) return <AdminContentLoading variant="admins" />
   if (!user || !isAllowed) return null
 
   if (isLoading) {
     return (
       <AdminPageShell
-        title="Admins"
+        title="Admin Roles"
         subtitle="Manage global and event-scoped admin roles."
       >
         <AdminContentLoading variant="admins" />
@@ -54,7 +53,7 @@ export default function AdminAdminsPage() {
   return (
     <>
       <AdminPageShell
-        title="Admins"
+        title="Admin Roles"
         subtitle="Manage global and event-scoped admin roles."
       >
         <div className="space-y-5">

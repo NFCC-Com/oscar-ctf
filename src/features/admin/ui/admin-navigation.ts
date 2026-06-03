@@ -1,45 +1,46 @@
 import type { LucideIcon } from 'lucide-react'
-import { BarChart3, CalendarDays, Flag, LayoutDashboard, ShieldCheck } from 'lucide-react'
+import {
+  BarChart3,
+  CalendarDays,
+  Flag,
+  LayoutDashboard,
+  Users,
+} from 'lucide-react'
 
 export type AdminNavItem = {
   href: string
   label: string
-  description: string
   icon: LucideIcon
   exact?: boolean
+  aliases?: string[]
 }
 
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   {
-    href: '/admin',
-    label: 'Challenges',
-    description: 'Challenge catalog',
-    icon: Flag,
-    exact: true,
-  },
-  {
     href: '/admin/overview',
     label: 'Overview',
-    description: 'Platform metrics',
     icon: LayoutDashboard,
+    aliases: ['/admin'],
+  },
+  {
+    href: '/admin/challenges',
+    label: 'Challenges',
+    icon: Flag,
+  },
+  {
+    href: '/admin/solvers',
+    label: 'Solves',
+    icon: BarChart3,
+  },
+  {
+    href: '/admin/users',
+    label: 'Users',
+    icon: Users,
   },
   {
     href: '/admin/event',
     label: 'Events',
-    description: 'Event management',
     icon: CalendarDays,
-  },
-  {
-    href: '/admin/solvers',
-    label: 'Solvers',
-    description: 'Submission records',
-    icon: BarChart3,
-  },
-  {
-    href: '/admin/admins',
-    label: 'Admins',
-    description: 'Access roles',
-    icon: ShieldCheck,
   },
 ]
 
@@ -48,6 +49,9 @@ export function getAdminNavItem(pathname: string) {
 }
 
 export function isAdminNavItemActive(pathname: string, item: AdminNavItem) {
+  if (item.aliases?.some((alias) => pathname === alias)) {
+    return true
+  }
   if (item.exact) return pathname === item.href
   return pathname === item.href || pathname.startsWith(`${item.href}/`)
 }

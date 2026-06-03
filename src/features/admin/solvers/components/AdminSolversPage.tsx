@@ -1,6 +1,5 @@
 "use client"
 
-import { Loader } from '@/shared/components'
 import DeleteSolverConfirmDialog from './DeleteSolverConfirmDialog'
 import SolversListCard from './SolversListCard'
 import { useAdminSolversData } from '../hooks/useAdminSolversData'
@@ -32,13 +31,13 @@ export default function AdminSolversPage() {
     doDelete,
   } = useAdminSolversData()
 
-  if (authLoading || (isLoading && !isAdminUser)) return <Loader fullscreen />
+  if (authLoading || (isLoading && !isAdminUser)) return <AdminContentLoading variant="solvers" />
   if (!user || !isAdminUser) return null
 
   if (isLoading) {
     return (
       <AdminPageShell
-        title="Solvers"
+        title="Solves"
         subtitle="Review submissions and manage solve records."
       >
         <AdminContentLoading variant="solvers" />
@@ -54,7 +53,7 @@ export default function AdminSolversPage() {
   return (
     <>
       <AdminPageShell
-        title="Solvers"
+        title="Solves"
         subtitle="Review submissions and manage solve records."
       >
         <SolversListCard

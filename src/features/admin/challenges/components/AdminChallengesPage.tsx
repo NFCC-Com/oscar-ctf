@@ -4,13 +4,11 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 
-import { Loader } from '@/shared/components'
 import { useAuth } from '@/shared/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import APP from '@/config'
 
 import ChallengeListPanel from './ChallengeListPanel'
-import ChallengeSidebar from './ChallengeSidebar'
 import ChallengeFormDialogHost from './ChallengeFormDialogHost'
 import DeleteChallengeConfirmDialog from './DeleteChallengeConfirmDialog'
 import { FlagPreviewDialog } from './FlagPreviewDialog'
@@ -27,8 +25,6 @@ export default function AdminChallengesPage() {
 
   const {
     challenges,
-    solvers,
-    siteInfo,
     events,
     adminScope,
     isLoading: dataLoading,
@@ -174,7 +170,7 @@ export default function AdminChallengesPage() {
     })
   }, [challenges, adminScope, isGlobalAdmin, eventId, filters])
 
-  if (authLoading || (dataLoading && !adminScope)) return <Loader fullscreen />
+  if (authLoading || (dataLoading && !adminScope)) return <AdminContentLoading variant="challenges" />
   if (!user) return null
 
   if (dataLoading) {
@@ -194,7 +190,7 @@ export default function AdminChallengesPage() {
         title="Challenges"
         subtitle="Manage challenge catalog, services, visibility, and flags."
       >
-        <div className="grid min-w-0 grid-cols-1 items-start gap-4 xl:grid-cols-4">
+        <div className="min-w-0">
           <ChallengeListPanel
             challenges={challenges}
             filteredChallenges={filteredChallenges}
@@ -213,14 +209,6 @@ export default function AdminChallengesPage() {
             onViewFlag={handleViewFlag}
             onToggleMaintenance={toggleChallengeMaintenance}
             onToggleActive={toggleChallengeActive}
-          />
-
-          <ChallengeSidebar
-            challenges={challenges}
-            solvers={solvers}
-            siteInfo={siteInfo}
-            isGlobalAdmin={isGlobalAdmin}
-            onViewAllSolvers={() => router.push('/admin/solvers')}
           />
         </div>
       </AdminPageShell>

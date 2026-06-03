@@ -147,10 +147,9 @@ const StatsGraph = ({ data, range, onRangeChange }: StatsGraphProps) => {
 
   return (
     <div>
-      <div className="flex flex-row items-center justify-between space-y-0 pb-2 border-b">
+      <div className="flex flex-row items-center justify-between gap-3 border-b pb-2">
         <div>
-          <h3 className="text-xl font-semibold">Activity Trends</h3>
-          <p className="text-sm text-muted-foreground mt-1">Track solves and active users over time</p>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Solve Activity</h3>
         </div>
         <Select value={range} onValueChange={onRangeChange}>
           <SelectTrigger className="w-[140px] h-8">

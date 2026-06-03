@@ -91,10 +91,10 @@ export function useAdminSolversData() {
     try {
       await deleteSolver(id)
       setSolvers((prev) => prev.filter((s) => s.solve_id !== id))
-      toast.success('Solver deleted successfully')
+      toast.success('Solve deleted successfully')
     } catch (err) {
       console.error(err)
-      toast.error('Failed to delete solver')
+      toast.error('Failed to delete solve')
     }
   }, [])
 

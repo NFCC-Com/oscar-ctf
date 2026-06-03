@@ -1,5 +1,5 @@
-import { AdminAdminsPage } from '@/features/admin/admins'
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return <AdminAdminsPage />
+  redirect('/admin/users?tab=roles')
 }

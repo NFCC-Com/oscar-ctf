@@ -7,7 +7,7 @@ import {
   SURFACE_FILTER_ITEM_CLASS,
   SURFACE_GLASS_BASE_CLASS,
 } from '@/shared/styles'
-import { ADMIN_NAV_ITEMS, getAdminNavItem, isAdminNavItemActive } from './admin-navigation'
+import { ADMIN_NAV_ITEMS, isAdminNavItemActive } from './admin-navigation'
 
 type AdminHeaderProps = {
   pathname: string
@@ -15,27 +15,10 @@ type AdminHeaderProps = {
   subtitle?: string
 }
 
-export default function AdminHeader({ pathname, title, subtitle }: AdminHeaderProps) {
-  const currentItem = getAdminNavItem(pathname)
-  const CurrentIcon = currentItem.icon
-
+export default function AdminHeader({ pathname }: AdminHeaderProps) {
   return (
-    <header className={cn('sticky top-14 z-20 border-b border-gray-200/80 dark:border-gray-800/90', SURFACE_GLASS_BASE_CLASS)}>
-      <div className="flex flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10">
-            <CurrentIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold text-gray-900 dark:text-white sm:text-lg">
-              {title ?? currentItem.label}
-            </h1>
-            <p className="mt-0.5 truncate text-xs font-medium text-gray-500 dark:text-gray-400 sm:text-sm">
-              {subtitle ?? currentItem.description}
-            </p>
-          </div>
-        </div>
-
+    <header className={cn('sticky top-14 z-20 border-b border-gray-200/80 dark:border-gray-800/90 lg:hidden', SURFACE_GLASS_BASE_CLASS)}>
+      <div className="px-4 py-2.5 sm:px-6">
         <nav className="flex gap-2 overflow-x-auto scroll-hidden lg:hidden" aria-label="Admin mobile navigation">
           {ADMIN_NAV_ITEMS.map((item) => {
             const active = isAdminNavItemActive(pathname, item)

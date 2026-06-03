@@ -1,9 +1,9 @@
 "use client"
 
-import { Loader } from '@/shared/components'
 import { Card, CardContent } from '@/shared/ui'
 import AuditLogList from './AuditLogList'
 import OverviewStatsCards from './OverviewStatsCards'
+import RecentSolvesCard from './RecentSolvesCard'
 import StatsGraph from './StatsGraph'
 import { useAdminOverviewData } from '../hooks/useAdminOverviewData'
 import { AdminContentLoading, AdminPageShell } from '../../ui'
@@ -19,10 +19,11 @@ export default function AdminOverviewPage() {
     siteInfo,
     timeRange,
     activityData,
+    recentSolves,
     refreshStats,
   } = useAdminOverviewData()
 
-  if (authLoading || !accessReady) return <Loader fullscreen />
+  if (authLoading || !accessReady) return <AdminContentLoading variant="overview" />
   if (!user || !isAllowed) return null
 
   if (isLoading) {
@@ -42,17 +43,21 @@ export default function AdminOverviewPage() {
       subtitle="Review platform metrics, activity, and audit logs."
     >
       <div className="space-y-5">
-        <OverviewStatsCards siteInfo={siteInfo} challengeCount={challenges.length} />
+        <OverviewStatsCards siteInfo={siteInfo} challenges={challenges} />
 
-        <Card className="bg-white pt-4 dark:bg-gray-800">
-          <CardContent>
-            <StatsGraph
-              data={activityData}
-              range={timeRange}
-              onRangeChange={refreshStats}
-            />
-          </CardContent>
-        </Card>
+        <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+          <Card className="bg-white pt-4 dark:bg-gray-800">
+            <CardContent>
+              <StatsGraph
+                data={activityData}
+                range={timeRange}
+                onRangeChange={refreshStats}
+              />
+            </CardContent>
+          </Card>
+
+          <RecentSolvesCard solves={recentSolves} />
+        </div>
 
         <AuditLogList />
       </div>

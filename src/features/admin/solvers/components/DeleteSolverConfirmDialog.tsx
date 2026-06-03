@@ -23,10 +23,10 @@ const DeleteSolverConfirmDialog: React.FC<DeleteSolverConfirmDialogProps> = ({
     <ConfirmDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Delete Solver"
+      title="Delete Solve"
       description={
         <div>
-          <div className="mb-2">Are you sure you want to delete this solver record? This action cannot be undone.</div>
+          <div className="mb-2">Are you sure you want to delete this solve record? This action cannot be undone.</div>
           {pendingDeleteDetail && (
             <div className="mt-2 p-3 rounded bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 text-sm font-semibold flex flex-col gap-1">
               <span><b>User:</b> <span className="font-mono max-w-[300px] truncate inline-flex">{pendingDeleteDetail.username}</span></span>

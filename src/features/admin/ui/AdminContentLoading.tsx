@@ -1,7 +1,7 @@
 import { cn } from '@/shared/lib/utils'
 import { SURFACE_GLASS_CARD_COMPACT_CLASS } from '@/shared/styles'
 
-type AdminLoadingVariant = 'overview' | 'challenges' | 'event' | 'solvers' | 'admins'
+type AdminLoadingVariant = 'overview' | 'challenges' | 'event' | 'solvers' | 'users' | 'admins'
 
 type AdminContentLoadingProps = {
   variant?: AdminLoadingVariant
@@ -53,7 +53,7 @@ function OverviewSkeleton() {
   return (
     <div className="space-y-4" aria-busy="true">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
+        {Array.from({ length: 8 }).map((_, index) => (
           <div key={index} className={cn(SURFACE_GLASS_CARD_COMPACT_CLASS, 'p-4')}>
             <SkeletonBlock className="h-4 w-28" />
             <SkeletonBlock className="mt-4 h-8 w-20" />
@@ -69,12 +69,8 @@ function OverviewSkeleton() {
 
 function ChallengesSkeleton() {
   return (
-    <div className="grid min-w-0 grid-cols-1 items-start gap-4 xl:grid-cols-4" aria-busy="true">
-      <AdminCardSkeleton rows={7} className="order-1 xl:col-span-3" />
-      <div className="order-2 space-y-4 xl:order-none">
-        <AdminCardSkeleton rows={3} />
-        <AdminCardSkeleton rows={4} />
-      </div>
+    <div aria-busy="true">
+      <AdminCardSkeleton rows={8} />
     </div>
   )
 }
@@ -108,10 +104,20 @@ function AdminsSkeleton() {
   )
 }
 
+function UsersSkeleton() {
+  return (
+    <div className="space-y-5" aria-busy="true">
+      <SkeletonBlock className="h-11 w-56" />
+      <AdminCardSkeleton rows={8} />
+    </div>
+  )
+}
+
 export default function AdminContentLoading({ variant = 'challenges' }: AdminContentLoadingProps) {
   if (variant === 'overview') return <OverviewSkeleton />
   if (variant === 'event') return <EventSkeleton />
   if (variant === 'solvers') return <SolversSkeleton />
+  if (variant === 'users') return <UsersSkeleton />
   if (variant === 'admins') return <AdminsSkeleton />
   return <ChallengesSkeleton />
 }

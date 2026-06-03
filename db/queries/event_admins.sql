@@ -90,9 +90,9 @@ BEGIN
   RETURN QUERY
   SELECT
     ea.user_id,
-    u.username,
+    u.username::TEXT,
     ea.event_id,
-    e.name,
+    e.name::TEXT,
     ea.created_at
   FROM public.event_admins ea
   JOIN public.users u ON u.id = ea.user_id

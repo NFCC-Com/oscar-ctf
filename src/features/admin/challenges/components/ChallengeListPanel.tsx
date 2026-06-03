@@ -1,5 +1,4 @@
 import React from 'react'
-import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Power, PowerOff, ShieldAlert } from 'lucide-react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/shared/ui'
@@ -85,8 +84,6 @@ const ChallengeListPanel: React.FC<ChallengeListPanelProps> = ({
                     <PowerOff size={14} />
                     Down All
                   </Button>
-                  <Link href="/admin/event"><Button variant="outline" size="sm">Events</Button></Link>
-                  <Link href="/admin/admins"><Button variant="outline" size="sm">Roles</Button></Link>
                 </>
               )}
               <Button onClick={onAdd} size="sm">+ Add Challenge</Button>
