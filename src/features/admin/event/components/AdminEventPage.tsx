@@ -10,8 +10,9 @@ import EventFormDialog from './EventFormDialog'
 import EventListCard from './EventListCard'
 import EventMembersCard from './EventMembersCard'
 import JoinRequestsCard from './JoinRequestsCard'
+import { Button } from '@/shared/ui'
 import { useAdminEventData } from '../hooks/useAdminEventData'
-import { AdminContentLoading, AdminPageShell } from '../../ui'
+import { AdminContentLoading, AdminPageShell, AdminTabsBar } from '../../ui'
 
 type AdminEventTab = 'event-list' | 'bulk-event' | 'event-members' | 'join-requests'
 
@@ -88,12 +89,7 @@ export default function AdminEventPage() {
 
   if (isLoading) {
     return (
-      <AdminPageShell
-        title="Events"
-        subtitle="Manage events, members, joins, and challenge assignment."
-        mainClassName="space-y-5"
-        backButtonClassName=""
-      >
+      <AdminPageShell mainClassName="space-y-5">
         <AdminContentLoading variant="event" />
       </AdminPageShell>
     )
@@ -101,83 +97,90 @@ export default function AdminEventPage() {
 
   return (
     <>
-      <AdminPageShell
-        title="Events"
-        subtitle="Manage events, members, joins, and challenge assignment."
-        mainClassName="space-y-5"
-        backButtonClassName=""
-      >
-        <SegmentedTabs
-          items={EVENT_TABS}
-          value={activeTab}
-          onChange={setActiveTab}
-          variant="panel"
+      <AdminPageShell>
+        <AdminTabsBar
+          tabs={
+            <SegmentedTabs
+              items={EVENT_TABS}
+              value={activeTab}
+              onChange={setActiveTab}
+              variant="panel"
+            />
+          }
+          actions={
+            activeTab === 'event-list' ? (
+              <Button onClick={openAdd} size="sm" className="rounded-xl">
+                + Add Event
+              </Button>
+            ) : null
+          }
         />
 
-        {activeTab === 'event-list' ? (
-          <EventListCard
-            events={sortedEvents}
-            onAdd={openAdd}
-            onEdit={openEdit}
-            onDelete={askDelete}
-          />
-        ) : null}
+        <div className="space-y-5">
+          {activeTab === 'event-list' ? (
+            <EventListCard
+              events={sortedEvents}
+              onEdit={openEdit}
+              onDelete={askDelete}
+            />
+          ) : null}
 
-        {activeTab === 'bulk-event' ? (
-          <BulkAssignChallengesCard
-            events={sortedEvents}
-            filters={filters}
-            onFilterChange={setFilters}
-            categories={categories}
-            difficulties={difficulties}
-            onSelectAllFiltered={selectAllFiltered}
-            onClearSelection={clearSelection}
-            bulkEventId={bulkEventId}
-            onBulkEventChange={setBulkEventId}
-            onBulkAssign={handleBulkAssign}
-            onBulkRemove={handleBulkRemove}
-            bulkSubmitting={bulkSubmitting}
-            filteredChallenges={filteredChallenges}
-            selectedIds={selectedIds}
-            onToggleSelect={toggleSelect}
-          />
-        ) : null}
+          {activeTab === 'bulk-event' ? (
+            <BulkAssignChallengesCard
+              events={sortedEvents}
+              filters={filters}
+              onFilterChange={setFilters}
+              categories={categories}
+              difficulties={difficulties}
+              onSelectAllFiltered={selectAllFiltered}
+              onClearSelection={clearSelection}
+              bulkEventId={bulkEventId}
+              onBulkEventChange={setBulkEventId}
+              onBulkAssign={handleBulkAssign}
+              onBulkRemove={handleBulkRemove}
+              bulkSubmitting={bulkSubmitting}
+              filteredChallenges={filteredChallenges}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+            />
+          ) : null}
 
-        {activeTab === 'event-members' ? (
-          <EventMembersCard
-            events={sortedEvents}
-            manageEventId={manageEventId}
-            onManageEventChange={setManageEventId}
-            assignUserQuery={assignUserQuery}
-            onAssignUserQueryChange={setAssignUserQuery}
-            loadingUserSearch={loadingUserSearch}
-            candidateUsers={candidateUsers}
-            selectedCandidateUserIds={selectedCandidateUserIds}
-            onToggleCandidateSelection={toggleCandidateSelection}
-            onSelectAllCandidates={selectAllCandidates}
-            onClearCandidateSelection={clearCandidateSelection}
-            onQuickAddSelectedMembers={handleQuickAddSelectedMembers}
-            memberActionUserId={memberActionUserId}
-            onQuickAddMember={handleQuickAddMember}
-            memberQuery={memberQuery}
-            onMemberQueryChange={setMemberQuery}
-            loadingEventMembers={loadingEventMembers}
-            filteredEventMembers={filteredEventMembers}
-            onRemoveMember={handleRemoveMember}
-          />
-        ) : null}
+          {activeTab === 'event-members' ? (
+            <EventMembersCard
+              events={sortedEvents}
+              manageEventId={manageEventId}
+              onManageEventChange={setManageEventId}
+              assignUserQuery={assignUserQuery}
+              onAssignUserQueryChange={setAssignUserQuery}
+              loadingUserSearch={loadingUserSearch}
+              candidateUsers={candidateUsers}
+              selectedCandidateUserIds={selectedCandidateUserIds}
+              onToggleCandidateSelection={toggleCandidateSelection}
+              onSelectAllCandidates={selectAllCandidates}
+              onClearCandidateSelection={clearCandidateSelection}
+              onQuickAddSelectedMembers={handleQuickAddSelectedMembers}
+              memberActionUserId={memberActionUserId}
+              onQuickAddMember={handleQuickAddMember}
+              memberQuery={memberQuery}
+              onMemberQueryChange={setMemberQuery}
+              loadingEventMembers={loadingEventMembers}
+              filteredEventMembers={filteredEventMembers}
+              onRemoveMember={handleRemoveMember}
+            />
+          ) : null}
 
-        {activeTab === 'join-requests' ? (
-          <JoinRequestsCard
-            events={sortedEvents}
-            manageEventId={manageEventId}
-            onManageEventChange={setManageEventId}
-            joinRequests={joinRequests}
-            loadingJoinRequests={loadingJoinRequests}
-            reviewingRequestId={reviewingRequestId}
-            onReviewRequest={handleReviewRequest}
-          />
-        ) : null}
+          {activeTab === 'join-requests' ? (
+            <JoinRequestsCard
+              events={sortedEvents}
+              manageEventId={manageEventId}
+              onManageEventChange={setManageEventId}
+              joinRequests={joinRequests}
+              loadingJoinRequests={loadingJoinRequests}
+              reviewingRequestId={reviewingRequestId}
+              onReviewRequest={handleReviewRequest}
+            />
+          ) : null}
+        </div>
       </AdminPageShell>
 
       <AnimatePresence>

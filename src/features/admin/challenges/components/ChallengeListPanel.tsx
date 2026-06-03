@@ -1,10 +1,9 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Power, PowerOff, ShieldAlert } from 'lucide-react'
+import { Loader2, Power, PowerOff } from 'lucide-react'
 import { Button } from '@/shared/ui'
-import { EmptyState } from '@/shared/components'
-import { AdminPanel } from '@/features/admin/ui'
-import ChallengeFilterBar from '@/features/challenges/components/ChallengeFilterBar'
+import { AdminPageSurface, AdminPageToolbar, AdminListSurface, AdminEmptyState } from '@/features/admin/ui'
+import AdminChallengesToolbar from './AdminChallengesToolbar'
 import ChallengeListItem from './ChallengeListItem'
 import type { AdminChallengeEventId, AdminChallengeFilterState, Challenge, Event } from '../types'
 
@@ -47,13 +46,6 @@ const ChallengeListPanel: React.FC<ChallengeListPanelProps> = ({
   onToggleActive,
   onToggleMaintenance,
 }) => {
-  const syncingIndicator = isRefreshing && (
-    <div className="flex items-center gap-2 text-[10px] font-bold text-orange-500 animate-pulse">
-      <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce" />
-      SYNCING...
-    </div>
-  )
-
   const headerActions = (
     <div className="flex flex-wrap items-center justify-end gap-2">
       {isGlobalAdmin && (
@@ -64,7 +56,7 @@ const ChallengeListPanel: React.FC<ChallengeListPanelProps> = ({
             onClick={() => onNxctlGlobalAction?.('up')}
             disabled={!!nxctlGlobalAction}
             title="Start all NXCTL services"
-            className="rounded-xl"
+            className="rounded-xl animate-none"
           >
             <Power size={14} />
             Up All
@@ -87,58 +79,67 @@ const ChallengeListPanel: React.FC<ChallengeListPanelProps> = ({
   )
 
   return (
-    <motion.div className="order-1 xl:col-span-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <AdminPanel
-        title="Challenge List"
-        action={headerActions}
-        description={isRefreshing ? "Synchronizing services..." : undefined}
-      >
-        <div className="space-y-4">
-          <ChallengeFilterBar
-            filters={filters}
-            categories={Array.from(new Set(challenges.map(c => c.category))).filter(Boolean).sort()}
-            difficulties={Array.from(new Set(challenges.map(c => c.difficulty)))}
-            onFilterChange={v => onFiltersChange({ ...filters, ...v })}
-            onClear={() => onFiltersChange({ category: "all", difficulty: "all", search: "", feature: "N" })}
-            events={events.map(e => ({ id: e.id, name: e.name, start_time: e.start_time, end_time: e.end_time }))}
-            selectedEventId={selectedEventId}
-            onEventChange={onEventChange}
-            hideAllEventOption={!isGlobalAdmin}
-            hideMainEventOption={!isGlobalAdmin}
-            includeEndedEvents
-            showEventState={false}
-            eventNavigationMode="select"
-            upcomingVisibilityWindowDays={null}
-          />
-
-          <div className="mt-4 space-y-2">
-            {filteredChallenges.length === 0 ? (
-              <div className="py-6 border border-dashed border-gray-200/80 dark:border-gray-800/80 rounded-2xl bg-white/20 dark:bg-black/5 flex items-center justify-center">
-                <EmptyState
-                  icon={<ShieldAlert className="w-full h-full text-gray-400 dark:text-gray-500" />}
-                  title="No challenges found"
-                  description="Try adjusting your filters or add a new challenge."
-                  containerHeight="py-2"
-                />
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-150 dark:divide-gray-800/80 border border-gray-200/80 dark:border-gray-800/80 rounded-xl overflow-hidden">
-                {filteredChallenges.map(challenge => (
-                  <ChallengeListItem
-                    key={challenge.id}
-                    challenge={challenge}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    onViewFlag={onViewFlag}
-                    onToggleMaintenance={onToggleMaintenance}
-                    onToggleActive={onToggleActive}
-                  />
-                ))}
-              </div>
+    <motion.div className="order-1 xl:col-span-3 space-y-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      {/* Page Toolbar */}
+      <AdminPageToolbar
+        title={
+          <>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Challenges</h1>
+            {isRefreshing && (
+              <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs text-orange-500">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Synchronizing services...
+              </p>
             )}
+          </>
+        }
+        actions={headerActions}
+      />
+
+      <AdminChallengesToolbar
+        filters={filters}
+        onFiltersChange={onFiltersChange}
+        categories={Array.from(new Set(challenges.map(c => c.category))).filter(Boolean).sort()}
+        difficulties={Array.from(new Set(challenges.map(c => c.difficulty))).filter(Boolean).sort()}
+        events={events}
+        selectedEventId={selectedEventId}
+        onEventChange={onEventChange}
+        isGlobalAdmin={isGlobalAdmin}
+        onClear={() => onFiltersChange({
+          category: "all",
+          difficulty: "all",
+          search: "",
+          scope: "all",
+          visibility: "all",
+          service: "all"
+        })}
+      />
+
+      {/* Main List Surface */}
+      <AdminPageSurface>
+        {filteredChallenges.length === 0 ? (
+          <div className="p-6">
+            <AdminEmptyState
+              title="No challenges found"
+              description="Try adjusting your filters or add a new challenge."
+            />
           </div>
-        </div>
-      </AdminPanel>
+        ) : (
+          <AdminListSurface>
+            {filteredChallenges.map(challenge => (
+              <ChallengeListItem
+                key={challenge.id}
+                challenge={challenge}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onViewFlag={onViewFlag}
+                onToggleMaintenance={onToggleMaintenance}
+                onToggleActive={onToggleActive}
+              />
+            ))}
+          </AdminListSurface>
+        )}
+      </AdminPageSurface>
     </motion.div>
   )
 }

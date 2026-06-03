@@ -3,7 +3,7 @@
 // React Imports
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { Compass, BookOpen, Flag, Trophy, Shield, Users, Gavel, User, ChevronDown, Menu, X } from 'lucide-react';
+import { Compass, BookOpen, Flag, Trophy, Shield, Users, Gavel, User, ChevronDown, Loader2, Menu, X } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 
@@ -34,6 +34,21 @@ const DevConfig = dynamic(() => import('@/widgets/dev-config'), {
   ssr: false,
 })
 
+const DEFAULT_NAVBAR_LOGO_SRC = '/logo.svg'
+
+function normalizeNavbarImageSrc(src?: string | null, fallback: string | null = null) {
+  const value = String(src || '').trim()
+  if (!value) return fallback
+  if (/^(https?:\/\/|data:|blob:)/i.test(value) || value.startsWith('//')) return value
+  if (value.startsWith('/')) return value
+
+  const publicPath = value
+    .replace(/^\.?\//, '')
+    .replace(/^public\//, '')
+
+  return publicPath ? `/${publicPath}` : fallback
+}
+
 export default function Navbar() {
   const router = useRouter()
   const { user, setUser, loading } = useAuth()
@@ -50,7 +65,9 @@ export default function Navbar() {
   const docsMenuRef = useRef<HTMLDivElement | null>(null)
 
   const { theme, toggleTheme } = useTheme()
-  const avatarSrc = user?.profile_picture_url || user?.picture || null
+  const authReady = !loading
+  const logoSrc = normalizeNavbarImageSrc(APP.image_logo, DEFAULT_NAVBAR_LOGO_SRC)
+  const avatarSrc = normalizeNavbarImageSrc(user?.profile_picture_url || user?.picture || null, null)
 
 
 
@@ -131,8 +148,6 @@ export default function Navbar() {
     }
   }, [docsOpen])
 
-  if (loading) return null
-
   return (
     <>
       <nav className={SURFACE_NAVBAR_CLASS}>
@@ -146,7 +161,7 @@ export default function Navbar() {
                 data-tour="navbar-logo"
               >
                 <ImageWithFallback
-                  src={APP.image_logo}
+                  src={logoSrc}
                   alt={`${APP.shortName} logo`}
                   size={42}
                   className="rounded-full"
@@ -156,7 +171,7 @@ export default function Navbar() {
 
               {/* Desktop menu */}
               <div className="hidden md:flex space-x-2">
-                {user && (
+                {authReady && user && (
                   <Link
                     href="/challenges"
                     className={navLinkClass(routeActive('/challenges'))}
@@ -166,7 +181,7 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                {user && scoreboardOptionCount > 0 && (
+                {authReady && user && scoreboardOptionCount > 0 && (
                   scoreboardOptionCount === 1 ? (
                     <Link
                       href={showTeamScoreboard ? '/teams/scoreboard' : '/scoreboard'}
@@ -218,7 +233,7 @@ export default function Navbar() {
                   )
                 )}
 
-                {user && APP.teams.enabled && (
+                {authReady && user && APP.teams.enabled && (
                   <Link
                     href="/teams"
                     className={navLinkClass(routeActive('/teams') && !routeActive('/teams/scoreboard'))}
@@ -278,7 +293,7 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {adminStatus && user && (
+                {authReady && adminStatus && user && (
                   <Link
                     href="/admin"
                     className={navLinkClass(routeActive('/admin'))}
@@ -292,7 +307,11 @@ export default function Navbar() {
             {/* Right section */}
             <div className="flex items-center space-x-5">
               <div className="hidden sm:flex items-center space-x-3">
-                {user ? (
+                {!authReady ? (
+                  <div className="flex h-9 min-w-24 items-center justify-center rounded-lg border border-gray-200/70 bg-white/50 text-gray-500 shadow-sm backdrop-blur-md dark:border-gray-800/80 dark:bg-[#111622]/60 dark:text-gray-400">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-label="Loading navigation" />
+                  </div>
+                ) : user ? (
                   <>
                     <Link
                       href="/profile"
@@ -333,12 +352,12 @@ export default function Navbar() {
               </div>
 
               {/* Notifications */}
-              {user && (
+              {authReady && user && (
                 <NavbarNotifications theme={theme} globalAdminStatus={globalAdminStatus} />
               )}
 
               {/* Logs Icon */}
-              {user && (
+              {authReady && user && (
                 <NavbarLogsButton theme={theme} pathname={pathname} />
               )}
 
@@ -399,7 +418,7 @@ export default function Navbar() {
 
           <div className="px-4 pt-4 pb-6 space-y-2 animate-fade-in">
             {/* Profile */}
-            {user && (
+            {authReady && user && (
               <Link
                 href="/profile"
                 className="flex items-center space-x-3 px-3 py-2 border-b border-gray-200 mb-2"
@@ -415,7 +434,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            {user && (
+            {authReady && user && (
               <>
                 <Link
                   href="/challenges"
@@ -515,7 +534,7 @@ export default function Navbar() {
               </div>
             </details>
 
-            {user && (
+            {authReady && user && (
               <>
                 {adminStatus && (
                   <Link
@@ -535,7 +554,7 @@ export default function Navbar() {
               </>
             )}
 
-            {!user && (
+            {authReady && !user && (
               <>
                 <Link
                   href="/login"

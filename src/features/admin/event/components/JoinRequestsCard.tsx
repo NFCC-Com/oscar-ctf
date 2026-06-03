@@ -1,7 +1,7 @@
 import React from 'react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Label } from '@/shared/ui'
+import { Button, Label } from '@/shared/ui'
 import { ADMIN_NATIVE_SELECT_CLASS } from '@/features/admin/ui/form-field-styles'
-import { ADMIN_CARD_CLASS, ADMIN_CARD_TITLE_CLASS, ADMIN_LIST_PANEL_CLASS } from '@/features/admin/ui'
+import { AdminPageSurface } from '@/features/admin/ui'
 import type { Event, EventJoinRequestRow } from '../types'
 
 interface JoinRequestsCardProps {
@@ -24,17 +24,18 @@ const JoinRequestsCard: React.FC<JoinRequestsCardProps> = ({
   onReviewRequest,
 }) => {
   return (
-    <Card className={ADMIN_CARD_CLASS}>
-      <CardHeader>
-        <CardTitle className={ADMIN_CARD_TITLE_CLASS}>Join Requests</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <AdminPageSurface className="p-6 space-y-6">
+      <div className="border-b border-gray-150 dark:border-gray-800/60 pb-4">
+        <h2 className="text-base font-bold text-gray-900 dark:text-white">Join Requests</h2>
+      </div>
+
+      <div className="space-y-4">
         <div>
-          <Label>Event</Label>
+          <Label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event</Label>
           <select
             value={manageEventId}
             onChange={(event) => onManageEventChange(event.target.value)}
-            className={ADMIN_NATIVE_SELECT_CLASS}
+            className={`mt-1.5 ${ADMIN_NATIVE_SELECT_CLASS}`}
           >
             <option value="">Select event</option>
             {events.map((event) => (
@@ -43,24 +44,25 @@ const JoinRequestsCard: React.FC<JoinRequestsCardProps> = ({
           </select>
         </div>
 
-        <div className={ADMIN_LIST_PANEL_CLASS}>
+        <div className="divide-y divide-gray-150 dark:divide-gray-800/85 rounded-xl bg-gray-50/25 dark:bg-black/10 overflow-hidden">
           {loadingJoinRequests ? (
             <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Loading requests...</div>
           ) : joinRequests.length === 0 ? (
             <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">No pending requests</div>
           ) : (
             joinRequests.map((request) => (
-              <div key={request.request_id} className="px-3 py-3 border-b last:border-b-0 border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div key={request.request_id} className="px-3.5 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 hover:bg-gray-55/40 dark:hover:bg-gray-900/10 transition-colors">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{request.username || request.user_id}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Requested at {new Date(request.requested_at).toLocaleString()}</p>
-                  {request.note && <p className="text-xs mt-1 text-gray-600 dark:text-gray-300">Note: {request.note}</p>}
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{request.username || request.user_id}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Requested at {new Date(request.requested_at).toLocaleString()}</p>
+                  {request.note && <p className="text-xs mt-1.5 text-gray-600 dark:text-gray-300">Note: {request.note}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     onClick={() => onReviewRequest(request.request_id, true)}
                     disabled={reviewingRequestId === request.request_id}
+                    className="rounded-xl"
                   >
                     Approve
                   </Button>
@@ -69,6 +71,7 @@ const JoinRequestsCard: React.FC<JoinRequestsCardProps> = ({
                     variant="destructive"
                     onClick={() => onReviewRequest(request.request_id, false)}
                     disabled={reviewingRequestId === request.request_id}
+                    className="rounded-xl"
                   >
                     Reject
                   </Button>
@@ -77,8 +80,8 @@ const JoinRequestsCard: React.FC<JoinRequestsCardProps> = ({
             ))
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </AdminPageSurface>
   )
 }
 

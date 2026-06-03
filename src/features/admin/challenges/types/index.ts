@@ -55,7 +55,9 @@ export type AdminChallengeFilterState = {
   category: string
   difficulty: string
   search: string
-  feature: 'T' | 'S' | 'N'
+  scope: 'all' | 'main' | 'private' | 'service'
+  visibility: 'all' | 'active' | 'inactive'
+  service: 'all' | 'has_service' | 'no_service'
 }
 
 export type ChallengePayload = {

@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/ui'
-import { AdminPanel } from '@/features/admin/ui'
+import { AdminPageSurface, AdminTableSurface } from '@/features/admin/ui'
 import type { EventAdminRow } from '../types'
 
 interface EventAdminsCardProps {
@@ -19,13 +19,18 @@ interface EventAdminsCardProps {
 
 const EventAdminsCard: React.FC<EventAdminsCardProps> = ({ admins, onAskRemove }) => {
   return (
-    <AdminPanel title="Event Admins" icon={ShieldAlert} contentClassName="p-0">
+    <AdminPageSurface>
+      <div className="px-5 py-4 border-b border-gray-150 dark:border-gray-800/60 flex items-center gap-2">
+        <ShieldAlert size={16} className="text-blue-500" />
+        <h2 className="text-base font-bold text-gray-900 dark:text-white">Event Admins</h2>
+      </div>
+
       {admins.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm font-medium text-muted-foreground">
           No event admins assigned yet.
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <AdminTableSurface>
           <Table>
             <TableHeader>
               <TableRow className="border-b border-gray-200/80 hover:bg-transparent dark:border-gray-800">
@@ -48,11 +53,10 @@ const EventAdminsCard: React.FC<EventAdminsCardProps> = ({ admins, onAskRemove }
               ))}
             </TableBody>
           </Table>
-        </div>
+        </AdminTableSurface>
       )}
-    </AdminPanel>
+    </AdminPageSurface>
   )
 }
 
 export default EventAdminsCard
-

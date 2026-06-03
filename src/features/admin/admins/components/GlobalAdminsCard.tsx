@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/ui'
-import { AdminPanel } from '@/features/admin/ui'
+import { AdminPageSurface, AdminTableSurface } from '@/features/admin/ui'
 import type { UserLite } from '../types'
 
 interface GlobalAdminsCardProps {
@@ -17,13 +17,18 @@ interface GlobalAdminsCardProps {
 
 const GlobalAdminsCard: React.FC<GlobalAdminsCardProps> = ({ admins }) => {
   return (
-    <AdminPanel title="Global Admins" icon={ShieldCheck} contentClassName="p-0">
+    <AdminPageSurface>
+      <div className="px-5 py-4 border-b border-gray-150 dark:border-gray-800/60 flex items-center gap-2">
+        <ShieldCheck size={16} className="text-blue-500" />
+        <h2 className="text-base font-bold text-gray-900 dark:text-white">Global Admins</h2>
+      </div>
+
       {admins.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm font-medium text-muted-foreground">
           No global admins found.
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <AdminTableSurface>
           <Table>
             <TableHeader>
               <TableRow className="border-b border-gray-200/80 hover:bg-transparent dark:border-gray-800">
@@ -40,11 +45,10 @@ const GlobalAdminsCard: React.FC<GlobalAdminsCardProps> = ({ admins }) => {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </AdminTableSurface>
       )}
-    </AdminPanel>
+    </AdminPageSurface>
   )
 }
 
 export default GlobalAdminsCard
-

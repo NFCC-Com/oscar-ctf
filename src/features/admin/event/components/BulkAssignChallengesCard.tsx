@@ -1,10 +1,8 @@
 import React from 'react'
 import ChallengeFilterBar from '@/features/challenges/components/ChallengeFilterBar'
-import { Search } from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle, Label } from '@/shared/ui'
-import { EmptyState } from '@/shared/components'
+import { Button, Label } from '@/shared/ui'
 import { ADMIN_NATIVE_SELECT_CLASS } from '@/features/admin/ui/form-field-styles'
-import { ADMIN_CARD_CLASS, ADMIN_CARD_TITLE_CLASS, ADMIN_PANEL_CLASS } from '@/features/admin/ui'
+import { AdminPageSurface, AdminEmptyState } from '@/features/admin/ui'
 import { DEFAULT_EVENT_FILTERS } from '../lib'
 import type { ChallengeLite, Event, FilterState } from '../types'
 
@@ -44,25 +42,32 @@ const BulkAssignChallengesCard: React.FC<BulkAssignChallengesCardProps> = ({
   onToggleSelect,
 }) => {
   return (
-    <Card className={ADMIN_CARD_CLASS}>
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <AdminPageSurface className="p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-150 dark:border-gray-800/60 pb-4">
         <div>
-          <CardTitle className={ADMIN_CARD_TITLE_CLASS}>Bulk Assign Challenges</CardTitle>
-          <p className="text-xs text-gray-500 dark:text-gray-300">Select multiple challenges, then assign or remove event.</p>
+          <h2 className="text-base font-bold text-gray-900 dark:text-white">Bulk Assign Challenges</h2>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
+            Select multiple challenges, then assign or remove event.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onSelectAllFiltered}>Select All</Button>
-          <Button variant="ghost" size="sm" onClick={onClearSelection}>Clear</Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" size="sm" onClick={onSelectAllFiltered} className="rounded-xl">
+            Select All
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onClearSelection} className="rounded-xl">
+            Clear
+          </Button>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+
+      <div className="space-y-4">
         <div className="flex flex-col lg:flex-row gap-3 lg:items-end">
           <div className="flex-1">
-            <Label>Target Event</Label>
+            <Label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Target Event</Label>
             <select
               value={bulkEventId}
               onChange={(event) => onBulkEventChange(event.target.value)}
-              className={ADMIN_NATIVE_SELECT_CLASS}
+              className={`mt-1.5 ${ADMIN_NATIVE_SELECT_CLASS}`}
             >
               <option value="">Select event</option>
               {events.map((event) => (
@@ -71,12 +76,12 @@ const BulkAssignChallengesCard: React.FC<BulkAssignChallengesCardProps> = ({
             </select>
           </div>
           <div className="flex items-end gap-2">
-            <Button onClick={onBulkAssign} disabled={bulkSubmitting} className="min-w-[96px]">Assign</Button>
-            <Button variant="secondary" onClick={onBulkRemove} disabled={bulkSubmitting} className="min-w-[120px]">Remove Event</Button>
+            <Button onClick={onBulkAssign} disabled={bulkSubmitting} className="min-w-[96px] rounded-xl">Assign</Button>
+            <Button variant="secondary" onClick={onBulkRemove} disabled={bulkSubmitting} className="min-w-[120px] rounded-xl">Remove Event</Button>
           </div>
         </div>
 
-        <div className="mt-3">
+        <div>
           <ChallengeFilterBar
             filters={filters}
             categories={categories}
@@ -87,25 +92,26 @@ const BulkAssignChallengesCard: React.FC<BulkAssignChallengesCardProps> = ({
           />
         </div>
 
-        <div className={`mt-4 ${ADMIN_PANEL_CLASS} max-h-[360px] overflow-auto bg-white dark:bg-gray-800`}>
+        <div className="max-h-[360px] overflow-auto divide-y divide-gray-150 dark:divide-gray-800/85 rounded-xl bg-gray-50/25 dark:bg-black/10">
           {filteredChallenges.length === 0 ? (
-            <EmptyState
-              icon={<Search className="w-full h-full" />}
-              title="No challenges found"
-              containerHeight="py-6"
-            />
+            <div className="p-6">
+              <AdminEmptyState
+                title="No challenges found"
+                description="Try adjusting your filters or search terms."
+              />
+            </div>
           ) : (
             filteredChallenges.map((challenge) => (
-              <label key={challenge.id} className="flex items-center gap-3 px-3 py-2 border-b last:border-b-0 border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/40">
+              <label key={challenge.id} className="flex items-center gap-3 px-3.5 py-3 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-colors duration-150">
                 <input
                   type="checkbox"
                   checked={selectedIds.includes(challenge.id)}
                   onChange={() => onToggleSelect(challenge.id)}
-                  className="h-4 w-4 accent-primary-500"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{challenge.title}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-300 truncate">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{challenge.title}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                     {challenge.category || 'Uncategorized'} {'\u2022'} {challenge.difficulty || 'Unknown'} {'\u2022'} {challenge.event_id ? 'Event' : 'Main'}
                   </div>
                 </div>
@@ -113,9 +119,9 @@ const BulkAssignChallengesCard: React.FC<BulkAssignChallengesCardProps> = ({
             ))
           )}
         </div>
-        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">Selected: {selectedIds.length}</div>
-      </CardContent>
-    </Card>
+        <div className="text-xs font-semibold text-gray-500 dark:text-gray-450">Selected: {selectedIds.length}</div>
+      </div>
+    </AdminPageSurface>
   )
 }
 

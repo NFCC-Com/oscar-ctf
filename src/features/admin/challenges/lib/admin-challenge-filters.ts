@@ -5,11 +5,6 @@ import type {
   Challenge,
 } from '../types'
 
-type ChallengeFeatureFields = {
-  has_questions?: boolean
-  services?: unknown[]
-}
-
 interface GetFilteredAdminChallengesParams {
   challenges: Challenge[]
   adminScope: AdminScope | null
@@ -33,21 +28,50 @@ export function getFilteredAdminChallenges({
     : challenges.filter(challenge => challenge.event_id && allowedEventSet.has(String(challenge.event_id)))
 
   return manageable.filter(challenge => {
+    // 1. Event filter
     if (eventId !== 'all') {
       const matchMain = eventId === null && !challenge.event_id
       const matchEvent = challenge.event_id === eventId
       if (!matchMain && !matchEvent) return false
     }
-    if (filters.search && !challenge.title.toLowerCase().includes(filters.search.toLowerCase())) return false
+
+    // 2. Search filter (title and description)
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase()
+      const titleMatch = challenge.title.toLowerCase().includes(searchLower)
+      const descMatch = challenge.description?.toLowerCase().includes(searchLower)
+      if (!titleMatch && !descMatch) return false
+    }
+
+    // 3. Category filter
     if (filters.category !== "all" && challenge.category !== filters.category) return false
+
+    // 4. Difficulty filter
     if (filters.difficulty !== "all" && challenge.difficulty !== filters.difficulty) return false
 
-    const featureFields = challenge as Challenge & ChallengeFeatureFields
-    const hasQuestions = !!featureFields.has_questions
-    const hasServices = Array.isArray(featureFields.services) && featureFields.services.length > 0
-    const featureType = hasQuestions && hasServices ? 'TS' : hasQuestions ? 'T' : hasServices ? 'S' : 'N'
-    if (filters.feature === 'T' && !(featureType === 'T' || featureType === 'TS')) return false
-    if (filters.feature === 'S' && !(featureType === 'S' || featureType === 'TS')) return false
+    // 5. Scope filter ('all' | 'main' | 'private' | 'service')
+    if (filters.scope !== 'all') {
+      const hasEvent = challenge.event_id !== null && challenge.event_id !== undefined
+      const hasServices = Array.isArray(challenge.services) && challenge.services.length > 0
+      
+      if (filters.scope === 'main' && hasEvent) return false
+      if (filters.scope === 'private' && !hasEvent) return false
+      if (filters.scope === 'service' && !hasServices) return false
+    }
+
+    // 6. Visibility filter ('all' | 'active' | 'inactive')
+    if (filters.visibility !== 'all') {
+      if (filters.visibility === 'active' && !challenge.is_active) return false
+      if (filters.visibility === 'inactive' && challenge.is_active) return false
+    }
+
+    // 7. Service filter ('all' | 'has_service' | 'no_service')
+    if (filters.service !== 'all') {
+      const hasServices = Array.isArray(challenge.services) && challenge.services.length > 0
+      if (filters.service === 'has_service' && !hasServices) return false
+      if (filters.service === 'no_service' && hasServices) return false
+    }
+
     return true
   }).sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points

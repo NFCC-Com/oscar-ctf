@@ -26,7 +26,7 @@ const ChallengeListItem: React.FC<ChallengeListItemProps> = ({
   };
 
   return (
-    <div className="w-full px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+    <div className="w-full px-5 py-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 order-2 sm:order-1">
           <DifficultyBadge difficulty={challenge.difficulty} width={92} />

@@ -1,125 +1,15 @@
-import { cn } from '@/shared/lib/utils'
-import { SURFACE_GLASS_CARD_COMPACT_CLASS } from '@/shared/styles'
+'use client'
 
-type AdminLoadingVariant = 'overview' | 'challenges' | 'event' | 'solvers' | 'users' | 'admins'
+import Loader from '@/shared/components/Loader'
 
 type AdminContentLoadingProps = {
-  variant?: AdminLoadingVariant
+  variant?: 'overview' | 'challenges' | 'event' | 'solvers' | 'users' | 'admins' | 'services'
 }
 
-const skeletonBlockClass = 'animate-pulse rounded-lg bg-gray-200/70 dark:bg-gray-800/80'
-
-function SkeletonBlock({ className }: { className?: string }) {
-  return <div className={cn(skeletonBlockClass, className)} />
-}
-
-function AdminCardSkeleton({
-  rows = 3,
-  className,
-}: {
-  rows?: number
-  className?: string
-}) {
+export default function AdminContentLoading(_props: AdminContentLoadingProps) {
   return (
-    <div className={cn(SURFACE_GLASS_CARD_COMPACT_CLASS, 'overflow-hidden', className)}>
-      <div className="border-b border-gray-200/70 px-4 py-3.5 dark:border-gray-800/80 sm:px-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="space-y-2">
-            <SkeletonBlock className="h-4 w-40" />
-            <SkeletonBlock className="h-3 w-56" />
-          </div>
-          <SkeletonBlock className="h-8 w-24" />
-        </div>
-      </div>
-      <div className="space-y-3 p-4 sm:p-5">
-        {Array.from({ length: rows }).map((_, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between gap-4 rounded-xl border border-gray-200/70 bg-white/40 px-4 py-3 dark:border-gray-800/70 dark:bg-[#111622]/50"
-          >
-            <div className="min-w-0 flex-1 space-y-2">
-              <SkeletonBlock className="h-4 w-2/5 max-w-56" />
-              <SkeletonBlock className="h-3 w-4/5 max-w-xl" />
-            </div>
-            <SkeletonBlock className="h-8 w-20 shrink-0" />
-          </div>
-        ))}
-      </div>
+    <div className="flex min-h-[400px] w-full items-center justify-center">
+      <Loader size={40} />
     </div>
   )
 }
-
-function OverviewSkeleton() {
-  return (
-    <div className="space-y-4" aria-busy="true">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <div key={index} className={cn(SURFACE_GLASS_CARD_COMPACT_CLASS, 'p-4')}>
-            <SkeletonBlock className="h-4 w-28" />
-            <SkeletonBlock className="mt-4 h-8 w-20" />
-            <SkeletonBlock className="mt-3 h-3 w-32" />
-          </div>
-        ))}
-      </div>
-      <AdminCardSkeleton rows={5} />
-      <AdminCardSkeleton rows={4} />
-    </div>
-  )
-}
-
-function ChallengesSkeleton() {
-  return (
-    <div aria-busy="true">
-      <AdminCardSkeleton rows={8} />
-    </div>
-  )
-}
-
-function EventSkeleton() {
-  return (
-    <div className="space-y-5" aria-busy="true">
-      <AdminCardSkeleton rows={4} />
-      <AdminCardSkeleton rows={3} />
-      <AdminCardSkeleton rows={5} />
-      <AdminCardSkeleton rows={3} />
-    </div>
-  )
-}
-
-function SolversSkeleton() {
-  return (
-    <div aria-busy="true">
-      <AdminCardSkeleton rows={8} />
-    </div>
-  )
-}
-
-function AdminsSkeleton() {
-  return (
-    <div className="space-y-5" aria-busy="true">
-      <AdminCardSkeleton rows={3} />
-      <AdminCardSkeleton rows={5} />
-      <AdminCardSkeleton rows={3} />
-    </div>
-  )
-}
-
-function UsersSkeleton() {
-  return (
-    <div className="space-y-5" aria-busy="true">
-      <SkeletonBlock className="h-11 w-56" />
-      <AdminCardSkeleton rows={8} />
-    </div>
-  )
-}
-
-export default function AdminContentLoading({ variant = 'challenges' }: AdminContentLoadingProps) {
-  if (variant === 'overview') return <OverviewSkeleton />
-  if (variant === 'event') return <EventSkeleton />
-  if (variant === 'solvers') return <SolversSkeleton />
-  if (variant === 'users') return <UsersSkeleton />
-  if (variant === 'admins') return <AdminsSkeleton />
-  return <ChallengesSkeleton />
-}
-
-export { AdminCardSkeleton }

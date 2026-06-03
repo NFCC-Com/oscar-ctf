@@ -57,7 +57,9 @@ export default function AdminChallengesPage() {
     category: "all",
     difficulty: "all",
     search: "",
-    feature: "N",
+    scope: "all",
+    visibility: "all",
+    service: "all",
   })
 
   const isGlobalAdmin = adminScope?.is_global_admin ?? false
@@ -175,10 +177,7 @@ export default function AdminChallengesPage() {
 
   if (dataLoading) {
     return (
-      <AdminPageShell
-        title="Challenges"
-        subtitle="Manage challenge catalog, services, visibility, and flags."
-      >
+      <AdminPageShell>
         <AdminContentLoading variant="challenges" />
       </AdminPageShell>
     )
@@ -186,10 +185,7 @@ export default function AdminChallengesPage() {
 
   return (
     <>
-      <AdminPageShell
-        title="Challenges"
-        subtitle="Manage challenge catalog, services, visibility, and flags."
-      >
+      <AdminPageShell>
         <div className="min-w-0">
           <ChallengeListPanel
             challenges={challenges}

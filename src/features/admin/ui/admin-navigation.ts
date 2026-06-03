@@ -4,7 +4,9 @@ import {
   CalendarDays,
   Flag,
   LayoutDashboard,
+  Server,
   Users,
+  ShieldCheck,
 } from 'lucide-react'
 
 export type AdminNavItem = {
@@ -28,6 +30,11 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     icon: Flag,
   },
   {
+    href: '/admin/services',
+    label: 'Services',
+    icon: Server,
+  },
+  {
     href: '/admin/solvers',
     label: 'Solves',
     icon: BarChart3,
@@ -41,6 +48,11 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: '/admin/event',
     label: 'Events',
     icon: CalendarDays,
+  },
+  {
+    href: '/admin/audit-logs',
+    label: 'Audit Logs',
+    icon: ShieldCheck,
   },
 ]
 

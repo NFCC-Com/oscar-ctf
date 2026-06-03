@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ShieldCheck, Users } from 'lucide-react'
 import { SegmentedTabs } from '@/shared/components'
-import { AdminContentLoading, AdminPageShell } from '../../ui'
+import { AdminContentLoading, AdminPageShell, AdminTabsBar } from '../../ui'
 import { useAdminUsersData } from '../hooks/useAdminUsersData'
 import UserRolesTab from './UserRolesTab'
 import UsersTableCard from './UsersTableCard'
@@ -32,26 +32,32 @@ export default function AdminUsersPage() {
 
   if (isLoading) {
     return (
-      <AdminPageShell title="Users">
+      <AdminPageShell>
         <AdminContentLoading variant="users" />
       </AdminPageShell>
     )
   }
 
   return (
-    <AdminPageShell title="Users" mainClassName="space-y-5">
-      <SegmentedTabs
-        items={USER_TABS}
-        value={activeTab}
-        onChange={setActiveTab}
-        variant="panel"
+    <AdminPageShell>
+      <AdminTabsBar
+        tabs={
+          <SegmentedTabs
+            items={USER_TABS}
+            value={activeTab}
+            onChange={setActiveTab}
+            variant="panel"
+          />
+        }
       />
 
-      {activeTab === 'users' ? (
-        <UsersTableCard users={users} />
-      ) : (
-        <UserRolesTab />
-      )}
+      <div className="space-y-5">
+        {activeTab === 'users' ? (
+          <UsersTableCard users={users} />
+        ) : (
+          <UserRolesTab />
+        )}
+      </div>
     </AdminPageShell>
   )
 }

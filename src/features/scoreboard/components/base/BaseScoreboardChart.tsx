@@ -396,6 +396,17 @@ export default function BaseScoreboardChart({
     () => series.map(s => new Set(s.data.map(point => point.date))),
     [series]
   )
+  const maxScore = React.useMemo(() => {
+    let max = 0
+    series.forEach((s) => {
+      s.data.forEach((p) => {
+        if (p.score > max) {
+          max = p.score
+        }
+      })
+    })
+    return max
+  }, [series])
   const drawOrderByName = React.useMemo(() => {
     const orderedSeries = series
       .map((s, index) => ({
@@ -511,6 +522,7 @@ export default function BaseScoreboardChart({
       },
       y: {
         beginAtZero: true,
+        suggestedMax: maxScore > 0 ? maxScore + Math.max(10, Math.round(maxScore * 0.05)) : 100,
         title: {
           display: true,
           text: yAxisTitle,
@@ -575,7 +587,7 @@ export default function BaseScoreboardChart({
         },
       },
     },
-  }), [labels, yAxisTitle])
+  }), [labels, yAxisTitle, maxScore])
 
   React.useEffect(() => {
     const chart = chartRef.current

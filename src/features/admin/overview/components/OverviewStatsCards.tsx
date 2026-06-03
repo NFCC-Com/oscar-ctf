@@ -27,7 +27,7 @@ const OverviewStatsCards: React.FC<OverviewStatsCardsProps> = ({ siteInfo, chall
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map((stat) => (
         <AdminStatCard
           key={stat.label}
@@ -41,4 +41,3 @@ const OverviewStatsCards: React.FC<OverviewStatsCardsProps> = ({ siteInfo, chall
 }
 
 export default OverviewStatsCards
-

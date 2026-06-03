@@ -18,7 +18,7 @@ type RecentSolvesCardProps = {
 
 export default function RecentSolvesCard({ solves }: RecentSolvesCardProps) {
   return (
-    <AdminPanel title="Recent Solves" icon={Flag} contentClassName="p-0">
+    <AdminPanel title="Recent Solves" icon={Flag} contentClassName="p-0 h-[350px] overflow-y-auto">
       {solves.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm font-medium text-muted-foreground">
           No solves recorded yet.

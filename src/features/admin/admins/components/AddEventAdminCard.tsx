@@ -1,10 +1,6 @@
 import React from 'react'
 import {
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Input,
   Label,
   Select,
@@ -13,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui'
-import { ADMIN_CARD_PLAIN_CLASS } from '@/features/admin/ui'
+import { AdminPageSurface } from '@/features/admin/ui'
 import type { Event, UserLite } from '../types'
 
 interface AddEventAdminCardProps {
@@ -48,72 +44,71 @@ const AddEventAdminCard: React.FC<AddEventAdminCardProps> = ({
   onReset,
 }) => {
   return (
-    <Card className={ADMIN_CARD_PLAIN_CLASS}>
-      <CardHeader>
-        <CardTitle>Add Event Admin</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>Search Username</Label>
-            <div className="relative">
-              <Input value={usernameQuery} onChange={(e) => onUsernameChange(e.target.value)} placeholder="Type username..." />
+    <AdminPageSurface className="p-6">
+      <div className="border-b border-gray-150 dark:border-gray-800/60 pb-4 mb-4">
+        <h2 className="text-base font-bold text-gray-900 dark:text-white">Add Event Admin</h2>
+      </div>
 
-              {userResults.length > 0 && !selectedUser && (
-                <div className="absolute z-10 mt-1 w-full rounded-md border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 overflow-hidden">
-                  {userResults.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => onUserSelect(u)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{u.username}</span>
-                        {u.is_admin ? <span className="text-xs text-muted-foreground">global admin</span> : null}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label>Search Username</Label>
+          <div className="relative">
+            <Input value={usernameQuery} onChange={(e) => onUsernameChange(e.target.value)} placeholder="Type username..." />
 
-            <div className="mt-2 text-xs text-muted-foreground">Choose a user, then select an event.</div>
-          </div>
-
-          <div>
-            <Label>Event</Label>
-            <Select value={selectedEventId} onValueChange={onEventChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pick an event" />
-              </SelectTrigger>
-              <SelectContent>
-                {events.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.name}
-                  </SelectItem>
+            {userResults.length > 0 && !selectedUser && (
+              <div className="absolute z-10 mt-1 w-full rounded-md border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 overflow-hidden">
+                {userResults.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => onUserSelect(u)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{u.username}</span>
+                      {u.is_admin ? <span className="text-xs text-muted-foreground">global admin</span> : null}
+                    </div>
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
-
-            {selectedEventName ? (
-              <div className="mt-2 text-xs text-muted-foreground">
-                Selected: <span className="font-medium">{selectedEventName}</span>
               </div>
-            ) : null}
+            )}
           </div>
+
+          <div className="mt-2 text-xs text-muted-foreground">Choose a user, then select an event.</div>
         </div>
 
-        <div className="mt-4 flex gap-2">
-          <Button onClick={onSubmit} disabled={!canSubmit}>
-            {submitting ? 'Adding...' : 'Add'}
-          </Button>
-          <Button variant="ghost" onClick={onReset} disabled={submitting}>
-            Reset
-          </Button>
+        <div>
+          <Label>Event</Label>
+          <Select value={selectedEventId} onValueChange={onEventChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pick an event" />
+            </SelectTrigger>
+            <SelectContent>
+              {events.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {selectedEventName ? (
+            <div className="mt-2 text-xs text-muted-foreground">
+              Selected: <span className="font-medium">{selectedEventName}</span>
+            </div>
+          ) : null}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <Button onClick={onSubmit} disabled={!canSubmit} className="rounded-xl">
+          {submitting ? 'Adding...' : 'Add'}
+        </Button>
+        <Button variant="ghost" onClick={onReset} disabled={submitting} className="rounded-xl">
+          Reset
+        </Button>
+      </div>
+    </AdminPageSurface>
   )
 }
 

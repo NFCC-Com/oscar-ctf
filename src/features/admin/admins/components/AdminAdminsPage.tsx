@@ -5,7 +5,7 @@ import EventAdminsCard from './EventAdminsCard'
 import GlobalAdminsCard from './GlobalAdminsCard'
 import RemoveEventAdminConfirmDialog from './RemoveEventAdminConfirmDialog'
 import { useAdminAdminsData } from '../hooks/useAdminAdminsData'
-import { AdminContentLoading, AdminPageShell } from '../../ui'
+import { AdminContentLoading, AdminPageShell, AdminPageToolbar } from '../../ui'
 
 export default function AdminAdminsPage() {
   const {
@@ -41,10 +41,7 @@ export default function AdminAdminsPage() {
 
   if (isLoading) {
     return (
-      <AdminPageShell
-        title="Admin Roles"
-        subtitle="Manage global and event-scoped admin roles."
-      >
+      <AdminPageShell>
         <AdminContentLoading variant="admins" />
       </AdminPageShell>
     )
@@ -52,10 +49,11 @@ export default function AdminAdminsPage() {
 
   return (
     <>
-      <AdminPageShell
-        title="Admin Roles"
-        subtitle="Manage global and event-scoped admin roles."
-      >
+      <AdminPageShell>
+        <AdminPageToolbar
+          title={<h1 className="text-xl font-bold text-gray-900 dark:text-white">Admin Roles</h1>}
+        />
+
         <div className="space-y-5">
           <GlobalAdminsCard admins={globalAdmins} />
 

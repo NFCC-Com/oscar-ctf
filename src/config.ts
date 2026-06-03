@@ -25,7 +25,7 @@ export const APP = {
   // Base URL (ambil dari env kalau ada). Prefer changing NEXT_PUBLIC_SITE_URL in .env.local.
   baseUrl: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
   image_icon: "favicon.ico",
-  image_logo: "logo.svg",
+  image_logo: "/logo.svg",
   image_preview: "og-image.png",
 
   // Turnstile aktif otomatis kalau site key ada di env.

@@ -36,10 +36,7 @@ export default function AdminSolversPage() {
 
   if (isLoading) {
     return (
-      <AdminPageShell
-        title="Solves"
-        subtitle="Review submissions and manage solve records."
-      >
+      <AdminPageShell>
         <AdminContentLoading variant="solvers" />
       </AdminPageShell>
     )
@@ -52,10 +49,7 @@ export default function AdminSolversPage() {
 
   return (
     <>
-      <AdminPageShell
-        title="Solves"
-        subtitle="Review submissions and manage solve records."
-      >
+      <AdminPageShell>
         <SolversListCard
           solvers={solvers}
           searchQuery={searchQuery}

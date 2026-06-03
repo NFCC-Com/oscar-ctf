@@ -1,6 +1,5 @@
-'use client'
-
 import React from 'react'
+import { cn } from '@/shared/lib/utils'
 import { getChallengeFilterDirtyState } from '../lib'
 import type {
   ChallengeEventFilterItem,
@@ -38,6 +37,7 @@ type Props = {
   hideSidebarFiltersOnDesktop?: boolean
   sortMode?: ChallengeSortMode
   onSortModeChange?: () => void
+  variant?: 'card' | 'flat'
 }
 
 export default function ChallengeFilterBar({
@@ -62,6 +62,7 @@ export default function ChallengeFilterBar({
   hideSidebarFiltersOnDesktop = false,
   sortMode = 'default',
   onSortModeChange,
+  variant = 'card',
 }: Props) {
   const [settingsOpen, setSettingsOpen] = React.useState(false)
   const dirtyState = getChallengeFilterDirtyState(filters, selectedEventId)
@@ -70,7 +71,10 @@ export default function ChallengeFilterBar({
   return (
     <div
       data-tour="challenge-filter-bar"
-      className="relative z-10 w-full bg-white/50 dark:bg-gray-900/50 border border-blue-500/20 dark:border-blue-500/10 backdrop-blur-sm rounded-2xl p-2 shadow-sm shadow-blue-500/5"
+      className={cn(
+        "relative z-10 w-full p-2",
+        variant === 'card' && "bg-white/50 dark:bg-gray-900/50 border border-blue-500/20 dark:border-blue-500/10 backdrop-blur-sm rounded-2xl shadow-sm shadow-blue-500/5"
+      )}
     >
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
         {showEventFilters && (

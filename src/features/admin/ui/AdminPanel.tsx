@@ -4,7 +4,7 @@ import { cn } from '@/shared/lib/utils'
 import type { LucideIcon } from 'lucide-react'
 
 interface AdminPanelProps {
-  title?: string
+  title?: React.ReactNode
   description?: string
   icon?: LucideIcon
   action?: ReactNode
@@ -43,7 +43,7 @@ export default function AdminPanel({
             {title && (
               <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-white">
                 {Icon && <Icon size={16} className="text-blue-500 dark:text-blue-400" />}
-                <span>{title}</span>
+                {typeof title === 'string' ? <span>{title}</span> : title}
               </CardTitle>
             )}
             {description && (

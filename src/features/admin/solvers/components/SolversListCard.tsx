@@ -1,9 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Trash2, Search } from 'lucide-react'
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@/shared/ui'
-import { EmptyState } from '@/shared/components'
+import { Trash2 } from 'lucide-react'
+import { Button } from '@/shared/ui'
+import { AdminPageSurface, AdminPageToolbar, AdminListSurface, AdminEmptyState } from '../../ui'
 import { formatRelativeDate } from '../lib'
 import type { SolverRow } from '../types'
 
@@ -35,90 +35,91 @@ const SolversListCard: React.FC<SolversListCardProps> = ({
   onLoadMore,
 }) => {
   return (
-    <Card className="bg-white dark:bg-gray-800">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <CardTitle>All Solves</CardTitle>
+    <div className="space-y-5">
+      <AdminPageToolbar
+        title={<h1 className="text-xl font-bold text-gray-900 dark:text-white">All Solves</h1>}
+      />
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Search by username or challenge..."
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') onSearch()
-            }}
-            className="px-3 py-1 text-sm rounded border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          placeholder="Search by user or challenge..."
+          value={searchQuery}
+          onChange={(e) => onSearchQueryChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onSearch()
+          }}
+          className="flex-1 min-w-[200px] px-3.5 py-2 text-sm rounded-xl border border-gray-200/80 bg-white/70 dark:border-gray-700/80 dark:bg-[#111622]/80 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 shadow-sm outline-none transition-all hover:border-blue-500/40 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/30"
+        />
 
-          <Button id="search-btn" variant="outline" size="sm" onClick={onSearch}>
-            {searching ? 'Searching...' : 'Search'}
-          </Button>
+        <Button id="search-btn" variant="outline" size="sm" onClick={onSearch} className="h-9 px-4 rounded-xl">
+          {searching ? 'Searching...' : 'Search'}
+        </Button>
 
-          <Button variant="outline" size="sm" onClick={onReset}>
-            Reset
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+        <Button variant="outline" size="sm" onClick={onReset} className="h-9 px-4 rounded-xl">
+          Reset
+        </Button>
+      </div>
+
+      <AdminPageSurface>
         {solvers.length === 0 ? (
-          <EmptyState
-            icon={<Search className="w-full h-full" />}
-            title="No solves found"
-            description="No one has solved this challenge yet or matches your search."
-            containerHeight="py-8"
-          />
+          <div className="p-6">
+            <AdminEmptyState
+              title="No solves found"
+              description="No one has solved this challenge yet or matches your search."
+            />
+          </div>
         ) : (
           <motion.div
-            className="divide-y border dark:border-gray-700 rounded-md overflow-hidden"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
           >
-            {solvers.map((s) => (
-              <div
-                key={s.solve_id}
-                className="flex items-center justify-between px-4 py-3 transition-colors border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-              >
-                <div className="truncate">
-                  <Link
-                    href={`/user/${encodeURIComponent(s.username)}`}
-                    className="font-medium text-blue-600 dark:text-blue-300 hover:underline"
-                    title={s.username}
-                  >
-                    {s.username.length > 20 ? `${s.username.slice(0, 30)}...` : s.username}
-                  </Link>
-                  <span className="text-xs text-gray-500 dark:text-gray-300"> solved </span>
-                  <span className="text-xs text-gray-700 dark:text-gray-200 font-semibold">{s.challenge_title}</span>
-                  <span className="ml-2 text-xs text-gray-400 dark:text-gray-300">
-                    {formatRelativeDate(s.solved_at)}
-                  </span>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onAskDelete(s.solve_id)}
-                  aria-label="Delete Solve"
-                  title="Delete Solve"
-                  className="text-red-600 dark:text-red-400"
+            <AdminListSurface>
+              {solvers.map((s) => (
+                <div
+                  key={s.solve_id}
+                  className="flex items-center justify-between px-6 py-3.5 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-900/10"
                 >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            ))}
+                  <div className="truncate text-sm font-medium">
+                    <Link
+                      href={`/user/${encodeURIComponent(s.username)}`}
+                      className="text-blue-600 dark:text-blue-300 hover:underline"
+                      title={s.username}
+                    >
+                      {s.username}
+                    </Link>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-normal"> solved </span>
+                    <span className="text-xs text-gray-800 dark:text-gray-200 font-semibold">{s.challenge_title}</span>
+                    <span className="ml-2.5 text-xs text-gray-450 dark:text-gray-500 font-mono font-normal">
+                      {formatRelativeDate(s.solved_at)}
+                    </span>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onAskDelete(s.solve_id)}
+                    aria-label="Delete Solve"
+                    title="Delete Solve"
+                    className="text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:text-red-700 h-8 w-8 rounded-lg"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              ))}
+            </AdminListSurface>
           </motion.div>
         )}
 
         {hasMore && (
-          <div className="flex justify-center mt-4">
-            <Button onClick={() => onLoadMore(offset)} disabled={loadingMore}>
+          <div className="flex justify-center p-4 border-t border-gray-100 dark:border-gray-800">
+            <Button onClick={() => onLoadMore(offset)} disabled={loadingMore} className="rounded-xl">
               {loadingMore ? 'Loading...' : 'Load More'}
             </Button>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </AdminPageSurface>
+    </div>
   )
 }
 

@@ -11,7 +11,6 @@ import {
   TimeScale
 } from 'chart.js'
 import 'chartjs-adapter-date-fns'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui'
 import type { ChartData, ChartOptions, Scale, Tick, CoreScaleOptions } from 'chart.js'
 import type { ActivityPoint, TimeRange } from '../types'
 import React from 'react'
@@ -28,12 +27,11 @@ ChartJS.register(
 )
 
 interface StatsGraphProps {
-  data: ActivityPoint[];
-  range: TimeRange;
-  onRangeChange: (range: TimeRange) => void;
+  data: ActivityPoint[]
+  range: TimeRange
 }
 
-const StatsGraph = ({ data, range, onRangeChange }: StatsGraphProps) => {
+const StatsGraph = ({ data, range }: StatsGraphProps) => {
   const options: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -146,27 +144,8 @@ const StatsGraph = ({ data, range, onRangeChange }: StatsGraphProps) => {
   }
 
   return (
-    <div>
-      <div className="flex flex-row items-center justify-between gap-3 border-b pb-2">
-        <div>
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Solve Activity</h3>
-        </div>
-        <Select value={range} onValueChange={onRangeChange}>
-          <SelectTrigger className="w-[140px] h-8">
-            <SelectValue placeholder="Select timeframe" />
-          </SelectTrigger>
-          <SelectContent className="bg-white dark:bg-gray-800 border">
-            <SelectItem value="7d">7 Days</SelectItem>
-            <SelectItem value="30d">30 Days</SelectItem>
-            <SelectItem value="90d">90 Days</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="pt-6">
-        <div className="h-[350px]">
-          <Line options={options} data={chartData} />
-        </div>
-      </div>
+    <div className="h-[310px] w-full pt-2">
+      <Line options={options} data={chartData} />
     </div>
   )
 }

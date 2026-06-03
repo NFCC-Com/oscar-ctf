@@ -7,6 +7,8 @@ import { THEME_PRIMARY_SELECTION_CLASS } from '@/shared/styles'
 import AdminContent from './AdminContent'
 import AdminHeader from './AdminHeader'
 import AdminSidebar from './AdminSidebar'
+import { useAuth } from '@/shared/contexts/AuthContext'
+import Loader from '@/shared/components/Loader'
 
 type AdminRouteShellProps = {
   children: ReactNode
@@ -14,6 +16,11 @@ type AdminRouteShellProps = {
 
 export default function AdminRouteShell({ children }: AdminRouteShellProps) {
   const pathname = usePathname()
+  const { loading: authLoading } = useAuth()
+
+  if (authLoading) {
+    return <Loader fullscreen />
+  }
 
   return (
     <PageBackground

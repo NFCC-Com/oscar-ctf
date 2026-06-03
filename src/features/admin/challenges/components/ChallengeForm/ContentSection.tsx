@@ -1,7 +1,7 @@
 import React from 'react'
 import { Label, Input, Textarea, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui'
 import { MarkdownRenderer } from '@/shared/markdown/MarkdownRenderer'
-import { Flag as FlagIcon, X as XIcon, Zap, Type } from 'lucide-react'
+import { Flag as FlagIcon, Loader2, X as XIcon, Zap, Type } from 'lucide-react'
 import { ChallengeFormData } from '../../types'
 import { cn } from '@/shared/lib/utils'
 import { parseNxctlService, serializeNxctlService, type NxctlServiceOptions } from '@/features/challenges/lib/nxctl-services'
@@ -91,7 +91,7 @@ export const ContentSection: React.FC<ContentSectionProps> = ({
               disabled={flagLoading || (!editing && !formData.flag)}
               className="flex-none pointer-events-auto text-gray-800 dark:text-gray-200 h-8 w-8"
             >
-              {flagLoading ? <span className="animate-pulse">…</span> : <FlagIcon size={18} />}
+              {flagLoading ? <Loader2 size={18} className="animate-spin" /> : <FlagIcon size={18} />}
             </Button>
           </div>
         </div>

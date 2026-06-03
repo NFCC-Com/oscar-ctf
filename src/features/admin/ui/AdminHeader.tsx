@@ -11,8 +11,6 @@ import { ADMIN_NAV_ITEMS, isAdminNavItemActive } from './admin-navigation'
 
 type AdminHeaderProps = {
   pathname: string
-  title?: string
-  subtitle?: string
 }
 
 export default function AdminHeader({ pathname }: AdminHeaderProps) {
@@ -28,6 +26,7 @@ export default function AdminHeader({ pathname }: AdminHeaderProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-semibold transition-all',
