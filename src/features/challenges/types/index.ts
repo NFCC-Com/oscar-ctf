@@ -31,6 +31,7 @@ export type EnrichedChallengeEvent = Event & { isLocked?: boolean }
 export type Solver = {
   username: string
   solvedAt: string
+  picture?: string | null
 }
 
 export type ChallengeFilterSettings = {

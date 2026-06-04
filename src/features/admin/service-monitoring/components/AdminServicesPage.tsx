@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Activity, AlertTriangle, Server } from 'lucide-react'
 import APP from '@/config'
 import { SegmentedTabs } from '@/shared/components'
-import { AdminContentLoading, AdminPageShell, AdminPageSurface, AdminTabsBar } from '@/features/admin/ui'
+import { AdminContentLoading, AdminPageShell, AdminPageSurface } from '@/features/admin/ui'
 import {
   buildLiveServiceRows,
   buildPlatformChallengeGroups,
@@ -187,9 +187,9 @@ export default function AdminServicesPage() {
 
           <div className="sticky top-14 z-30 bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-md -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-2.5 border-b border-gray-200/60 dark:border-gray-800/60">
             <div className="flex flex-col gap-2.5">
-              <AdminTabsBar
-                className="mb-0 pb-2 border-b border-gray-100/50 dark:border-gray-800/30"
-                tabs={
+              {/* Row 1: Tab Switcher */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-100/50 dark:border-gray-800/30">
+                <div className="flex items-center">
                   <SegmentedTabs
                     value={activeTab}
                     onChange={setActiveTab}
@@ -207,9 +207,10 @@ export default function AdminServicesPage() {
                       },
                     ]}
                   />
-                }
-              />
+                </div>
+              </div>
 
+              {/* Row 2: Filters & Actions */}
               <AdminServicesToolbar
                 filters={filters}
                 keyOptions={keyOptions}

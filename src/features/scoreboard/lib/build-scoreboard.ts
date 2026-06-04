@@ -49,6 +49,7 @@ export function buildScoreboard(
       username: name,
       score: score,
       rank: index + 1,
+      picture: row.picture,
       progress: history.map(p => ({
         date: String(p.date),
         score: p.score

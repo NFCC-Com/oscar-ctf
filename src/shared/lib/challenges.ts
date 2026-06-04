@@ -498,6 +498,7 @@ export async function getLeaderboardSummary(limit = 100, offset = 0, eventId?: s
     score: typeof d.score === 'number' ? d.score : (d.progress?.at(-1)?.score ?? 0),
     rank: d.rank,
     last_solve: d.last_solve,
+    picture: d.picture,
   }))
 }
 
@@ -785,18 +786,16 @@ export async function getFirstBloodLeaderboard(limit = 100, offset = 0, eventId?
  */
 export async function getSolversByChallenge(challengeId: string) {
   try {
-    const { data, error } = await supabase
-      .from('solves')
-      .select('created_at, users(username)')
-      .eq('challenge_id', challengeId)
-      .order('created_at', { ascending: true })
+    const { data, error } = await callChallengeRpc('get_challenge_solvers', {
+      p_challenge_id: challengeId,
+    })
 
     if (error) throw error
 
-  // Use any to avoid TypeScript complaints
     return ((data as any[]) || []).map(row => ({
-      username: row.users.username,
-      solvedAt: row.created_at
+      username: row.username,
+      solvedAt: row.solved_at,
+      picture: row.picture
     }))
   } catch (error) {
     console.error('Error fetching solvers:', error)

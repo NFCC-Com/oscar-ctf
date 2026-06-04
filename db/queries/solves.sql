@@ -341,6 +341,36 @@ SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION get_solves_by_challenge(TEXT) TO authenticated;
 
+CREATE OR REPLACE FUNCTION get_challenge_solvers(
+  p_challenge_id UUID
+)
+RETURNS TABLE (
+  username TEXT,
+  solved_at TIMESTAMPTZ,
+  picture TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    u.username::TEXT,
+    s.created_at AS solved_at,
+    COALESCE(
+      au.raw_user_meta_data->>'picture',
+      au.raw_user_meta_data->>'avatar_url',
+      u.profile_picture_url
+    )::TEXT AS picture
+  FROM public.solves s
+  JOIN public.users u ON u.id = s.user_id
+  LEFT JOIN auth.users au ON au.id = u.id
+  WHERE s.challenge_id = p_challenge_id
+  ORDER BY s.created_at ASC;
+END;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth;
+
+GRANT EXECUTE ON FUNCTION get_challenge_solvers(UUID) TO authenticated, anon;
+
 -- DELETE
 CREATE OR REPLACE FUNCTION delete_solver(
   p_solve_id UUID

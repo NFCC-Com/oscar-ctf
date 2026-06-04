@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Users, Crown, UserX } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
-import { EmptyState } from '@/shared/components'
+import { EmptyState, ImageWithFallback } from '@/shared/components'
 import { SURFACE_GLASS_CARD_COMPACT_CLASS, SURFACE_GLASS_CARD_INTERACTIVE_CLASS, SURFACE_INTERACTIVE_HOVER_CLASS } from '@/shared/styles'
 import { TeamMember } from '../types'
 
@@ -49,9 +49,11 @@ export default function TeamMembersSection({
             {members.map((m) => (
               <div key={m.user_id} className={`group relative overflow-hidden p-3 ${SURFACE_GLASS_CARD_COMPACT_CLASS} ${SURFACE_INTERACTIVE_HOVER_CLASS}`}>
                 <div className="flex items-center gap-3">
-                  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-bold text-sm text-gray-500 dark:text-gray-400">
-                    {m.username.slice(0, 1).toUpperCase()}
-                  </div>
+                  <ImageWithFallback
+                    src={m.picture}
+                    size={36}
+                    className="h-9 w-9 rounded-lg shadow-sm border border-gray-200/20 dark:border-gray-800/35 shrink-0 overflow-hidden"
+                  />
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

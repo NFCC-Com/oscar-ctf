@@ -9,6 +9,7 @@ export type TeamMember = {
 	username: string
 	role: 'captain' | 'member'
 	joined_at: string
+	picture?: string | null
 	solo_score?: number
 	first_solve_count?: number
 	first_solve_score?: number

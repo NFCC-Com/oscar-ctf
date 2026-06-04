@@ -1,15 +1,22 @@
-// React Imports
 import React from 'react';
-
-// Shared Imports
+import Link from 'next/link';
 import { formatRelativeDate } from '@/shared/lib'
-
-// Local Imports
+import { ImageWithFallback } from '@/shared/components'
 import type { Solver } from '../types'
 
 interface SolversListProps {
   solvers: Solver[];
 }
+
+const FirstBloodBadge: React.FC = () => (
+  <span
+    title="First Blood"
+    className="inline-flex items-center gap-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-red-200 bg-red-500/20 dark:bg-red-500/25"
+  >
+    <span className="leading-none">🩸</span>
+    <span>First Blood</span>
+  </span>
+)
 
 const SolversList: React.FC<SolversListProps> = ({ solvers }) => {
   // Find the earliest solve time to identify First Blood correctly regardless of sort order
@@ -19,7 +26,7 @@ const SolversList: React.FC<SolversListProps> = ({ solvers }) => {
   }, [solvers]);
 
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-2">
       {solvers.length === 0 ? (
         <li className="text-gray-400 dark:text-gray-500">No solves yet.</li>
       ) : (
@@ -27,21 +34,27 @@ const SolversList: React.FC<SolversListProps> = ({ solvers }) => {
           const isFirstBlood = firstBloodTime && new Date(solver.solvedAt).getTime() === firstBloodTime;
 
           return (
-            <li key={idx} className="flex justify-between items-center text-gray-700 dark:text-gray-200 text-sm md:text-base">
-              <div className="flex items-center gap-2">
-                {isFirstBlood && (
-                  <span title="First Blood" className="text-red-500 dark:text-red-400 text-lg font-bold">🩸</span>
-                )}
-                <a
+            <li
+              key={idx}
+              className="flex justify-between items-center text-sm md:text-base text-gray-700 dark:text-gray-200 px-1 py-1"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <ImageWithFallback
+                  src={solver.picture}
+                  size={24}
+                  className="h-6 w-6 rounded-md shadow-sm border border-gray-200/20 dark:border-gray-800/35 shrink-0"
+                />
+                <Link
                   href={`/user/${encodeURIComponent(solver.username)}`}
-                  className={`hover:underline ${isFirstBlood ? 'font-bold text-red-500 dark:text-red-400' : 'text-pink-600 dark:text-pink-300'} max-w-[180px] md:max-w-[240px] truncate block`}
-                  style={{ maxWidth: '240px' }}
+                  className={`hover:underline truncate block ${isFirstBlood ? 'font-bold text-red-400' : 'text-pink-600 dark:text-pink-300'}`}
+                  style={{ maxWidth: '180px' }}
                   title={solver.username}
                 >
                   {solver.username}
-                </a>
+                </Link>
+                {isFirstBlood && <FirstBloodBadge />}
               </div>
-              <span className="text-xs text-gray-400 dark:text-gray-300">{formatRelativeDate(solver.solvedAt)}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-300 shrink-0 ml-2">{formatRelativeDate(solver.solvedAt)}</span>
             </li>
           );
         })

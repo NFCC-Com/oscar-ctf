@@ -89,7 +89,12 @@ BEGIN
         'joined_at', tm.joined_at,
         'solo_score', COALESCE(us.solo_score, 0),
         'first_solve_count', COALESCE(fs.first_solves, 0),
-        'first_solve_score', COALESCE(fs.first_solve_score, 0)
+        'first_solve_score', COALESCE(fs.first_solve_score, 0),
+        'picture', COALESCE(
+          au.raw_user_meta_data->>'picture',
+          au.raw_user_meta_data->>'avatar_url',
+          u.profile_picture_url
+        )::TEXT
       )
       ORDER BY (u.id = t.captain_user_id) DESC, tm.joined_at ASC
     ),
@@ -99,6 +104,7 @@ BEGIN
   FROM public.team_members tm
   JOIN public.users u ON u.id = tm.user_id
   JOIN public.teams t ON t.id = tm.team_id
+  LEFT JOIN auth.users au ON au.id = tm.user_id
   LEFT JOIN user_stats us ON us.user_id = tm.user_id
   LEFT JOIN first_stats fs ON fs.user_id = tm.user_id
   WHERE tm.team_id = v_team_id;

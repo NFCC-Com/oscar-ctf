@@ -294,7 +294,8 @@ RETURNS TABLE (
   username TEXT,
   score BIGINT,
   last_solve TIMESTAMPTZ,
-  rank BIGINT
+  rank BIGINT,
+  picture TEXT
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -330,11 +331,17 @@ BEGIN
         OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
         OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
       ) THEN s.created_at ELSE NULL END) ASC
-    ) AS rank
+    ) AS rank,
+    COALESCE(
+      au.raw_user_meta_data->>'picture',
+      au.raw_user_meta_data->>'avatar_url',
+      u.profile_picture_url
+    )::TEXT AS picture
   FROM public.users u
+  LEFT JOIN auth.users au ON au.id = u.id
   LEFT JOIN public.solves s ON u.id = s.user_id
   LEFT JOIN public.challenges c ON s.challenge_id = c.id
-  GROUP BY u.id, u.username
+  GROUP BY u.id, u.username, au.raw_user_meta_data, u.profile_picture_url
   HAVING COALESCE(
     SUM(
       CASE WHEN (
@@ -2812,6 +2819,34 @@ END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION get_solves_by_challenge(TEXT) TO authenticated;
+CREATE OR REPLACE FUNCTION get_challenge_solvers(
+  p_challenge_id UUID
+)
+RETURNS TABLE (
+  username TEXT,
+  solved_at TIMESTAMPTZ,
+  picture TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    u.username::TEXT,
+    s.created_at AS solved_at,
+    COALESCE(
+      au.raw_user_meta_data->>'picture',
+      au.raw_user_meta_data->>'avatar_url',
+      u.profile_picture_url
+    )::TEXT AS picture
+  FROM public.solves s
+  JOIN public.users u ON u.id = s.user_id
+  LEFT JOIN auth.users au ON au.id = u.id
+  WHERE s.challenge_id = p_challenge_id
+  ORDER BY s.created_at ASC;
+END;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth;
+GRANT EXECUTE ON FUNCTION get_challenge_solvers(UUID) TO authenticated, anon;
 -- DELETE
 CREATE OR REPLACE FUNCTION delete_solver(
   p_solve_id UUID
@@ -2974,7 +3009,12 @@ BEGIN
         'joined_at', tm.joined_at,
         'solo_score', COALESCE(us.solo_score, 0),
         'first_solve_count', COALESCE(fs.first_solves, 0),
-        'first_solve_score', COALESCE(fs.first_solve_score, 0)
+        'first_solve_score', COALESCE(fs.first_solve_score, 0),
+        'picture', COALESCE(
+          au.raw_user_meta_data->>'picture',
+          au.raw_user_meta_data->>'avatar_url',
+          u.profile_picture_url
+        )::TEXT
       )
       ORDER BY (u.id = t.captain_user_id) DESC, tm.joined_at ASC
     ),
@@ -2984,6 +3024,7 @@ BEGIN
   FROM public.team_members tm
   JOIN public.users u ON u.id = tm.user_id
   JOIN public.teams t ON t.id = tm.team_id
+  LEFT JOIN auth.users au ON au.id = tm.user_id
   LEFT JOIN user_stats us ON us.user_id = tm.user_id
   LEFT JOIN first_stats fs ON fs.user_id = tm.user_id
   WHERE tm.team_id = v_team_id;
@@ -3310,7 +3351,12 @@ BEGIN
         'user_id', u.id,
         'username', u.username,
         'role', CASE WHEN u.id = t.captain_user_id THEN 'captain' ELSE 'member' END,
-        'joined_at', tm.joined_at
+        'joined_at', tm.joined_at,
+        'picture', COALESCE(
+          au.raw_user_meta_data->>'picture',
+          au.raw_user_meta_data->>'avatar_url',
+          u.profile_picture_url
+        )::TEXT
       )
       ORDER BY (u.id = t.captain_user_id) DESC, tm.joined_at ASC
     ),
@@ -3320,6 +3366,7 @@ BEGIN
   FROM public.team_members tm
   JOIN public.users u ON u.id = tm.user_id
   JOIN public.teams t ON t.id = tm.team_id
+  LEFT JOIN auth.users au ON au.id = tm.user_id
   WHERE tm.team_id = v_team_id;
   RETURN json_build_object('success', true, 'team', v_team, 'members', v_members);
 END;
@@ -3513,7 +3560,12 @@ BEGIN
         'joined_at', tm.joined_at,
         'solo_score', COALESCE(us.solo_score, 0),
         'first_solve_count', COALESCE(fs.first_solves, 0),
-        'first_solve_score', COALESCE(fs.first_solve_score, 0)
+        'first_solve_score', COALESCE(fs.first_solve_score, 0),
+        'picture', COALESCE(
+          au.raw_user_meta_data->>'picture',
+          au.raw_user_meta_data->>'avatar_url',
+          u.profile_picture_url
+        )::TEXT
       )
       ORDER BY (u.id = t.captain_user_id) DESC, tm.joined_at ASC
     ),
@@ -3523,6 +3575,7 @@ BEGIN
   FROM public.team_members tm
   JOIN public.users u ON u.id = tm.user_id
   JOIN public.teams t ON t.id = tm.team_id
+  LEFT JOIN auth.users au ON au.id = tm.user_id
   LEFT JOIN user_stats us ON us.user_id = tm.user_id
   LEFT JOIN first_stats fs ON fs.user_id = tm.user_id
   WHERE tm.team_id = v_team_id;

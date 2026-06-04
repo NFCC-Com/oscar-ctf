@@ -52,7 +52,7 @@ export default function AdminServicesToolbar({
   const showValidity = activeTab === 'platform'
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between w-full pt-0.5">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between w-full">
       <div className={`flex flex-wrap items-center gap-2 text-xs`}>
         {showValidity && (
           <Select value={filters.validity} onValueChange={(value) => updateFilter('validity', value as AdminServicesFilters['validity'])}>

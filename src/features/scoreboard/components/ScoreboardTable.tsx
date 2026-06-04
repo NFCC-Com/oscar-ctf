@@ -4,6 +4,7 @@ import { Trophy, TrendingUp } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { LeaderboardEntry } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
+import { ImageWithFallback } from '@/shared/components'
 import {
   BaseScoreboardCard,
   BaseScoreboardColumn,
@@ -63,6 +64,11 @@ const ScoreboardTable: React.FC<ScoreboardTableProps> = ({
 
         return (
           <div className="flex items-center gap-2">
+            <ImageWithFallback
+              src={entry.picture}
+              size={24}
+              className="h-6 w-6 rounded-md shadow-sm border border-gray-200/20 dark:border-gray-800/35"
+            />
             <Link
               href={`/user/${encodeURIComponent(entry.username)}`}
               className={cn(

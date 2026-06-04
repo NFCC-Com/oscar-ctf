@@ -249,7 +249,8 @@ RETURNS TABLE (
   username TEXT,
   score BIGINT,
   last_solve TIMESTAMPTZ,
-  rank BIGINT
+  rank BIGINT,
+  picture TEXT
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -285,11 +286,17 @@ BEGIN
         OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
         OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
       ) THEN s.created_at ELSE NULL END) ASC
-    ) AS rank
+    ) AS rank,
+    COALESCE(
+      au.raw_user_meta_data->>'picture',
+      au.raw_user_meta_data->>'avatar_url',
+      u.profile_picture_url
+    )::TEXT AS picture
   FROM public.users u
+  LEFT JOIN auth.users au ON au.id = u.id
   LEFT JOIN public.solves s ON u.id = s.user_id
   LEFT JOIN public.challenges c ON s.challenge_id = c.id
-  GROUP BY u.id, u.username
+  GROUP BY u.id, u.username, au.raw_user_meta_data, u.profile_picture_url
   HAVING COALESCE(
     SUM(
       CASE WHEN (
