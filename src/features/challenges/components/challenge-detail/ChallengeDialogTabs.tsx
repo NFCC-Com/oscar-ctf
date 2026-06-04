@@ -1,6 +1,6 @@
 'use client'
 
-import { SegmentedTabs } from '@/shared/components'
+import { AppTabs } from '@/shared/ui'
 import type { ChallengeDialogTab } from '../../types'
 
 type ChallengeDialogTabsProps = {
@@ -17,12 +17,13 @@ export default function ChallengeDialogTabs({
   onTabChange,
 }: ChallengeDialogTabsProps) {
   return (
-    <SegmentedTabs
+    <AppTabs
       items={tabs.map((tab) => ({ value: tab.key, label: tab.label }))}
       value={activeTab}
-      onChange={(tab) => onTabChange(tab, challengeId)}
+      onValueChange={(tab) => onTabChange(tab, challengeId)}
       variant="panel"
       stretch
+      ariaLabel="Challenge dialog tabs"
     />
   )
 }

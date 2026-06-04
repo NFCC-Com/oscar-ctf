@@ -1,16 +1,16 @@
 import React, { type ReactNode } from 'react'
-import { AlertTriangle, Search } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import EmptyState from '@/shared/components/EmptyState'
-import { SegmentedTabs } from '@/shared/components'
 import {
+  AppTabs,
+  type AppTabItem,
   Badge,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  DataSurface,
+  FilterInput,
+  FilterSelect,
+  FilterToolbar,
+  type FilterSelectOption,
 } from '@/shared/ui'
 
 export const ADMIN_STICKY_TOOLBAR_CLASS =
@@ -68,14 +68,8 @@ export function AdminStickyToolbar({
   )
 }
 
-type AdminTabItem<T extends string> = {
-  value: T
-  label: React.ReactNode
-  icon?: React.ComponentType<{ className?: string }>
-}
-
 interface AdminTabsProps<T extends string> {
-  items: AdminTabItem<T>[]
+  items: AppTabItem<T>[]
   value: T
   onChange: (value: T) => void
   className?: string
@@ -90,13 +84,14 @@ export function AdminTabs<T extends string>({
   stretch,
 }: AdminTabsProps<T>) {
   return (
-    <SegmentedTabs
+    <AppTabs
       items={items}
       value={value}
-      onChange={onChange}
+      onValueChange={onChange}
       variant="panel"
       className={className}
       stretch={stretch}
+      ariaLabel="Admin tabs"
     />
   )
 }
@@ -143,14 +138,14 @@ export function AdminDataSurface({
   contentClassName,
 }: AdminDataSurfaceProps) {
   return (
-    <AdminPageSurface className={className}>
-      {toolbar}
-      {empty ? (
-        <div className="p-5 sm:p-6">{empty}</div>
-      ) : (
-        <div className={contentClassName}>{children}</div>
-      )}
-    </AdminPageSurface>
+    <DataSurface
+      toolbar={toolbar}
+      empty={empty}
+      className={className}
+      contentClassName={contentClassName}
+    >
+      {children}
+    </DataSurface>
   )
 }
 
@@ -185,95 +180,16 @@ export function AdminSection({ title, description, children, className }: AdminS
   )
 }
 
-interface AdminFilterToolbarProps {
-  children: ReactNode
-  actions?: ReactNode
-  className?: string
-}
+export const AdminFilterToolbar = FilterToolbar
+export const AdminFilterInput = FilterInput
 
-export function AdminFilterToolbar({ children, actions, className }: AdminFilterToolbarProps) {
-  return (
-    <div className={cn('flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between', className)}>
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-xs">
-        {children}
-      </div>
-      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">{actions}</div>}
-    </div>
-  )
-}
-
-interface AdminFilterInputProps extends React.ComponentProps<typeof Input> {
-  icon?: ReactNode
-  wrapperClassName?: string
-}
-
-export function AdminFilterInput({
-  icon,
-  wrapperClassName,
-  className,
-  ...props
-}: AdminFilterInputProps) {
-  const iconNode = icon === undefined
-    ? <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-    : icon
-
-  return (
-    <div className={cn('relative w-full max-w-md', wrapperClassName)}>
-      {iconNode && (
-        <div className="pointer-events-none absolute left-3 top-2.5">
-          {iconNode}
-        </div>
-      )}
-      <Input
-        className={cn(ADMIN_CONTROL_CLASS, iconNode && 'pl-9', className)}
-        {...props}
-      />
-    </div>
-  )
-}
-
-type AdminFilterSelectOption = {
-  value: string
-  label: ReactNode
-  className?: string
-}
-
-interface AdminFilterSelectProps {
-  value: string
+type AdminFilterSelectProps = Omit<React.ComponentProps<typeof FilterSelect>, 'onChange'> & {
   onValueChange: (value: string) => void
-  placeholder?: string
-  options: AdminFilterSelectOption[]
-  triggerClassName?: string
-  contentClassName?: string
-  className?: string
-  icon?: ReactNode
+  options: FilterSelectOption[]
 }
 
-export function AdminFilterSelect({
-  value,
-  onValueChange,
-  placeholder,
-  options,
-  triggerClassName,
-  contentClassName,
-  className,
-  icon,
-}: AdminFilterSelectProps) {
-  return (
-    <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className={cn('w-full sm:w-[130px]', ADMIN_CONTROL_CLASS, triggerClassName, className)}>
-        {icon}
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent className={contentClassName}>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value} className={option.className}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
+export function AdminFilterSelect({ onValueChange, ...props }: AdminFilterSelectProps) {
+  return <FilterSelect onChange={onValueChange} {...props} />
 }
 
 const ADMIN_STATUS_BADGE_CLASS = {

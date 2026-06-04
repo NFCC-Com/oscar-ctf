@@ -2,10 +2,10 @@
 
 import APP from '@/config'
 import {
-  SURFACE_GLASS_FIELD_COMPACT_CLASS,
   SURFACE_FILTER_ITEM_CLASS,
   SURFACE_FILTER_ITEM_ACTIVE_CLASS,
 } from '@/shared/styles'
+import { FilterInput } from '@/shared/ui'
 import {
   getFeatureFilterLabel,
   getFeatureFilterTitle,
@@ -89,20 +89,22 @@ export default function ChallengeFilterControls({
           <div data-tour="challenge-search-control" className="flex-1 min-w-[180px]">
             {hideSidebarFiltersOnDesktop ? (
               <>
-                <input
+                <FilterInput
                   id="challenge-filter-search"
-                  type="text"
                   value={filters.search}
-                  onChange={(event) => onFilterChange({ ...filters, search: event.target.value })}
+                  defaultValue=""
+                  onChange={(value) => onFilterChange({ ...filters, search: value })}
                   placeholder="Search challenge..."
-                  className={`${SURFACE_GLASS_FIELD_COMPACT_CLASS} xl:hidden focus:ring-blue-500 focus:border-blue-500 ${filters.search && String(filters.search).trim() !== '' ? `${SURFACE_FILTER_ITEM_ACTIVE_CLASS} placeholder:text-white/70 dark:placeholder:text-white/70` : ''} ${dirtyState.isSearchDirty ? 'ring-2 ring-blue-500/30 dark:ring-blue-500/30' : ''}`}
+                  active={dirtyState.isSearchDirty}
+                  clearable
+                  wrapperClassName="xl:hidden"
                 />
                 <button
                   type="button"
                   onClick={() => document.dispatchEvent(new Event('challenge-search-open'))}
                   title="Open challenge search"
                   aria-label="Open challenge search"
-                  className={`${SURFACE_GLASS_FIELD_COMPACT_CLASS} hidden xl:flex items-center text-left focus:ring-blue-500 focus:border-blue-500 ${filters.search && String(filters.search).trim() !== '' ? `${SURFACE_FILTER_ITEM_ACTIVE_CLASS}` : ''} ${dirtyState.isSearchDirty ? 'ring-2 ring-blue-500/30 dark:ring-blue-500/30' : ''}`}
+                  className={`hidden h-9 w-full items-center rounded-xl border px-3 text-left text-xs font-semibold shadow-sm backdrop-blur-md transition focus:ring-2 focus:ring-blue-500/30 xl:flex ${dirtyState.isSearchDirty ? SURFACE_FILTER_ITEM_ACTIVE_CLASS : SURFACE_FILTER_ITEM_CLASS}`}
                 >
                   <span className={`truncate ${filters.search ? '' : 'text-gray-400 dark:text-gray-500'}`}>
                     {filters.search || 'Search challenge...'}
@@ -110,13 +112,14 @@ export default function ChallengeFilterControls({
                 </button>
               </>
             ) : (
-              <input
+              <FilterInput
                 id="challenge-filter-search"
-                type="text"
                 value={filters.search}
-                onChange={(event) => onFilterChange({ ...filters, search: event.target.value })}
+                defaultValue=""
+                onChange={(value) => onFilterChange({ ...filters, search: value })}
                 placeholder="Search challenge..."
-                className={`${SURFACE_GLASS_FIELD_COMPACT_CLASS} focus:ring-blue-500 focus:border-blue-500 ${filters.search && String(filters.search).trim() !== '' ? `${SURFACE_FILTER_ITEM_ACTIVE_CLASS} placeholder:text-white/70 dark:placeholder:text-white/70` : ''} ${dirtyState.isSearchDirty ? 'ring-2 ring-blue-500/30 dark:ring-blue-500/30' : ''}`}
+                active={dirtyState.isSearchDirty}
+                clearable
               />
             )}
           </div>

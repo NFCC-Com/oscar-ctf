@@ -66,7 +66,9 @@ export default function EventsTabPanel({
           currentTab={currentTab}
           onTabChange={onTabChange}
           showSummary={false}
-          className="xl:w-[176px] [&_button]:xl:w-[176px]"
+          iconOnly
+          compact
+          className="xl:w-[176px]"
         />
 
         <DesktopEventsSidebar

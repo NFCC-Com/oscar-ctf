@@ -3,11 +3,8 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Bell, Check, Plus, Loader2, X, Megaphone, Settings2, Trash2, Calendar } from 'lucide-react'
-import { Switch } from '@/shared/ui'
-import { Button } from '@/shared/ui/button'
-import { SURFACE_GLASS_INPUT_CLASS, SURFACE_GLASS_TEXTAREA_CLASS } from '@/shared/styles'
+import { Switch, Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui'
 import { cn, formatRelativeDate } from '@/shared/lib/utils'
-import { BaseModal, ModalHeader, ModalBody } from '@/shared/components/BaseModal'
 import NotificationItem from './NotificationItem'
 
 function formatNotificationText(content: string) {
@@ -75,8 +72,23 @@ export default function NotificationPanel({
     globalAdminStatus ? 'notifications' : 'notifications'
   )
 
-  const [hoveredNotifId, setHoveredNotifId] = useState<string | null>(null)
-  const [selectedNotif, setSelectedNotif] = useState<typeof notifItems[0] | null>(null)
+  const [explicitExpanded, setExplicitExpanded] = useState<Record<string, boolean>>({})
+
+  const isItemExpanded = (id: string, isRead: boolean) => {
+    if (explicitExpanded[id] !== undefined) {
+      return explicitExpanded[id]
+    }
+    return !isRead
+  }
+
+  const handleNotifClick = (id: string, isRead: boolean) => {
+    markNotificationRead(id)
+    const currentlyExpanded = isItemExpanded(id, isRead)
+    setExplicitExpanded((prev) => ({
+      ...prev,
+      [id]: !currentlyExpanded,
+    }))
+  }
 
   const groupedNotifs = React.useMemo(() => {
     const now = new Date()
@@ -228,20 +240,21 @@ export default function NotificationPanel({
                         <h3 className="px-3 text-[10px] font-bold uppercase tracking-widest text-gray-500/70">
                           {group}
                         </h3>
-                        {groupedNotifs[group].map((n) => (
-                          <NotificationItem
-                            key={n.id}
-                            notification={n}
-                            isRead={isNotifRead(n.id)}
-                            theme={theme}
-                            globalAdminStatus={globalAdminStatus}
-                            getLevelBadgeClass={getLevelBadgeClass}
-                            onClick={() => {
-                              markNotificationRead(n.id)
-                              setSelectedNotif(n)
-                            }}
-                          />
-                        ))}
+                        {groupedNotifs[group].map((n) => {
+                          const isRead = isNotifRead(n.id)
+                          return (
+                            <NotificationItem
+                              key={n.id}
+                              notification={n}
+                              isRead={isRead}
+                              theme={theme}
+                              globalAdminStatus={globalAdminStatus}
+                              getLevelBadgeClass={getLevelBadgeClass}
+                              isExpanded={isItemExpanded(n.id, isRead)}
+                              onClick={() => handleNotifClick(n.id, isRead)}
+                            />
+                          )
+                        })}
                       </div>
                     )
                   })}
@@ -257,29 +270,33 @@ export default function NotificationPanel({
                   <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-500">New Broadcast</h3>
                 </div>
                 <div className="space-y-2">
-                  <input
+                  <Input
                     value={notifTitle}
                     onChange={(e) => setNotifTitle(e.target.value)}
                     placeholder="Title"
-                    className={cn(SURFACE_GLASS_INPUT_CLASS, "h-10")}
+                    className="h-10 text-sm"
                   />
-                  <textarea
+                  <Textarea
                     value={notifMessage}
                     onChange={(e) => setNotifMessage(e.target.value)}
                     placeholder="Message..."
-                    className={cn(SURFACE_GLASS_TEXTAREA_CLASS, "min-h-[80px] resize-y")}
+                    className="min-h-[80px] resize-y text-sm"
                     rows={2}
                   />
                   <div className="flex items-center justify-between gap-3 pt-1">
-                    <select
+                    <Select
                       value={notifLevel}
-                      onChange={(e) => setNotifLevel(e.target.value as any)}
-                      className={cn(SURFACE_GLASS_INPUT_CLASS, "h-9 w-auto text-xs py-0 pr-8 bg-white/50 dark:bg-[#111622]/50")}
+                      onValueChange={(value) => setNotifLevel(value as any)}
                     >
-                      <option value="info">Broadcast</option>
-                      <option value="info_platform">System</option>
-                      <option value="info_challenges">Challenges</option>
-                    </select>
+                      <SelectTrigger className="h-9 w-36 text-xs px-3">
+                        <SelectValue placeholder="Broadcast Type" />
+                      </SelectTrigger>
+                      <SelectContent className="!z-[999]">
+                        <SelectItem value="info">Broadcast</SelectItem>
+                        <SelectItem value="info_platform">System</SelectItem>
+                        <SelectItem value="info_challenges">Challenges</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button
                       onClick={handleSendNotif}
                       size="sm"
@@ -308,15 +325,16 @@ export default function NotificationPanel({
                     <NotificationItem
                       key={n.id}
                       notification={n}
-                      isRead={isNotifRead(n.id)}
+                      isRead={true}
                       theme={theme}
                       globalAdminStatus={globalAdminStatus}
                       getLevelBadgeClass={getLevelBadgeClass}
                       onDelete={handleDeleteNotif}
-                      onClick={() => {
-                        markNotificationRead(n.id)
-                        setSelectedNotif(n)
-                      }}
+                      isExpanded={explicitExpanded[n.id] === true}
+                      onClick={() => setExplicitExpanded(prev => ({
+                        ...prev,
+                        [n.id]: !prev[n.id],
+                      }))}
                     />
                   ))}
                 </div>
@@ -326,35 +344,7 @@ export default function NotificationPanel({
         </div>
       </motion.div>
 
-      <BaseModal
-        open={!!selectedNotif}
-        onOpenChange={(open) => {
-          if (!open) setSelectedNotif(null)
-        }}
-        size="2xl"
-      >
-        {selectedNotif && (
-          <>
-            <ModalHeader
-              title={selectedNotif.title}
-              description={
-                <div className="flex items-center gap-2 mt-1 uppercase tracking-wider text-[10px] font-bold">
-                  <span className={getLevelBadgeClass(selectedNotif.level)}>
-                    {selectedNotif.level.replace('info_', '')}
-                  </span>
-                  <span>•</span>
-                  <span>{formatRelativeDate(selectedNotif.created_at)}</span>
-                </div>
-              }
-            />
-            <ModalBody>
-              <div className="text-[13px] text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
-                {formatNotificationText(selectedNotif.message)}
-              </div>
-            </ModalBody>
-          </>
-        )}
-      </BaseModal>
+      {/* Detail Modal removed in favor of inline accordion UX */}
     </>
   )
 }

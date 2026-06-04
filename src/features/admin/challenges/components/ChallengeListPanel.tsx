@@ -61,21 +61,24 @@ const ChallengeListPanel: React.FC<ChallengeListPanelProps> = ({
             <AdminStickyToolbar
               filters={(
                 <AdminChallengesToolbar
-            filters={filters}
-            onFiltersChange={onFiltersChange}
-            categories={Array.from(new Set(challenges.map(c => c.category))).filter(Boolean).sort()}
-            difficulties={Array.from(new Set(challenges.map(c => c.difficulty))).filter(Boolean).sort()}
-            actions={headerActions}
-            status={syncStatus}
-            onClear={() => onFiltersChange({
-              category: "all",
-              difficulty: "all",
-              search: "",
-              scope: "all",
-              visibility: "all",
-              service: "all",
-              sortBy: "points_desc",
-            })}
+                  filters={filters}
+                  onFiltersChange={onFiltersChange}
+                  categories={Array.from(new Set(challenges.map(c => c.category))).filter(Boolean).sort()}
+                  difficulties={Array.from(new Set(challenges.map(c => c.difficulty))).filter(Boolean).sort()}
+                  actions={headerActions}
+                  status={syncStatus}
+                  events={events}
+                  selectedEventId={selectedEventId}
+                  onEventChange={onEventChange}
+                  onClear={() => onFiltersChange({
+                    category: "all",
+                    difficulty: "all",
+                    search: "",
+                    scope: "all",
+                    visibility: "all",
+                    service: "all",
+                    sortBy: "points_desc",
+                  })}
                 />
               )}
             />

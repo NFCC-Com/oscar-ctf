@@ -8,9 +8,8 @@ import { APP } from '@/config'
 import Loader from '@/shared/components/Loader'
 import EmptyState from '@/shared/components/EmptyState'
 import PageBackground from '@/shared/components/PageBackground'
-import { SegmentedTabs } from '@/shared/components'
 import EventSelect from '@/features/events/components/EventSelect'
-import { Card, CardContent } from '@/shared/ui'
+import { AppTabs, Card, CardContent } from '@/shared/ui'
 import {
   PAGE_MAIN_CONTAINER_6XL,
   SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS,
@@ -64,12 +63,14 @@ export default function TeamScoreboardPage() {
             onChange={setSelectedEvent as any}
             events={startedEvents}
             className="w-full max-w-full sm:w-[180px]"
+            defaultValue="all"
+            clearable
             getEventLabel={(ev: any) => String(ev?.name ?? ev?.title ?? 'Untitled')}
           />
         </div>
 
         {/* Mode Tabs */}
-        <SegmentedTabs
+        <AppTabs
           items={[
             { value: 'unique', label: 'Unique Score', icon: Sparkles },
             ...(!APP.teams.hidescoreboardTotal
@@ -77,10 +78,12 @@ export default function TeamScoreboardPage() {
               : []),
           ]}
           value={showTotalScore ? 'total' : 'unique'}
-          onChange={(tab) => setShowTotalScore(tab === 'total')}
+          onValueChange={(tab) => setShowTotalScore(tab === 'total')}
           variant="panel"
+          size="sm"
           className="w-full sm:w-fit"
           stretch
+          ariaLabel="Team scoreboard mode"
         />
       </div>
 

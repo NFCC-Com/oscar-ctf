@@ -3,6 +3,8 @@
 import type { CSSProperties } from 'react'
 import { Calendar } from 'lucide-react'
 import Image from 'next/image'
+import { SurfaceCard } from '@/shared/ui'
+import { cn } from '@/shared/lib/utils'
 
 type MainEventCardProps = {
   label: string
@@ -29,11 +31,12 @@ export default function MainEventCard({
       {/* Glow Effect on Hover */}
       <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/[0.03] rounded-2xl transition-colors duration-300 pointer-events-none" />
 
-      <div className={`relative h-full flex flex-col overflow-hidden rounded-2xl border backdrop-blur-md transition-all duration-300
-        ${selected
-          ? 'bg-blue-500/[0.03] border-blue-500/50 shadow-sm'
-          : 'bg-white/40 dark:bg-gray-900/40 border-gray-200 dark:border-gray-800 group-hover:border-blue-500/50 shadow-sm'}
-        hover:shadow-md`}
+      <SurfaceCard
+        variant="glass"
+        className={cn(
+          'relative flex h-full flex-col overflow-hidden transition-all duration-300 group-hover:border-blue-500/50 hover:shadow-md',
+          selected && 'border-blue-500/50 bg-blue-500/[0.03]'
+        )}
       >
         {/* Image Section */}
         <div className="relative h-40 w-full overflow-hidden border-b border-gray-100 dark:border-gray-800/50">
@@ -74,7 +77,7 @@ export default function MainEventCard({
             </div>
           </div>
         </div>
-      </div>
+      </SurfaceCard>
     </div>
   )
 }

@@ -6,8 +6,8 @@ import { ImageWithFallback } from '@/shared/components'
 import EventSelect from '@/features/events/components/EventSelect'
 import SocialIcon from '@/features/users/components/ui/SocialIcon'
 import { formatRelativeDate } from '@/shared/lib'
+import { SurfaceCard } from '@/shared/ui'
 import {
-  SURFACE_GLASS_CARD_COMPACT_CLASS,
   TYPO_PAGE_TITLE_CLASS,
   TYPO_METADATA_CLASS
 } from '@/shared/styles'
@@ -42,8 +42,10 @@ export default function ProfileHeader({
   onUpdateUserDetail
 }: ProfileHeaderProps) {
   return (
-    <section
-      className={cn("mx-auto flex w-full max-w-7xl flex-col gap-6 p-5 md:flex-row md:items-start md:justify-between", SURFACE_GLASS_CARD_COMPACT_CLASS)}
+    <SurfaceCard
+      variant="glass"
+      padding="md"
+      className="mx-auto flex w-full max-w-7xl flex-col gap-6 rounded-xl md:flex-row md:items-start md:justify-between"
     >
       <div className="flex w-full flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
         <div className="relative mx-auto flex h-24 w-24 shrink-0 overflow-hidden rounded-full border border-gray-200/50 shadow-sm dark:border-white/10 sm:mx-0 sm:h-28 sm:w-28 aspect-square">
@@ -69,6 +71,8 @@ export default function ProfileHeader({
               events={profileEvents as any}
               showMain={showMainOption}
               className="w-full sm:min-w-[180px] md:w-[220px]"
+              defaultValue="all"
+              clearable
               getEventLabel={(ev: any) => String(ev?.name ?? ev?.title ?? 'Untitled')}
             />
           </div>
@@ -133,6 +137,6 @@ export default function ProfileHeader({
           </div>
         </div>
       </div>
-    </section>
+    </SurfaceCard>
   )
 }

@@ -9,6 +9,8 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
   TableRow,
 } from '@/shared/ui'
 import {
@@ -25,6 +27,20 @@ import type { AdminUserRow, UserSocialLinks } from '../types'
 
 type UsersTableCardProps = {
   users: AdminUserRow[]
+  totalCount: number
+  isDataLoading: boolean
+  query: string
+  setQuery: (q: string) => void
+  searchQuery: string
+  setSearchQuery: (q: string) => void
+  roleFilter: 'all' | 'admin' | 'user'
+  setRoleFilter: (role: 'all' | 'admin' | 'user') => void
+  sortMode: 'newest' | 'oldest' | 'username_asc' | 'updated_desc' | 'role'
+  setSortMode: (sort: 'newest' | 'oldest' | 'username_asc' | 'updated_desc' | 'role') => void
+  pageSize: number
+  setPageSize: (size: number) => void
+  page: number
+  setPage: React.Dispatch<React.SetStateAction<number>>
 }
 
 type RoleFilter = 'all' | 'admin' | 'user'
@@ -37,7 +53,7 @@ type SocialItem = {
   href: string | null
 }
 
-const PAGE_SIZE_OPTIONS = [25, 50, 100]
+const PAGE_SIZE_OPTIONS = [100, 500, 1000]
 
 function formatDate(value?: string) {
   if (!value) return '-'
@@ -50,14 +66,6 @@ function formatDate(value?: string) {
     day: 'numeric',
     year: 'numeric',
   })
-}
-
-function compareDateDesc(a?: string, b?: string) {
-  return new Date(b || 0).getTime() - new Date(a || 0).getTime()
-}
-
-function compareDateAsc(a?: string, b?: string) {
-  return new Date(a || 0).getTime() - new Date(b || 0).getTime()
 }
 
 function truncateUserId(id: string) {
@@ -89,49 +97,30 @@ function getSocialItems(sosmed: UserSocialLinks): SocialItem[] {
     })
 }
 
-export default function UsersTableCard({ users }: UsersTableCardProps) {
-  const [query, setQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
-  const [sortMode, setSortMode] = useState<SortMode>('newest')
-  const [pageSize, setPageSize] = useState(25)
-  const [page, setPage] = useState(1)
+export default function UsersTableCard({
+  users,
+  totalCount,
+  isDataLoading,
+  query,
+  setQuery,
+  searchQuery,
+  setSearchQuery,
+  roleFilter,
+  setRoleFilter,
+  sortMode,
+  setSortMode,
+  pageSize,
+  setPageSize,
+  page,
+  setPage,
+}: UsersTableCardProps) {
   const [copiedUserId, setCopiedUserId] = useState<string | null>(null)
 
-  const resetPage = () => setPage(1)
-
-  const filteredUsers = useMemo(() => {
-    const keyword = query.trim().toLowerCase()
-
-    return users
-      .filter((listedUser) => {
-        if (roleFilter === 'admin' && !listedUser.is_admin) return false
-        if (roleFilter === 'user' && listedUser.is_admin) return false
-        if (!keyword) return true
-
-        return (
-          listedUser.username.toLowerCase().includes(keyword) ||
-          listedUser.id.toLowerCase().includes(keyword) ||
-          (listedUser.bio || '').toLowerCase().includes(keyword)
-        )
-      })
-      .sort((a, b) => {
-        if (sortMode === 'newest') return compareDateDesc(a.created_at, b.created_at)
-        if (sortMode === 'oldest') return compareDateAsc(a.created_at, b.created_at)
-        if (sortMode === 'updated_desc') return compareDateDesc(a.updated_at, b.updated_at)
-        if (sortMode === 'role') {
-          if (a.is_admin !== b.is_admin) return a.is_admin ? -1 : 1
-          return a.username.localeCompare(b.username)
-        }
-        return a.username.localeCompare(b.username)
-      })
-  }, [query, roleFilter, sortMode, users])
-
-  const pageCount = Math.max(1, Math.ceil(filteredUsers.length / pageSize))
+  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
   const safePage = Math.min(page, pageCount)
-  const startIndex = (safePage - 1) * pageSize
-  const visibleUsers = filteredUsers.slice(startIndex, startIndex + pageSize)
-  const firstResult = filteredUsers.length === 0 ? 0 : startIndex + 1
-  const lastResult = Math.min(startIndex + pageSize, filteredUsers.length)
+  const firstResult = totalCount === 0 ? 0 : (safePage - 1) * pageSize + 1
+  const lastResult = Math.min(safePage * pageSize, totalCount)
+  
   const handleCopyUserId = async (id: string) => {
     if (!navigator.clipboard) return
 
@@ -144,66 +133,7 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
 
   return (
     <AdminDataSurface
-      toolbar={
-        <div className="py-2">
-          <AdminFilterToolbar>
-              <AdminFilterInput
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value)
-                  resetPage()
-                }}
-                placeholder="Search username, ID, bio..."
-              />
-
-            <AdminFilterSelect
-              value={roleFilter}
-              onValueChange={(value) => {
-                setRoleFilter(value as RoleFilter)
-                resetPage()
-              }}
-              placeholder="Role"
-              options={[
-                { value: 'all', label: 'All roles' },
-                { value: 'admin', label: 'Admin' },
-                { value: 'user', label: 'User' },
-              ]}
-            />
-
-            <AdminFilterSelect
-              value={sortMode}
-              onValueChange={(value) => {
-                setSortMode(value as SortMode)
-                resetPage()
-              }}
-              placeholder="Sort"
-              triggerClassName="sm:w-[150px]"
-              options={[
-                { value: 'newest', label: 'Newest' },
-                { value: 'oldest', label: 'Oldest' },
-                { value: 'username_asc', label: 'Username' },
-                { value: 'updated_desc', label: 'Recently updated' },
-                { value: 'role', label: 'Role' },
-              ]}
-            />
-
-            <AdminFilterSelect
-              value={String(pageSize)}
-              onValueChange={(value) => {
-                setPageSize(Number(value))
-                resetPage()
-              }}
-              placeholder="Rows"
-              triggerClassName="sm:w-[120px]"
-              options={PAGE_SIZE_OPTIONS.map((option) => ({
-                value: String(option),
-                label: `${option} rows`,
-              }))}
-            />
-          </AdminFilterToolbar>
-        </div>
-      }
-      empty={filteredUsers.length === 0 ? (
+      empty={users.length === 0 ? (
         <AdminEmptyState
           title="No users match the current filters"
           description="Try adjusting your search, role filter, or sort."
@@ -212,9 +142,17 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
     >
             <AdminTableSurface>
               <Table>
+                <TableHeader className="border-b border-gray-200/70 dark:border-gray-800/70">
+                  <TableRow>
+                    <TableHead className="pl-6 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">User</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Role</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Created</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Updated</TableHead>
+                    <TableHead className="pr-6 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
-                  {visibleUsers.map((listedUser) => {
-                    const socialItems = getSocialItems(listedUser.sosmed)
+                  {users.map((listedUser) => {
                     const profileHref = listedUser.username
                       ? `/user/${encodeURIComponent(listedUser.username)}`
                       : null
@@ -253,66 +191,9 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-muted-foreground" title={listedUser.id}>
-                              {truncateUserId(listedUser.id)}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleCopyUserId(listedUser.id)}
-                              aria-label="Copy user ID"
-                              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-blue-600 dark:hover:text-blue-300"
-                            >
-                              {copiedUserId === listedUser.id ? (
-                                <Check className="h-4 w-4" />
-                              ) : (
-                                <Copy className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
                           <AdminStatusBadge tone={listedUser.is_admin ? 'info' : 'neutral'}>
                             {listedUser.is_admin ? 'Admin' : 'User'}
                           </AdminStatusBadge>
-                        </TableCell>
-                        <TableCell>
-                          {socialItems.length > 0 ? (
-                            <div className="flex max-w-[260px] flex-wrap gap-1.5">
-                              {socialItems.slice(0, 3).map((item) => (
-                                item.href ? (
-                                  <a
-                                    key={item.key}
-                                    href={item.href}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-1 rounded-lg border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-500/15 dark:text-blue-300"
-                                    title={item.value}
-                                  >
-                                    {item.label}
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                ) : (
-                                  <span
-                                    key={item.key}
-                                    className="inline-flex rounded-lg border border-gray-300/70 bg-gray-100/60 px-2 py-1 text-xs font-semibold text-gray-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-300"
-                                    title={item.value}
-                                  >
-                                    {item.label}
-                                  </span>
-                                )
-                              ))}
-                              {socialItems.length > 3 && (
-                                <span className="inline-flex rounded-lg border border-gray-300/70 bg-gray-100/60 px-2 py-1 text-xs font-semibold text-gray-500 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-400">
-                                  +{socialItems.length - 3}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
                         </TableCell>
                         <TableCell className="text-right text-xs text-muted-foreground">
                           {formatDate(listedUser.created_at)}
@@ -343,7 +224,7 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
 
             <div className="mx-6 my-4 flex flex-col gap-3 border-t border-gray-200/80 pt-4 text-sm text-muted-foreground dark:border-gray-800/80 sm:flex-row sm:items-center sm:justify-between">
               <span>
-                Showing {firstResult}-{lastResult} of {filteredUsers.length}
+                Showing {firstResult}-{lastResult} of {totalCount}
               </span>
 
               <div className="flex items-center gap-2">

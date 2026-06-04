@@ -97,7 +97,7 @@ export default function AdminServicesToolbar({
             value={filters.validity}
             onValueChange={(value) => updateFilter('validity', value as AdminServicesFilters['validity'])}
             placeholder="Validity"
-            triggerClassName="sm:w-[170px]"
+            className="w-full sm:w-[170px]"
             options={[
               { value: 'all', label: 'All services' },
               { value: 'valid', label: 'Valid services' },
@@ -110,7 +110,7 @@ export default function AdminServicesToolbar({
           value={filters.key}
           onValueChange={(value) => updateFilter('key', value)}
           placeholder="Key"
-          triggerClassName="sm:w-[190px]"
+          className="w-full sm:w-[190px]"
           contentClassName="max-h-[300px]"
           options={[
             { value: 'all', label: 'All keys' },

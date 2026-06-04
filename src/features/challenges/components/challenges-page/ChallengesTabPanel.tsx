@@ -23,7 +23,9 @@ export default function ChallengesTabPanel({
           currentTab={data.currentTab}
           onTabChange={data.setCurrentTab}
           showSummary={false}
-          className="xl:w-[176px] [&_button]:xl:w-[176px]"
+          iconOnly
+          compact
+          className="xl:w-[176px]"
         />
 
         <DesktopChallengeFilterSidebar

@@ -21,7 +21,6 @@ export default function AdminChallengeFilters({
 }: AdminChallengeFiltersProps) {
   const isDirty =
     filters.search ||
-    filters.scope !== 'all' ||
     filters.category !== 'all' ||
     filters.difficulty !== 'all' ||
     filters.visibility !== 'all' ||
@@ -30,83 +29,97 @@ export default function AdminChallengeFilters({
 
   return (
     <AdminFilterToolbar
-      actions={isDirty ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClear}
-          className="h-9 shrink-0 rounded-xl px-3 text-xs font-semibold text-gray-500 hover:text-red-600"
-        >
-          Clear
-        </Button>
-      ) : null}
+      actions={
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+
+          <AdminFilterSelect
+            value={filters.category}
+            onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, category: val }))}
+            placeholder="Category"
+            className="w-full sm:w-[150px]"
+            options={[
+              { value: 'all', label: 'All Categories' },
+              ...categories.map((cat) => ({ value: cat, label: cat })),
+            ]}
+          />
+
+          <AdminFilterSelect
+            value={filters.difficulty}
+            onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, difficulty: val }))}
+            placeholder="Difficulty"
+            className="w-full sm:w-[145px]"
+            options={[
+              { value: 'all', label: 'All Difficulties' },
+              ...difficulties.map((diff) => ({ value: diff, label: diff, className: 'capitalize' })),
+            ]}
+          />
+
+          <AdminFilterSelect
+            value={filters.visibility}
+            onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, visibility: val as AdminChallengeFilterState['visibility'] }))}
+            placeholder="Visibility"
+            className="w-full sm:w-[140px]"
+            options={[
+              { value: 'all', label: 'All Visibility' },
+              { value: 'active', label: 'Active / Visible' },
+              { value: 'inactive', label: 'Inactive / Hidden' },
+              { value: 'maintenance', label: 'Maintenance' },
+            ]}
+          />
+
+          <AdminFilterSelect
+            value={filters.service}
+            onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, service: val as AdminChallengeFilterState['service'] }))}
+            placeholder="Services"
+            className="w-full sm:w-[130px]"
+            options={[
+              { value: 'all', label: 'All Services' },
+              { value: 'services', label: 'Services' },
+              { value: 'placeholder', label: 'Placeholder' },
+              { value: 'tasks', label: 'Tasks' },
+            ]}
+          />
+
+          <AdminFilterSelect
+            value={filters.sortBy || 'points_desc'}
+            defaultValue="points_desc"
+            onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, sortBy: val }))}
+            placeholder="Sort by"
+            className="w-full sm:w-[150px]"
+            icon={<ArrowUpDown className="h-3.5 w-3.5 shrink-0" />}
+            options={[
+              { value: 'points_desc', label: 'Points desc' },
+              { value: 'points_asc', label: 'Points asc' },
+              { value: 'difficulty_asc', label: 'Difficulty asc' },
+              { value: 'difficulty_desc', label: 'Difficulty desc' },
+              { value: 'title_asc', label: 'Name A-Z' },
+              { value: 'title_desc', label: 'Name Z-A' },
+            ]}
+          />
+        </div>
+      }
     >
-      <AdminFilterInput
-        type="text"
-        value={filters.search}
-        onChange={(e) => onFiltersChange((prev) => ({ ...prev, search: e.target.value }))}
-        placeholder="Search challenge by name or description..."
-      />
+      <div className="flex items-center gap-2 flex-1 max-w-[320px]">
+        <AdminFilterInput
+          type="text"
+          value={filters.search}
+          defaultValue=""
+          onChange={(value) => onFiltersChange((prev) => ({ ...prev, search: value }))}
+          placeholder="Search challenge by name or description..."
+          wrapperClassName="w-full"
+        />
 
-      <AdminFilterSelect
-        value={filters.category}
-        onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, category: val }))}
-        placeholder="Category"
-        options={[
-          { value: 'all', label: 'All Categories' },
-          ...categories.map((cat) => ({ value: cat, label: cat })),
-        ]}
-      />
-
-      <AdminFilterSelect
-        value={filters.difficulty}
-        onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, difficulty: val }))}
-        placeholder="Difficulty"
-        options={[
-          { value: 'all', label: 'All Difficulties' },
-          ...difficulties.map((diff) => ({ value: diff, label: diff, className: 'capitalize' })),
-        ]}
-      />
-
-      <AdminFilterSelect
-        value={filters.visibility}
-        onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, visibility: val as AdminChallengeFilterState['visibility'] }))}
-        placeholder="Visibility"
-        options={[
-          { value: 'all', label: 'All Visibility' },
-          { value: 'active', label: 'Active / Visible' },
-          { value: 'inactive', label: 'Inactive / Hidden' },
-          { value: 'maintenance', label: 'Maintenance' },
-        ]}
-      />
-
-      <AdminFilterSelect
-        value={filters.service}
-        onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, service: val as AdminChallengeFilterState['service'] }))}
-        placeholder="Services"
-        options={[
-          { value: 'all', label: 'All Services' },
-          { value: 'services', label: 'Services' },
-          { value: 'placeholder', label: 'Placeholder' },
-          { value: 'tasks', label: 'Tasks' },
-        ]}
-      />
-
-      <AdminFilterSelect
-        value={filters.sortBy || 'points_desc'}
-        onValueChange={(val) => onFiltersChange((prev) => ({ ...prev, sortBy: val }))}
-        placeholder="Sort by"
-        triggerClassName="sm:w-[150px]"
-        icon={<ArrowUpDown className="mr-1 h-3 w-3 shrink-0" />}
-        options={[
-          { value: 'points_desc', label: 'Points desc' },
-          { value: 'points_asc', label: 'Points asc' },
-          { value: 'difficulty_asc', label: 'Difficulty asc' },
-          { value: 'difficulty_desc', label: 'Difficulty desc' },
-          { value: 'title_asc', label: 'Name A-Z' },
-          { value: 'title_desc', label: 'Name Z-A' },
-        ]}
-      />
+        {isDirty && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClear}
+            className="h-9 shrink-0 rounded-xl px-3.5 text-xs font-bold text-gray-500 hover:text-red-600 dark:border-gray-800"
+          >
+            Clear
+          </Button>
+        )}
+      </div>
     </AdminFilterToolbar>
   )
 }

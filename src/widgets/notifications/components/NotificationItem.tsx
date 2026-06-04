@@ -34,6 +34,7 @@ type NotificationItemProps = {
   getLevelBadgeClass: (level: string) => string
   onDelete?: (id: string) => void
   onClick?: () => void
+  isExpanded?: boolean
 }
 
 function getIconAndLabel(level: string) {
@@ -56,6 +57,7 @@ export default function NotificationItem({
   getLevelBadgeClass,
   onDelete,
   onClick,
+  isExpanded = false,
 }: NotificationItemProps) {
   const { Icon, label, colorClass } = getIconAndLabel(notification.level)
 
@@ -65,20 +67,29 @@ export default function NotificationItem({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       className={cn(
-        "group relative flex items-start gap-3 rounded-xl p-3 transition-all duration-200",
+        "group relative flex items-start gap-3.5 rounded-xl p-3.5 transition-all duration-200 border",
         onClick ? "cursor-pointer" : "",
-        !isRead
-          ? "bg-blue-500/[0.03] dark:bg-blue-400/[0.04] ring-1 ring-blue-500/20"
-          : "hover:bg-blue-500/5 dark:hover:bg-blue-400/5 ring-1 ring-transparent hover:ring-gray-200/50 dark:hover:ring-gray-800/50"
+        isExpanded
+          ? "bg-white/85 dark:bg-[#111622]/40 border-blue-500/30 dark:border-blue-500/20 shadow-md shadow-blue-500/[0.02]"
+          : !isRead
+            ? "bg-blue-500/[0.03] dark:bg-blue-400/[0.04] border-blue-500/10 dark:border-blue-500/10"
+            : "bg-transparent border-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/10 hover:border-gray-100 dark:hover:border-gray-800/30"
       )}
     >
-      <div className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 transition-transform group-hover:scale-105", colorClass)}>
-        <Icon size={14} />
+      <div className={cn("mt-0.5 flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg ring-1 transition-all", 
+        isExpanded ? "scale-105" : "group-hover:scale-105", 
+        colorClass
+      )}>
+        <Icon size={15} />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
-          <h4 className={cn("text-[13px] font-bold truncate leading-tight", theme === 'dark' ? 'text-gray-100' : 'text-gray-900')} title={notification.title}>
+          <h4 className={cn(
+            "text-[13px] font-bold leading-tight transition-colors", 
+            isExpanded ? "whitespace-normal break-words text-blue-600 dark:text-blue-400" : "truncate", 
+            theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
+          )} title={notification.title}>
             {notification.title}
           </h4>
           <div className="flex items-center gap-2 shrink-0">
@@ -100,12 +111,17 @@ export default function NotificationItem({
           </div>
         </div>
 
-        <div className="text-xs text-gray-500 dark:text-gray-400/90 leading-relaxed whitespace-pre-line break-words line-clamp-3 font-medium">
-          {formatNotificationText(notification.message)}
-        </div>
+        {isExpanded && (
+          <>
+            <div className="h-px bg-gray-200/50 dark:bg-gray-800/50 w-full" />
+            <div className="text-xs leading-relaxed whitespace-pre-line break-words font-medium text-gray-750 dark:text-gray-300 transition-all duration-200">
+              {formatNotificationText(notification.message)}
+            </div>
+          </>
+        )}
 
-        <div className="mt-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-          <span>{label}</span>
+        <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          <span className={cn(isExpanded && "text-blue-500 dark:text-blue-400")}>{label}</span>
           <span>•</span>
           <span>{notification.created_at ? formatRelativeDate(notification.created_at) : ''}</span>
         </div>

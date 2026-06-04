@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { SegmentedTabs } from '@/shared/components'
+import { AppTabs } from '@/shared/ui'
 import { cn } from '@/shared/lib/utils'
 
 type UserTab<T extends string> = {
@@ -22,12 +22,13 @@ export function UserTabs<T extends string>({
   className,
 }: UserTabsProps<T>) {
   return (
-    <SegmentedTabs
+    <AppTabs
       items={tabs}
       value={activeTab}
-      onChange={onChange}
+      onValueChange={onChange}
       variant="panel"
       className={cn(className)}
+      ariaLabel="User tabs"
     />
   )
 }

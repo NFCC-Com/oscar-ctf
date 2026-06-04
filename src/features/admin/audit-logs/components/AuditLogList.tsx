@@ -123,8 +123,9 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
                   </div>
                   <AdminFilterSelect
                     value={String(limit)}
+                    defaultValue="50"
                     onValueChange={(value) => setLimit(Number(value))}
-                    triggerClassName="sm:w-[120px]"
+                    className="w-full sm:w-[120px]"
                     options={LIMIT_OPTIONS.map((value) => ({
                       value: String(value),
                       label: `Last ${value}`,
@@ -135,7 +136,8 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
             >
               <AdminFilterInput
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                defaultValue=""
+                onChange={setSearchQuery}
                 placeholder="Filter by actor email..."
                 wrapperClassName="max-w-xs"
                 icon={<ShieldCheck className="h-4 w-4 text-gray-400 dark:text-gray-500" />}

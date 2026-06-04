@@ -5,6 +5,8 @@ import { CheckCircle2, EyeOff, Flag, Gauge, Layers, LayoutGrid, ListChecks, List
 import { createPortal } from 'react-dom'
 import type { ElementType } from 'react'
 import APP from '@/config'
+import { cn } from '@/shared/lib/utils'
+import { FilterSelect } from '@/shared/ui'
 import {
   SURFACE_FILTER_ITEM_ACTIVE_CLASS,
   SURFACE_FILTER_ITEM_CLASS,
@@ -156,35 +158,32 @@ export default function DesktopChallengeFilterSidebar({
             <span className="truncate">{featureLabel}</span>
           </button>
 
-          <label htmlFor="desktop-sidebar-difficulty" className="sr-only">
-            Difficulty
-          </label>
-          <div data-tour="challenge-sidebar-difficulty-filter" className="relative">
-            <Gauge
-              size={19}
-              className={`pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 ${difficultyActive
-                ? 'text-white'
-                : 'text-gray-500 dark:text-gray-400'
-                }`}
-            />
-            <select
-              id="desktop-sidebar-difficulty"
+          <div data-tour="challenge-sidebar-difficulty-filter" className="w-full">
+            <FilterSelect
               value={selectedDifficulty}
-              onChange={(event) => handleDifficultyChange(event.target.value)}
-              className={`h-9 w-full rounded-xl border pl-10 pr-3 text-xs font-semibold outline-none transition focus:ring-2 focus:ring-blue-500/30 ${difficultyActive
-                ? SURFACE_FILTER_ITEM_ACTIVE_CLASS
-                : SURFACE_FILTER_ITEM_CLASS
-                }`}
-              title="Filter by difficulty"
-              aria-label="Filter by difficulty"
-            >
-              <option value="all">All Difficulties</option>
-              {sortedDifficulties.map((difficulty) => (
-                <option key={difficulty} value={difficulty}>
-                  {difficulty}
-                </option>
-              ))}
-            </select>
+              onChange={handleDifficultyChange}
+              placeholder="Difficulty"
+              active={difficultyActive}
+              clearable={false}
+              className="w-full sm:w-full"
+              triggerClassName={cn(
+                "px-3 text-xs font-semibold h-9 rounded-xl border transition focus:ring-2 focus:ring-blue-500/30",
+                difficultyActive ? SURFACE_FILTER_ITEM_ACTIVE_CLASS : SURFACE_FILTER_ITEM_CLASS
+              )}
+              icon={
+                <Gauge
+                  size={14}
+                  className={difficultyActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}
+                />
+              }
+              options={[
+                { value: 'all', label: 'All Difficulties' },
+                ...sortedDifficulties.map((difficulty) => ({
+                  value: difficulty,
+                  label: difficulty,
+                })),
+              ]}
+            />
           </div>
 
           <div className="h-px w-full bg-gray-200 dark:bg-gray-800" />

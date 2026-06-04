@@ -11,7 +11,7 @@ import {
   Target
 } from "lucide-react";
 
-import { Loader } from '@/shared/components';
+import { Loader, EmptyState } from '@/shared/components';
 import { formatRelativeDate } from '@/shared/lib'
 import { useLogs } from '@/features/logs/contexts/LogsContext';
 import { Button } from "@/shared/ui";
@@ -72,17 +72,12 @@ export default function LogsList({
 
   if (notifications.length === 0) {
     return (
-      <div
-        className={`flex flex-col items-center justify-center border-dashed px-4 py-12 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`}
-      >
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
-          <Clock className="text-gray-400" size={24} />
-        </div>
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Silence in the Wire</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-xs mt-2">
-          No activities recorded for this period. Stay tuned for incoming signals.
-        </p>
-      </div>
+      <EmptyState
+        icon={<Clock size={24} className="text-gray-400" />}
+        title="Silence in the Wire"
+        description="No activities recorded for this period. Stay tuned for incoming signals."
+        className={SURFACE_GLASS_CARD_COMPACT_CLASS}
+      />
     );
   }
 

@@ -7,19 +7,20 @@ import {
   SURFACE_GLASS_BASE_CLASS,
   SURFACE_FILTER_ITEM_ACTIVE_CLASS,
 } from '@/shared/styles'
-import { ADMIN_NAV_ITEMS, isAdminNavItemActive } from './admin-navigation'
+import { isAdminNavItemActive, type AdminNavItem } from './admin-navigation'
 
 type AdminSidebarProps = {
   pathname: string
+  items: AdminNavItem[]
 }
 
-export default function AdminSidebar({ pathname }: AdminSidebarProps) {
+export default function AdminSidebar({ pathname, items }: AdminSidebarProps) {
   return (
     <aside className={cn('fixed bottom-0 left-0 top-14 z-30 hidden w-60 flex-col border-r border-gray-200/80 p-3 dark:border-gray-800/90 lg:flex', SURFACE_GLASS_BASE_CLASS)}>
       <div className="flex h-full min-h-0 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto scroll-hidden">
           <nav className="space-y-1.5" aria-label="Admin navigation">
-            {ADMIN_NAV_ITEMS.map((item) => {
+            {items.map((item) => {
               const active = isAdminNavItemActive(pathname, item)
               const Icon = item.icon
 

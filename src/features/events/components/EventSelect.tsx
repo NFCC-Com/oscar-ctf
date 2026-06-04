@@ -2,8 +2,7 @@
 
 import React from 'react'
 import APP from '@/config'
-import { cn } from '@/shared/lib/utils'
-import { SURFACE_GLASS_FIELD_CLASS } from '@/shared/styles'
+import { FilterSelect } from '@/shared/ui'
 
 export type EventSelectItem = {
   id: string
@@ -18,7 +17,12 @@ type Props = {
   onChange: (nextValue: string) => void
   events: EventSelectItem[]
   className?: string
+  selectClassName?: string
   disabled?: boolean
+  defaultValue?: string
+  active?: boolean
+  clearable?: boolean
+  onClear?: () => void
   sortMode?: 'challenge-filter-bar' | 'none'
   referenceTimeMs?: number
   showMain?: boolean
@@ -35,7 +39,12 @@ export default function EventSelect({
   onChange,
   events,
   className,
+  selectClassName,
   disabled,
+  defaultValue,
+  active,
+  clearable = false,
+  onClear,
   sortMode = 'challenge-filter-bar',
   referenceTimeMs,
   showMain = !APP.hideEventMain,
@@ -47,12 +56,8 @@ export default function EventSelect({
   getEventLabel = (evt) => String(evt.name ?? evt.title ?? 'Untitled'),
 }: Props) {
   const nowMs = referenceTimeMs ?? Date.now()
-
-  const isValueKnown = React.useMemo(() => {
-    if (value === allValue && showAll) return true
-    if (value === mainValue && showMain) return true
-    return events.some((e) => String(e.id) === String(value))
-  }, [value, events, showAll, allValue, showMain, mainValue])
+  const resolvedDefaultValue = defaultValue ?? allValue
+  const isActive = active ?? value !== resolvedDefaultValue
 
   const sortedEvents = React.useMemo(() => {
     if (sortMode === 'none') return events
@@ -114,31 +119,33 @@ export default function EventSelect({
     })
   }, [events, sortMode, nowMs, getEventLabel])
 
-  const resolvedClassName = cn(
-    SURFACE_GLASS_FIELD_CLASS,
-    'cursor-pointer caret-transparent focus-visible:outline-none focus-visible:border-blue-500/70 focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-0',
-    className
-  )
+  const selectOptions = React.useMemo(() => {
+    const opts = []
+    if (showAll) {
+      opts.push({ value: allValue, label: allLabel })
+    }
+    if (showMain) {
+      opts.push({ value: mainValue, label: mainLabel })
+    }
+    sortedEvents.forEach((ev) => {
+      opts.push({ value: String(ev.id), label: getEventLabel(ev) })
+    })
+    return opts
+  }, [showAll, allValue, allLabel, showMain, mainValue, mainLabel, sortedEvents, getEventLabel])
 
   return (
-    <select
+    <FilterSelect
       value={value}
+      defaultValue={resolvedDefaultValue}
+      onChange={onChange}
       disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
-      className={resolvedClassName}
-    >
-      {!isValueKnown && (
-        <option value={value} disabled>
-          Event not found â€” select again
-        </option>
-      )}
-      {showAll && <option value={allValue}>{allLabel}</option>}
-      {showMain && <option value={mainValue}>{mainLabel}</option>}
-      {sortedEvents.map((ev) => (
-        <option key={ev.id} value={ev.id}>
-          {getEventLabel(ev)}
-        </option>
-      ))}
-    </select>
+      placeholder="Select Event"
+      active={isActive}
+      clearable={false}
+      onClear={onClear}
+      className={className}
+      triggerClassName={selectClassName}
+      options={selectOptions}
+    />
   )
 }

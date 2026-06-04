@@ -63,7 +63,8 @@ const SolversListCard: React.FC<SolversListCardProps> = ({
               type="text"
               placeholder="Search by user or challenge..."
               value={searchQuery}
-              onChange={(e) => onSearchQueryChange(e.target.value)}
+              defaultValue=""
+              onChange={onSearchQueryChange}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') onSearch()
               }}

@@ -5,11 +5,11 @@ import { Coins, Droplet, Trophy, Rocket } from 'lucide-react'
 import Loader from '@/shared/components/Loader'
 import EmptyState from '@/shared/components/EmptyState'
 import PageBackground from '@/shared/components/PageBackground'
-import { SegmentedTabs } from '@/shared/components'
-import { Card, CardContent } from '@/shared/ui/card'
+import { AppTabs } from '@/shared/ui'
+import { CardContent } from '@/shared/ui/card'
+import { SurfaceCard } from '@/shared/ui'
 import {
   PAGE_MAIN_CONTAINER_6XL,
-  SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS,
   THEME_PRIMARY_BG_CLASS,
   THEME_PRIMARY_BG_HOVER_CLASS,
   THEME_PRIMARY_SELECTION_CLASS,
@@ -74,21 +74,25 @@ export default function ScoreboardPage() {
               onChange={setSelectedEvent}
               events={startedEvents}
               className="w-full"
+              defaultValue="all"
+              clearable
               getEventLabel={(event: any) => String(event?.name ?? event?.title ?? 'Untitled')}
             />
           </div>
         </div>
 
-        <SegmentedTabs
+        <AppTabs
           items={[
             { value: 'points', label: 'Points', icon: Coins },
             { value: 'first-blood', label: 'First Blood', icon: Droplet },
           ]}
           value={firstBloodMode ? 'first-blood' : 'points'}
-          onChange={(tab) => setFirstBloodMode(tab === 'first-blood')}
+          onValueChange={(tab) => setFirstBloodMode(tab === 'first-blood')}
           variant="panel"
+          size="sm"
           className="w-full sm:w-fit"
           stretch
+          ariaLabel="Scoreboard mode"
         />
       </div>
 
@@ -110,7 +114,7 @@ export default function ScoreboardPage() {
 
           <div>
             {isEmpty ? (
-              <Card className={SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS}>
+              <SurfaceCard variant="interactive">
                 <CardContent>
                   <EmptyState
                     icon={<Trophy className="w-full h-full text-blue-500" />}
@@ -130,9 +134,9 @@ export default function ScoreboardPage() {
                         Explore Challenges
                       </Link>
                     }
-                  />
+                />
                 </CardContent>
-              </Card>
+              </SurfaceCard>
             ) : (
               <ScoreboardTable
                 leaderboard={leaderboard}

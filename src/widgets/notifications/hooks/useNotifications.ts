@@ -32,13 +32,12 @@ export function useNotifications() {
 
   const [notifTitle, setNotifTitle] = useState('')
   const [notifMessage, setNotifMessage] = useState('')
-  const [notifLevel, setNotifLevel] = useState<'info' | 'info_platform' | 'info_challenges'>('info')
+  const [notifLevel, setNotifLevel] = useState<'info' | 'info_platform' | 'info_challenges'>('info_challenges')
 
   const [solveNotif, setSolveNotif] = useState<{ username: string; challenge: string } | null>(null)
-  const [notifToast, setNotifToast] = useState<{ title: string; message: string } | null>(null)
+  const [notifToasts, setNotifToasts] = useState<Array<{ id: string; title: string; message: string; level: string }>>([])
 
   const notifTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const notifToastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const notifPanelRef = useRef<HTMLDivElement>(null)
   const notifButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -102,10 +101,24 @@ export function useNotifications() {
 
   const handleSendNotif = useCallback(async () => {
     if (!notifTitle.trim() || !notifMessage.trim()) return
+    // Capture values before clearing
+    const title = notifTitle.trim()
+    const message = notifMessage.trim()
+    const level = notifLevel
     try {
-      await createNotification(notifTitle.trim(), notifMessage.trim(), notifLevel)
+      const newId = await createNotification(title, message, level)
       setNotifTitle('')
       setNotifMessage('')
+      // Optimistically add with the real database UUID
+      if (newId) {
+        setNotifItems(prev => [{
+          id: String(newId),
+          title,
+          message,
+          level,
+          created_at: new Date().toISOString()
+        }, ...prev])
+      }
     } catch (err) {
       console.warn('Failed to create notification', err)
     }
@@ -132,11 +145,11 @@ export function useNotifications() {
     }
   }, [])
 
-  const dismissNotifToast = useCallback(() => {
-    setNotifToast(null)
-    if (notifToastTimeout.current) {
-      clearTimeout(notifToastTimeout.current)
-      notifToastTimeout.current = null
+  const dismissNotifToast = useCallback((toastId?: string) => {
+    if (toastId) {
+      setNotifToasts(prev => prev.filter(t => t.id !== toastId))
+    } else {
+      setNotifToasts([])
     }
   }, [])
 
@@ -183,22 +196,48 @@ export function useNotifications() {
   // Real-time notifications subscription
   useEffect(() => {
     if (!user) return
-    const unsubscribe = subscribeToNotifications((payload) => {
+    const unsubscribe = subscribeToNotifications(async (payload) => {
       const id = payload.id || `realtime-${payload.created_at}-${payload.title}`
-      setNotifItems(prev => ([
-        {
-          id,
-          title: payload.title,
-          message: payload.message,
-          level: payload.level,
-          created_at: payload.created_at,
-        },
-        ...prev,
-      ]))
 
-      setNotifToast({ title: payload.title, message: payload.message })
-      if (notifToastTimeout.current) clearTimeout(notifToastTimeout.current)
-      notifToastTimeout.current = setTimeout(() => setNotifToast(null), 8000)
+      // Check if payload from Supabase Realtime is empty (RLS issue)
+      const isEmptyPayload = !payload.message && payload.title === 'Notification'
+
+      let notifData = {
+        id,
+        title: payload.title,
+        message: payload.message,
+        level: payload.level,
+        created_at: payload.created_at,
+      }
+
+      // If payload was empty, re-fetch latest from database to get actual content
+      if (isEmptyPayload) {
+        try {
+          const items = await getNotifications(1, 0)
+          if (items && items.length > 0) {
+            const latest = items[0] as any
+            notifData = {
+              id: latest.id || id,
+              title: latest.title || 'Notification',
+              message: latest.message || '',
+              level: latest.level || 'info',
+              created_at: latest.created_at || new Date().toISOString(),
+            }
+          }
+        } catch {
+          // If fetch fails, keep the fallback data
+        }
+      }
+
+      // Dedup: skip if this notification ID already exists (from optimistic update)
+      setNotifItems(prev => {
+        if (prev.some(n => n.id === notifData.id)) return prev
+        return [notifData, ...prev]
+      })
+
+      const toastId = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+      setNotifToasts(prev => [...prev, { id: toastId, title: notifData.title, message: notifData.message, level: notifData.level }])
+      setTimeout(() => setNotifToasts(prev => prev.filter(t => t.id !== toastId)), 15000)
 
       try {
         const audio = new Audio('/sounds/notif.mp3')
@@ -207,7 +246,7 @@ export function useNotifications() {
       } catch { }
 
       const seen = getSeenNotifIds()
-      if (!seen.has(id)) {
+      if (!seen.has(notifData.id)) {
         setNotifUnreadCount(prev => prev + 1)
       }
     })
@@ -264,7 +303,7 @@ export function useNotifications() {
     notifLevel,
     setNotifLevel,
     solveNotif,
-    notifToast,
+    notifToasts,
     solveSoundEnabled,
     setSolveSoundEnabled,
     notifPanelRef,

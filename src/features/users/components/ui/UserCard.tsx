@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { cn } from '@/shared/lib/utils'
-import { SURFACE_GLASS_CARD_COMPACT_CLASS, SURFACE_INTERACTIVE_HOVER_CLASS } from '@/shared/styles'
+import { SurfaceCard } from '@/shared/ui'
 
 type UserCardProps = {
   children: React.ReactNode
@@ -12,14 +12,15 @@ type UserCardProps = {
 
 export function UserCard({ children, className, hover = true }: UserCardProps) {
   return (
-    <div
+    <SurfaceCard
+      variant="glass"
       className={cn(
-        SURFACE_GLASS_CARD_COMPACT_CLASS,
-        hover && SURFACE_INTERACTIVE_HOVER_CLASS,
+        'rounded-xl',
         className
       )}
+      interactive={hover}
     >
       {children}
-    </div>
+    </SurfaceCard>
   )
 }

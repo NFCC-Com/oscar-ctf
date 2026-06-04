@@ -17,5 +17,23 @@ export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export { Textarea } from '@/shared/ui/textarea'
 export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 export { Skeleton } from '@/shared/ui/skeleton'
+export {
+  FilterToolbar,
+  FilterInput,
+  FilterSelect,
+  FILTER_CONTROL_CLASS,
+  FILTER_CONTROL_IDLE_CLASS,
+  FILTER_CONTROL_ACTIVE_CLASS,
+  type FilterSelectOption,
+} from '@/shared/ui/filter'
+export { AppTabs, type AppTabItem, type AppTabsSize, type AppTabsVariant } from '@/shared/ui/tabs'
+export {
+  SurfaceCard,
+  DataSurface,
+  SurfaceHeader,
+  SurfaceRow,
+  type SurfacePadding,
+  type SurfaceVariant,
+} from '@/shared/ui/surface'
 
 export { default as CustomBadge } from './CustomBadge'

@@ -5,7 +5,7 @@ import { Flag, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Loader } from '@/shared/components';
 import PageBackground from '@/shared/components/PageBackground'
-import { SegmentedTabs } from '@/shared/components'
+import { AppTabs } from '@/shared/ui'
 import EventSelect from '@/features/events/components/EventSelect'
 import { useAuth } from '@/shared/contexts'
 import { useEventContext } from '@/features/events/contexts/EventContext'
@@ -57,13 +57,13 @@ export default function LogsPageContent() {
         </div>
 
         {/* Tab Switcher */}
-        <SegmentedTabs
+        <AppTabs
           items={[
             { value: 'solves', label: 'Solves Feed', icon: Target },
             { value: 'challenges', label: 'Challenge Info', icon: Flag },
           ]}
           value={tabType}
-          onChange={setTabType}
+          onValueChange={setTabType}
           variant="panel"
         />
       </div>

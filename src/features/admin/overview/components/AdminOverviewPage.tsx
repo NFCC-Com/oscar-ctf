@@ -42,6 +42,7 @@ export default function AdminOverviewPage() {
             action={
               <AdminFilterSelect
                 value={timeRange}
+                defaultValue="7d"
                 onValueChange={refreshStats}
                 placeholder="Select timeframe"
                 triggerClassName="h-8 sm:w-[130px]"

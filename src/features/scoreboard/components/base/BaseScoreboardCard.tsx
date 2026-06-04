@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { SurfaceCard } from '@/shared/ui'
 import { cn } from '@/shared/lib/utils'
-import { SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS } from '@/shared/styles'
 
 type BaseScoreboardCardProps = {
   title?: string
@@ -34,7 +34,7 @@ export default function BaseScoreboardCard({
     : 'flex flex-row items-center justify-between gap-3 border-b border-gray-200/70 px-4 py-3.5 dark:border-gray-800/80 sm:px-5'
 
   return (
-    <Card className={cn(SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS, 'overflow-hidden', className)}>
+    <SurfaceCard variant="interactive" className={cn('overflow-hidden', className)}>
       {hasHeader && (
         <CardHeader
           className={cn(headerLayoutClass, headerClassName)}
@@ -74,6 +74,6 @@ export default function BaseScoreboardCard({
       <CardContent className={cn('p-4 sm:p-5', contentClassName)}>
         {children}
       </CardContent>
-    </Card>
+    </SurfaceCard>
   )
 }

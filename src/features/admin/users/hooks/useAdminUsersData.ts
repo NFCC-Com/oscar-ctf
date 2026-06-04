@@ -12,14 +12,24 @@ export function useAdminUsersData() {
   const { user, loading: authLoading } = useAuth()
 
   const [users, setUsers] = useState<AdminUserRow[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [isDataLoading, setIsDataLoading] = useState(false)
   const [accessReady, setAccessReady] = useState(false)
   const [isAllowed, setIsAllowed] = useState(false)
+
+  // Filters state
+  const [query, setQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('') // committed search query
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>('all')
+  const [sortMode, setSortMode] = useState<'newest' | 'oldest' | 'username_asc' | 'updated_desc' | 'role'>('newest')
+  const [pageSize, setPageSize] = useState(100)
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     let mounted = true
 
-    const initUsersData = async () => {
+    const checkAccess = async () => {
       if (authLoading) return
 
       if (!user) {
@@ -37,20 +47,44 @@ export function useAdminUsersData() {
         router.push('/challenges')
         return
       }
-
-      const userList = await getAdminUsers()
-      if (!mounted) return
-
-      setUsers(userList)
-      setIsLoading(false)
     }
 
-    void initUsersData()
+    void checkAccess()
 
     return () => {
       mounted = false
     }
   }, [authLoading, router, user])
+
+  // Fetch data reactively when query/pagination changes
+  useEffect(() => {
+    if (!isAllowed) return
+    let mounted = true
+
+    const fetchData = async () => {
+      setIsDataLoading(true)
+      const offset = (page - 1) * pageSize
+      const result = await getAdminUsers({
+        search: searchQuery,
+        role: roleFilter,
+        sortBy: sortMode,
+        limit: pageSize,
+        offset: offset,
+      })
+
+      if (!mounted) return
+      setUsers(result.users)
+      setTotalCount(result.totalCount)
+      setIsLoading(false)
+      setIsDataLoading(false)
+    }
+
+    void fetchData()
+
+    return () => {
+      mounted = false
+    }
+  }, [isAllowed, searchQuery, roleFilter, sortMode, pageSize, page])
 
   return {
     user,
@@ -58,6 +92,20 @@ export function useAdminUsersData() {
     accessReady,
     isAllowed,
     isLoading,
+    isDataLoading,
     users,
+    totalCount,
+    query,
+    setQuery,
+    searchQuery,
+    setSearchQuery,
+    roleFilter,
+    setRoleFilter,
+    sortMode,
+    setSortMode,
+    pageSize,
+    setPageSize,
+    page,
+    setPage,
   }
 }

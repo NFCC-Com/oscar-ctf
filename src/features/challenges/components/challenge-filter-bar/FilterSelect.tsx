@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  SURFACE_FILTER_ITEM_CLASS,
-  SURFACE_FILTER_ITEM_ACTIVE_CLASS,
-} from '@/shared/styles'
+import { FilterSelect as SharedFilterSelect } from '@/shared/ui'
 
 type FilterSelectProps = {
   id: string
@@ -21,7 +18,6 @@ export default function FilterSelect({
   label,
   value,
   options,
-  isDirty,
   isActive,
   wrapperClassName = '',
   onChange,
@@ -29,24 +25,16 @@ export default function FilterSelect({
   return (
     <div className={`flex-1 min-w-[140px] ${wrapperClassName}`}>
       <label htmlFor={id} className="sr-only">{label}</label>
-      <select
-        id={id}
+      <SharedFilterSelect
         value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={`w-full px-3 py-2 text-sm rounded-xl focus:outline-none focus:ring-2 ${isActive
-          ? `${SURFACE_FILTER_ITEM_ACTIVE_CLASS} focus:ring-blue-500/30 ring-2 ring-blue-500/30`
-          : `${SURFACE_FILTER_ITEM_CLASS} focus:ring-blue-500/30`
-          }`}
-      >
-        {options.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-          >
-            {option.label}
-          </option>
-        ))}
-      </select>
+        defaultValue="all"
+        onChange={onChange}
+        placeholder={label}
+        active={isActive}
+        clearable
+        className="w-full sm:w-full"
+        options={options}
+      />
     </div>
   )
 }

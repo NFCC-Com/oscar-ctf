@@ -17,6 +17,11 @@ export type AdminNavItem = {
   aliases?: string[]
 }
 
+export type AdminNavScope = {
+  is_global_admin: boolean
+  event_ids: string[]
+}
+
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   {
     href: '/admin/overview',
@@ -55,6 +60,14 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     icon: ShieldCheck,
   },
 ]
+
+const EVENT_ADMIN_NAV_HREFS = new Set(['/admin/challenges', '/admin/solvers'])
+
+export function getVisibleAdminNavItems(scope: AdminNavScope | null | undefined) {
+  if (!scope || scope.is_global_admin) return ADMIN_NAV_ITEMS
+  if (scope.event_ids.length === 0) return []
+  return ADMIN_NAV_ITEMS.filter((item) => EVENT_ADMIN_NAV_HREFS.has(item.href))
+}
 
 export function getAdminNavItem(pathname: string) {
   return ADMIN_NAV_ITEMS.find((item) => isAdminNavItemActive(pathname, item)) ?? ADMIN_NAV_ITEMS[0]

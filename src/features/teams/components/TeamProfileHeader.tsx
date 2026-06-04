@@ -4,8 +4,8 @@ import React from 'react'
 import { Calendar, Flag, Hash, LogOut, Trophy } from 'lucide-react'
 import EventSelect from '@/features/events/components/EventSelect'
 import { Button } from '@/shared/ui/button'
+import { SurfaceCard } from '@/shared/ui'
 import {
-  SURFACE_GLASS_CARD_COMPACT_CLASS,
   TYPO_PAGE_TITLE_CLASS,
   TYPO_SECTION_TITLE_CLASS,
   TYPO_STAT_VALUE_CLASS,
@@ -43,7 +43,7 @@ export default function TeamProfileHeader({
   const teamInitials = team.name.slice(0, 2).toUpperCase()
 
   return (
-    <div className={cn("relative overflow-hidden p-5", SURFACE_GLASS_CARD_COMPACT_CLASS)}>
+    <SurfaceCard variant="glass" padding="md" className="relative overflow-hidden rounded-xl">
       <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
           <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-lg border border-gray-200/50 dark:border-white/10">
@@ -71,6 +71,8 @@ export default function TeamProfileHeader({
             events={teamEvents}
             showMain={showMainOption}
             className="w-full"
+            defaultValue="all"
+            clearable
             getEventLabel={(ev: any) => String(ev?.name ?? ev?.title ?? 'Untitled')}
           />
 
@@ -104,7 +106,7 @@ export default function TeamProfileHeader({
           value={summary?.unique_challenges ?? 0}
         />
       </div>
-    </div>
+    </SurfaceCard>
   )
 }
 

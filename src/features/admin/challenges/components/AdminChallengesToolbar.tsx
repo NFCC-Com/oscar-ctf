@@ -1,7 +1,7 @@
 import React from 'react'
-import AdminChallengeScopeTabs from './AdminChallengeScopeTabs'
 import AdminChallengeFilters from './AdminChallengeFilters'
-import type { AdminChallengeFilterState } from '../types'
+import EventSelect from '@/features/events/components/EventSelect'
+import type { AdminChallengeFilterState, AdminChallengeEventId, Event } from '../types'
 
 interface AdminChallengesToolbarProps {
   filters: AdminChallengeFilterState
@@ -11,6 +11,9 @@ interface AdminChallengesToolbarProps {
   onClear: () => void
   actions?: React.ReactNode
   status?: React.ReactNode
+  events: Event[]
+  selectedEventId: AdminChallengeEventId
+  onEventChange: (eventId: AdminChallengeEventId) => void
 }
 
 export default function AdminChallengesToolbar({
@@ -21,33 +24,36 @@ export default function AdminChallengesToolbar({
   onClear,
   actions,
   status,
+  events,
+  selectedEventId,
+  onEventChange,
 }: AdminChallengesToolbarProps) {
   return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex flex-col gap-2.5">
-        {/* Row 1: Scope tabs & Add Action */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-100/50 dark:border-gray-800/30">
-          <div className="flex items-center">
-            <AdminChallengeScopeTabs
-              value={filters.scope}
-              onChange={(val) => onFiltersChange((prev) => ({ ...prev, scope: val }))}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            {status}
-            {actions}
-          </div>
+    <div className="flex flex-col gap-3.5">
+      {/* Row 1: Event Selector on the left, Status & Actions on the right */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1.5 border-b border-gray-100/50 dark:border-gray-800/30">
+        <div className="flex items-center gap-3">
+          <EventSelect
+            value={selectedEventId as string}
+            onChange={(val) => onEventChange(val as any)}
+            events={events}
+            className="w-full sm:w-[220px]"
+          />
+          {status}
         </div>
-
-        {/* Row 2: Search and Select dropdowns */}
-        <AdminChallengeFilters
-          filters={filters}
-          onFiltersChange={onFiltersChange}
-          categories={categories}
-          difficulties={difficulties}
-          onClear={onClear}
-        />
+        <div className="flex items-center gap-2">
+          {actions}
+        </div>
       </div>
+
+      {/* Row 2: Search, Clear, and Select filters */}
+      <AdminChallengeFilters
+        filters={filters}
+        onFiltersChange={onFiltersChange}
+        categories={categories}
+        difficulties={difficulties}
+        onClear={onClear}
+      />
     </div>
   )
 }

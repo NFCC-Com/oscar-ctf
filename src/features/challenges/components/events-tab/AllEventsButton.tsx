@@ -2,6 +2,8 @@
 
 import type { CSSProperties } from 'react'
 import { Layers } from 'lucide-react'
+import { cn } from '@/shared/lib/utils'
+import { SurfaceCard } from '@/shared/ui'
 
 type AllEventsButtonProps = {
   selected: boolean
@@ -15,14 +17,17 @@ export default function AllEventsButton({
   onSelect,
 }: AllEventsButtonProps) {
   return (
-    <button
+    <SurfaceCard
+      as="button"
+      variant="glass"
+      interactive
+      padding="md"
       onClick={onSelect}
       style={{ '--card-reveal-delay': `${delay}s` } as CSSProperties}
-      className={`event-card-reveal relative w-full px-5 py-4 rounded-2xl border backdrop-blur-md transition-all duration-200 text-left group hover:-translate-y-1 active:scale-[0.98]
-        ${selected
-          ? 'bg-blue-500/[0.03] border-blue-500/50 shadow-sm'
-          : 'bg-white/40 dark:bg-gray-900/40 border-gray-200 dark:border-gray-800 hover:border-blue-500/50 shadow-sm'}
-      `}
+      className={cn(
+        'event-card-reveal group relative w-full cursor-pointer text-left transition-all duration-200 hover:-translate-y-1 active:scale-[0.98]',
+        selected && 'border-blue-500/50 bg-blue-500/[0.03]'
+      )}
     >
       {/* Glow Effect on Hover */}
       <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/[0.03] rounded-2xl transition-colors duration-300 pointer-events-none" />
@@ -51,6 +56,6 @@ export default function AllEventsButton({
           </div>
         )}
       </div>
-    </button>
+    </SurfaceCard>
   )
 }
