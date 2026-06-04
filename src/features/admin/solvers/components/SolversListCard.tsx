@@ -36,26 +36,30 @@ const SolversListCard: React.FC<SolversListCardProps> = ({
 }) => {
   return (
     <AdminPageSurface>
-      <AdminFilterBar className="flex flex-wrap items-center gap-2 border-b border-gray-200/80 dark:border-gray-700/80">
-        <input
-          type="text"
-          placeholder="Search by user or challenge..."
-          value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onSearch()
-          }}
-          className="flex-1 min-w-[200px] px-3.5 py-2 text-sm rounded-xl border border-gray-200/80 bg-white/70 dark:border-gray-700/80 dark:bg-[#111622]/80 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 shadow-sm outline-none transition-all hover:border-blue-500/40 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/30"
-        />
+      <div className="sticky top-14 z-30 bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-md -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-2.5 border-b border-gray-200/60 dark:border-gray-800/60 mb-2">
+        <AdminFilterBar className="pt-0 pb-0">
+          <div className="flex items-center gap-2 w-full max-w-md">
+            <input
+              type="text"
+              placeholder="Search by user or challenge..."
+              value={searchQuery}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearch()
+              }}
+              className="flex-1 px-3.5 h-9 text-xs rounded-xl border border-gray-200/50 dark:border-gray-800/50 bg-white/30 dark:bg-gray-900/40 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 shadow-sm outline-none transition-all hover:border-blue-500/40 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/30"
+            />
 
-        <Button id="search-btn" variant="outline" size="sm" onClick={onSearch} className="h-9 px-4 rounded-xl">
-          {searching ? 'Searching...' : 'Search'}
-        </Button>
+            <Button id="search-btn" variant="outline" size="sm" onClick={onSearch} className="h-9 px-4 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 border-gray-200/50 dark:border-gray-800/50 hover:border-blue-500/40 shrink-0">
+              {searching ? 'Searching...' : 'Search'}
+            </Button>
 
-        <Button variant="outline" size="sm" onClick={onReset} className="h-9 px-4 rounded-xl">
-          Reset
-        </Button>
-      </AdminFilterBar>
+            <Button variant="outline" size="sm" onClick={onReset} className="h-9 px-4 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 border-gray-200/50 dark:border-gray-800/50 hover:border-blue-500/40 shrink-0">
+              Reset
+            </Button>
+          </div>
+        </AdminFilterBar>
+      </div>
         {solvers.length === 0 ? (
           <div className="p-6">
             <AdminEmptyState
@@ -72,7 +76,7 @@ const SolversListCard: React.FC<SolversListCardProps> = ({
               {solvers.map((s) => (
                 <div
                   key={s.solve_id}
-                  className="flex items-center justify-between px-6 py-3.5 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-900/10"
+                  className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-900/10"
                 >
                   <div className="truncate text-sm font-medium">
                     <Link

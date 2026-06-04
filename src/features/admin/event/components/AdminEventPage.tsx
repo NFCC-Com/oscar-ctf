@@ -98,25 +98,28 @@ export default function AdminEventPage() {
   return (
     <>
       <AdminPageShell>
-        <AdminTabsBar
-          tabs={
-            <SegmentedTabs
-              items={EVENT_TABS}
-              value={activeTab}
-              onChange={setActiveTab}
-              variant="panel"
-            />
-          }
-          actions={
-            activeTab === 'event-list' ? (
-              <Button onClick={openAdd} size="sm" className="rounded-xl">
-                + Add Event
-              </Button>
-            ) : null
-          }
-        />
+        <div className="sticky top-14 z-30 bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-md -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-2.5 border-b border-gray-200/60 dark:border-gray-800/60">
+          <AdminTabsBar
+            className="mb-0"
+            tabs={
+              <SegmentedTabs
+                items={EVENT_TABS}
+                value={activeTab}
+                onChange={setActiveTab}
+                variant="panel"
+              />
+            }
+            actions={
+              activeTab === 'event-list' ? (
+                <Button onClick={openAdd} size="sm" className="rounded-xl">
+                  + Add Event
+                </Button>
+              ) : null
+            }
+          />
+        </div>
 
-        <div className="space-y-5">
+        <div className="space-y-0 mt-2">
           {activeTab === 'event-list' ? (
             <EventListCard
               events={sortedEvents}

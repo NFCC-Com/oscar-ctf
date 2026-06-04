@@ -146,10 +146,10 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
 
   return (
     <AdminPageSurface>
-      <AdminFilterBar>
-          <div className="grid w-full min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="relative min-w-0 sm:col-span-2 lg:col-span-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+      <AdminFilterBar className="pt-0.5">
+          <div className="flex flex-wrap items-center gap-2 w-full text-xs">
+            <div className="relative w-full max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               <Input
                 value={query}
                 onChange={(event) => {
@@ -157,7 +157,7 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
                   resetPage()
                 }}
                 placeholder="Search username, ID, bio..."
-                className="rounded-xl pl-9"
+                className="rounded-xl pl-9 h-9 w-full bg-transparent"
               />
             </div>
 
@@ -168,10 +168,10 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
                 resetPage()
               }}
             >
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="w-[130px] h-9 text-xs rounded-xl bg-white/30 dark:bg-gray-900/40 border border-gray-200/50 dark:border-gray-800/50 font-semibold text-gray-700 dark:text-gray-200 hover:border-blue-500/40">
                 <SelectValue placeholder="Role" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white/95 dark:bg-[#111622]/95 border border-gray-200/80 dark:border-gray-800/90 rounded-xl shadow-lg backdrop-blur-xl">
                 <SelectItem value="all">All roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="user">User</SelectItem>
@@ -185,10 +185,10 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
                 resetPage()
               }}
             >
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="w-[150px] h-9 text-xs rounded-xl bg-white/30 dark:bg-gray-900/40 border border-gray-200/50 dark:border-gray-800/50 font-semibold text-gray-700 dark:text-gray-200 hover:border-blue-500/40">
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white/95 dark:bg-[#111622]/95 border border-gray-200/80 dark:border-gray-800/90 rounded-xl shadow-lg backdrop-blur-xl">
                 <SelectItem value="newest">Newest</SelectItem>
                 <SelectItem value="oldest">Oldest</SelectItem>
                 <SelectItem value="username_asc">Username</SelectItem>
@@ -204,10 +204,10 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
                 resetPage()
               }}
             >
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="w-[120px] h-9 text-xs rounded-xl bg-white/30 dark:bg-gray-900/40 border border-gray-200/50 dark:border-gray-800/50 font-semibold text-gray-700 dark:text-gray-200 hover:border-blue-500/40">
                 <SelectValue placeholder="Rows" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white/95 dark:bg-[#111622]/95 border border-gray-200/80 dark:border-gray-800/90 rounded-xl shadow-lg backdrop-blur-xl">
                 {PAGE_SIZE_OPTIONS.map((option) => (
                   <SelectItem key={option} value={String(option)}>
                     {option} rows
@@ -229,17 +229,6 @@ export default function UsersTableCard({ users }: UsersTableCardProps) {
           <>
             <AdminTableSurface>
               <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-gray-200/80 hover:bg-transparent dark:border-gray-800">
-                    <TableHead className="pl-6">User</TableHead>
-                    <TableHead>User ID</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Social</TableHead>
-                    <TableHead className="text-right">Created</TableHead>
-                    <TableHead className="text-right">Updated</TableHead>
-                    <TableHead className="pr-6 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
                 <TableBody>
                   {visibleUsers.map((listedUser) => {
                     const socialItems = getSocialItems(listedUser.sosmed)

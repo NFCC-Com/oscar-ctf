@@ -24,7 +24,8 @@ GRANT SELECT ON public.events TO anon;
 
 CREATE OR REPLACE FUNCTION public.get_auth_audit_logs(
   p_limit int default 50,
-  p_offset int default 0
+  p_offset int default 0,
+  p_action_filters text[] default null
 )
 RETURNS TABLE (
   id uuid,
@@ -42,11 +43,12 @@ as $$
     ip_address::text,
     payload
   FROM auth.audit_log_entries
+  WHERE (p_action_filters IS NULL OR payload->>'action' = ANY(p_action_filters))
   ORDER BY created_at DESC
   LIMIT p_limit OFFSET p_offset;
 $$;
 
-grant execute on function public.get_auth_audit_logs(int, int) to authenticated;
+grant execute on function public.get_auth_audit_logs(int, int, text[]) to authenticated;
 
 CREATE OR REPLACE FUNCTION public.get_flag_placeholder(p_flag TEXT)
 RETURNS TEXT

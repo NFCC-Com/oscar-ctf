@@ -41,16 +41,15 @@ function normalizeAuditLog(row: any): AuditLogEntry {
   }
 }
 
-/**
- * Fetch audit logs via RPC (auto pagination, adaptive limit)
- */
-export async function getAuditLogs(limit = 1000): Promise<AuditLogEntry[]> {
+export async function getAuditLogs(limit = 1000, actionFilters?: string[]): Promise<AuditLogEntry[]> {
   const batchSize = 1000
+  const actionFiltersParam = actionFilters && actionFilters.length > 0 ? actionFilters : null
 
   if (limit <= batchSize) {
     const { data, error } = await supabase.rpc('get_auth_audit_logs', {
       p_limit: limit,
       p_offset: 0,
+      p_action_filters: actionFiltersParam,
     })
 
     if (error) {
@@ -66,6 +65,7 @@ export async function getAuditLogs(limit = 1000): Promise<AuditLogEntry[]> {
     supabase.rpc('get_auth_audit_logs', {
       p_limit: batchSize,
       p_offset: i * batchSize,
+      p_action_filters: actionFiltersParam,
     })
   )
 

@@ -10,12 +10,7 @@ interface AdminPageSurfaceProps {
 
 export function AdminPageSurface({ children, className }: AdminPageSurfaceProps) {
   return (
-    <div
-      className={cn(
-        "bg-white/70 dark:bg-[#111622]/80 backdrop-blur-xl border border-gray-200/80 dark:border-gray-700/80 rounded-2xl overflow-hidden shadow-sm",
-        className
-      )}
-    >
+    <div className={cn("w-full", className)}>
       {children}
     </div>
   )
@@ -121,7 +116,7 @@ export function AdminFilterBar({ children, className }: AdminFilterBarProps) {
   return (
     <div
       className={cn(
-        "px-5 py-4 border-b border-gray-200/80 dark:border-gray-700/80 bg-gray-50/50 dark:bg-gray-900/30",
+        "flex flex-wrap items-center gap-2 w-full pt-0.5 pb-3",
         className
       )}
     >

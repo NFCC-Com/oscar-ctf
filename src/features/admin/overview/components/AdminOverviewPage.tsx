@@ -36,7 +36,7 @@ export default function AdminOverviewPage() {
 
   return (
     <AdminPageShell>
-      <div className="space-y-5">
+      <div className="py-2.5 space-y-5">
         <OverviewStatsCards siteInfo={siteInfo} challenges={challenges} />
 
         <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">

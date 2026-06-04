@@ -59,24 +59,23 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
     const fetchLogs = async () => {
       setInternalLoading(true)
       try {
-        const data = await getAuditLogs(limit)
+        const data = await getAuditLogs(limit, selectedActions)
         setInternalLogs(data || [])
       } finally {
         setInternalLoading(false)
       }
     }
     fetchLogs()
-  }, [limit, propLogs])
+  }, [limit, selectedActions, propLogs])
 
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
       if (log.payload.action === 'token_revoked') return false
-      const matchesAction = selectedActions.length === 0 || selectedActions.includes(log.payload.action as ActionType)
       const email = log.payload.action === 'user_deleted' ? log.payload.traits?.user_email : log.payload.actor_username
       const matchesSearch = !searchQuery || email?.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchesAction && matchesSearch
+      return matchesSearch
     })
-  }, [logs, selectedActions, searchQuery])
+  }, [logs, searchQuery])
 
   const handleUsernameLoaded = useCallback((email: string, username: string | null) => {
     setUsernameCache(prev => new Map(prev).set(email, username))
@@ -86,7 +85,7 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
     <select
       value={limit}
       onChange={e => setLimit(Number(e.target.value))}
-      className="text-xs bg-transparent border border-gray-200/80 dark:border-gray-800/80 rounded-xl px-2.5 py-1.5 outline-none font-semibold text-gray-700 dark:text-gray-200 transition-all hover:border-blue-500/40"
+      className="w-[120px] h-9 text-xs rounded-xl bg-white/30 dark:bg-gray-900/40 border border-gray-200/50 dark:border-gray-800/50 font-semibold text-gray-700 dark:text-gray-200 hover:border-blue-500/40 outline-none px-2"
     >
       {[50, 100, 250, 500, 1000].map(v => <option key={v} value={v} className="dark:bg-[#111622]">Last {v}</option>)}
     </select>
@@ -100,31 +99,40 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
 
   return (
     <AdminPageSurface>
-      <AdminFilterBar className="flex flex-col gap-3 border-b border-gray-200/80 dark:border-gray-700/80">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            {ACTION_OPTIONS.map(opt => (
-              <Button
-                key={opt.value}
-                variant={selectedActions.includes(opt.value) ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSelectedActions(prev => prev.includes(opt.value) ? prev.filter(a => a !== opt.value) : [...prev, opt.value])}
-                className="h-8 text-[10px] uppercase font-black tracking-widest rounded-xl"
-              >
-                {opt.label}
-              </Button>
-            ))}
+      <div className="sticky top-14 z-30 bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-md -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-2.5 border-b border-gray-200/60 dark:border-gray-800/60 mb-2">
+        <AdminFilterBar className="pt-0 pb-0">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between w-full pt-0.5">
+            {/* Search Input on the Left */}
+            <div className="relative w-full max-w-xs">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Filter by actor email..."
+                className="w-full px-3.5 h-9 text-xs rounded-xl border border-gray-200/50 dark:border-gray-800/50 bg-white/30 dark:bg-gray-900/40 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 shadow-sm outline-none transition-all hover:border-blue-500/40 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/30"
+              />
+            </div>
+
+            {/* Middle & Right options */}
+            <div className="flex flex-wrap items-center gap-3 sm:justify-end text-xs flex-1">
+              <div className="flex flex-wrap gap-1.5">
+                {ACTION_OPTIONS.map(opt => (
+                  <Button
+                    key={opt.value}
+                    variant={selectedActions.includes(opt.value) ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedActions(prev => prev.includes(opt.value) ? prev.filter(a => a !== opt.value) : [...prev, opt.value])}
+                    className="h-8 text-[9px] uppercase font-bold tracking-widest rounded-lg px-2 border-gray-200/50 dark:border-gray-800/50 hover:border-blue-500/40"
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+              {actionSelector}
+            </div>
           </div>
-          {actionSelector}
-        </div>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Filter by email..."
-          className="w-full text-sm px-4 py-2 rounded-xl border border-gray-200/80 bg-white/70 dark:border-gray-700/80 dark:bg-[#111622]/80 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 shadow-sm outline-none transition-all hover:border-blue-500/40 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/30"
-        />
-      </AdminFilterBar>
+        </AdminFilterBar>
+      </div>
 
       {filteredLogs.length === 0 ? (
         <div className="px-5 py-8 text-center text-sm font-medium text-muted-foreground">
@@ -138,7 +146,7 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
             const style = getActionStyle(log.payload.action)
 
             return (
-              <motion.div key={log.id || idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-6 py-3.5 hover:bg-gray-55/50 dark:hover:bg-gray-900/10 transition-colors">
+              <motion.div key={log.id || idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-5 py-3 hover:bg-gray-50/50 dark:hover:bg-gray-900/10 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 min-w-[140px]">
                     <span className={cn(style.color, "font-black text-lg")}>{style.icon}</span>
