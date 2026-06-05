@@ -136,6 +136,15 @@ BEGIN
   VALUES (p_user_id, p_event_id)
   ON CONFLICT (user_id, event_id) DO NOTHING;
 
+  PERFORM public.write_admin_audit_log(
+    'GRANT_ADMIN',
+    'role',
+    p_event_id,
+    NULL,
+    jsonb_build_object('user_id', p_user_id, 'event_id', p_event_id, 'role', 'event_admin'),
+    jsonb_build_object('administrative_action', 'grant_event_admin')
+  );
+
   RETURN json_build_object('success', true);
 END;
 $$ LANGUAGE plpgsql
@@ -166,6 +175,17 @@ BEGIN
     AND event_id = p_event_id;
 
   GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+  IF v_deleted > 0 THEN
+    PERFORM public.write_admin_audit_log(
+      'REVOKE_ADMIN',
+      'role',
+      p_event_id,
+      jsonb_build_object('user_id', p_user_id, 'event_id', p_event_id, 'role', 'event_admin'),
+      NULL,
+      jsonb_build_object('administrative_action', 'revoke_event_admin')
+    );
+  END IF;
 
   RETURN json_build_object('success', true, 'deleted', v_deleted);
 END;

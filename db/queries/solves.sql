@@ -378,12 +378,34 @@ CREATE OR REPLACE FUNCTION delete_solver(
 RETURNS BOOLEAN AS $$
 DECLARE
   v_user_id UUID := auth.uid()::uuid;
+  v_before JSONB;
 BEGIN
   IF NOT is_admin() THEN
     RAISE EXCEPTION 'Only global admin can delete solver';
   END IF;
 
+  SELECT jsonb_build_object(
+    'solve_id', s.id,
+    'user_id', s.user_id,
+    'challenge_id', s.challenge_id,
+    'challenge_title', c.title,
+    'solved_at', s.created_at
+  )
+  INTO v_before
+  FROM public.solves s
+  JOIN public.challenges c ON c.id = s.challenge_id
+  WHERE s.id = p_solve_id;
+
   DELETE FROM public.solves WHERE id = p_solve_id;
+
+  PERFORM public.write_admin_audit_log(
+    'DELETE',
+    'solve',
+    p_solve_id,
+    v_before,
+    NULL,
+    '{}'::jsonb
+  );
 
   RETURN TRUE;
 END;

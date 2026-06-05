@@ -264,6 +264,8 @@ CREATE OR REPLACE FUNCTION admin_add_event_member(
   p_user_id UUID
 )
 RETURNS BOOLEAN AS $$
+DECLARE
+  v_inserted INT := 0;
 BEGIN
   IF NOT can_manage_event(p_event_id) THEN
     RAISE EXCEPTION 'Only event admin/global admin can add members';
@@ -276,6 +278,19 @@ BEGIN
   INSERT INTO public.event_participants(event_id, user_id, joined_by)
   VALUES (p_event_id, p_user_id, auth.uid()::uuid)
   ON CONFLICT (event_id, user_id) DO NOTHING;
+
+  GET DIAGNOSTICS v_inserted = ROW_COUNT;
+
+  IF v_inserted > 0 THEN
+    PERFORM public.write_admin_audit_log(
+      'ADD_MEMBER',
+      'event_member',
+      p_event_id,
+      NULL,
+      jsonb_build_object('event_id', p_event_id, 'user_id', p_user_id),
+      jsonb_build_object('administrative_action', 'admin_add_event_member')
+    );
+  END IF;
 
   RETURN TRUE;
 END;
@@ -295,6 +310,7 @@ RETURNS JSON AS $$
 DECLARE
   v_mode TEXT := lower(trim(COALESCE(p_join_mode, '')));
   v_key TEXT := NULLIF(trim(COALESCE(p_join_key, '')), '');
+  v_before JSONB;
 BEGIN
   IF NOT can_manage_event(p_event_id) THEN
     RAISE EXCEPTION 'Only event admin/global admin can change event join settings';
@@ -308,11 +324,25 @@ BEGIN
     RETURN json_build_object('success', false, 'message', 'join_key is required for key mode');
   END IF;
 
+  SELECT jsonb_build_object('join_mode', e.join_mode, 'has_join_key', e.join_key IS NOT NULL)
+  INTO v_before
+  FROM public.events e
+  WHERE e.id = p_event_id;
+
   UPDATE public.events
   SET join_mode = v_mode,
       join_key = CASE WHEN v_mode = 'key' THEN v_key ELSE NULL END,
       updated_at = now()
   WHERE id = p_event_id;
+
+  PERFORM public.write_admin_audit_log(
+    'UPDATE',
+    'event',
+    p_event_id,
+    v_before,
+    jsonb_build_object('join_mode', v_mode, 'has_join_key', (v_mode = 'key')),
+    jsonb_build_object('administrative_action', 'set_event_join_settings')
+  );
 
   RETURN json_build_object(
     'success', true,
@@ -331,10 +361,16 @@ CREATE OR REPLACE FUNCTION regenerate_event_join_key(p_event_id UUID)
 RETURNS TEXT AS $$
 DECLARE
   v_key TEXT;
+  v_before JSONB;
 BEGIN
   IF NOT can_manage_event(p_event_id) THEN
     RAISE EXCEPTION 'Only event admin/global admin can regenerate join key';
   END IF;
+
+  SELECT jsonb_build_object('join_mode', e.join_mode, 'has_join_key', e.join_key IS NOT NULL)
+  INTO v_before
+  FROM public.events e
+  WHERE e.id = p_event_id;
 
   v_key := substring(replace(gen_random_uuid()::text, '-', '') FROM 1 FOR 20);
 
@@ -343,6 +379,15 @@ BEGIN
       join_key = v_key,
       updated_at = now()
   WHERE id = p_event_id;
+
+  PERFORM public.write_admin_audit_log(
+    'UPDATE',
+    'event',
+    p_event_id,
+    v_before,
+    jsonb_build_object('join_mode', 'key', 'has_join_key', true),
+    jsonb_build_object('administrative_action', 'regenerate_event_join_key')
+  );
 
   RETURN v_key;
 END;
@@ -391,6 +436,15 @@ BEGIN
         reviewed_by = v_user_id
     WHERE id = p_request_id;
 
+    PERFORM public.write_admin_audit_log(
+      'APPROVE',
+      'event_join_request',
+      p_request_id,
+      jsonb_build_object('event_id', v_event_id, 'user_id', v_target_user, 'status', v_status),
+      jsonb_build_object('event_id', v_event_id, 'user_id', v_target_user, 'status', 'approved'),
+      jsonb_build_object('administrative_action', 'review_event_join_request')
+    );
+
     RETURN json_build_object('success', true, 'status', 'approved');
   END IF;
 
@@ -399,6 +453,15 @@ BEGIN
       reviewed_at = now(),
       reviewed_by = v_user_id
   WHERE id = p_request_id;
+
+  PERFORM public.write_admin_audit_log(
+    'REJECT',
+    'event_join_request',
+    p_request_id,
+    jsonb_build_object('event_id', v_event_id, 'user_id', v_target_user, 'status', v_status),
+    jsonb_build_object('event_id', v_event_id, 'user_id', v_target_user, 'status', 'rejected'),
+    jsonb_build_object('administrative_action', 'review_event_join_request')
+  );
 
   RETURN json_build_object('success', true, 'status', 'rejected');
 END;
@@ -414,6 +477,8 @@ CREATE OR REPLACE FUNCTION admin_remove_event_member(
   p_user_id UUID
 )
 RETURNS BOOLEAN AS $$
+DECLARE
+  v_deleted INT := 0;
 BEGIN
   IF NOT can_manage_event(p_event_id) THEN
     RAISE EXCEPTION 'Only event admin/global admin can remove members';
@@ -422,6 +487,19 @@ BEGIN
   DELETE FROM public.event_participants
   WHERE event_id = p_event_id
     AND user_id = p_user_id;
+
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+  IF v_deleted > 0 THEN
+    PERFORM public.write_admin_audit_log(
+      'REMOVE_MEMBER',
+      'event_member',
+      p_event_id,
+      jsonb_build_object('event_id', p_event_id, 'user_id', p_user_id),
+      NULL,
+      jsonb_build_object('administrative_action', 'admin_remove_event_member')
+    );
+  END IF;
 
   RETURN TRUE;
 END;

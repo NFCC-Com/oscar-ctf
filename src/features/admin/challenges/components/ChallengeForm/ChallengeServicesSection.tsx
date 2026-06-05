@@ -2,8 +2,6 @@ import React from 'react'
 import { Label, Input, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui'
 import { Loader2, X as XIcon } from 'lucide-react'
 import { ChallengeFormData } from '../../types'
-import { cn } from '@/shared/lib/utils'
-import { supabase } from '@/lib/supabase/client'
 import { parseNxctlService, serializeNxctlService, type NxctlServiceOptions } from '@/features/challenges/lib/nxctl-services'
 import toast from 'react-hot-toast'
 import {
@@ -79,38 +77,15 @@ export const ChallengeServicesSection: React.FC<ChallengeServicesSectionProps> =
     if (platformLoaded || platformLoading) return
     setPlatformLoading(true)
     try {
+      const { supabase } = await import('@/lib/supabase/client')
       const { data: sessionData } = await supabase.auth.getSession()
       const accessToken = sessionData.session?.access_token
       if (!accessToken) return
 
       const headers = { Authorization: `Bearer ${accessToken}` }
-      const [supabaseRes, platformRes] = await Promise.all([
-        supabase.from('challenges').select('services'),
-        fetch('/api/nxctl?action=admin-challenges', { headers }),
-      ])
-
-      const dbChallenges = supabaseRes.data
+      const platformRes = await fetch('/api/nxctl?action=admin-challenges', { headers })
       const platformData = platformRes.ok ? await platformRes.json() : []
       const pPicks = new Map<string, NxctlServiceQuickPick>()
-
-      if (Array.isArray(dbChallenges)) {
-        dbChallenges.forEach((chal) => {
-          const rawServices = Array.isArray(chal.services) ? chal.services : []
-          rawServices.forEach((raw) => {
-            const parsed = parseNxctlService(raw)
-            if (!parsed.name) return
-            const nameLower = parsed.name.toLowerCase()
-            pPicks.set(nameLower, {
-              id: nameLower,
-              name: parsed.name,
-              key: parsed.key,
-              source: 'platform',
-              enabled: true,
-              keyAvailable: !!parsed.key,
-            })
-          })
-        })
-      }
 
       if (Array.isArray(platformData)) {
         platformData.forEach((item) => {
@@ -152,6 +127,7 @@ export const ChallengeServicesSection: React.FC<ChallengeServicesSectionProps> =
     if (liveLoaded || liveLoading) return
     setLiveLoading(true)
     try {
+      const { supabase } = await import('@/lib/supabase/client')
       const { data: sessionData } = await supabase.auth.getSession()
       const accessToken = sessionData.session?.access_token
       if (!accessToken) return

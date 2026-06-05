@@ -70,7 +70,8 @@ export default function TeamProfileHeader({
             onChange={setSelectedEvent}
             events={teamEvents}
             showMain={showMainOption}
-            className="w-full"
+            className="!w-full"
+            selectClassName="h-10"
             defaultValue="all"
             clearable
             getEventLabel={(ev: any) => String(ev?.name ?? ev?.title ?? 'Untitled')}

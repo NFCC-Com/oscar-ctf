@@ -118,6 +118,30 @@ BEGIN
   INSERT INTO public.challenge_flags(challenge_id, flag)
   VALUES (v_challenge_id, p_flag);
 
+  PERFORM public.write_admin_audit_log(
+    'CREATE',
+    'challenge',
+    v_challenge_id,
+    NULL,
+    jsonb_build_object(
+      'title', p_title,
+      'description', p_description,
+      'category', p_category,
+      'points', p_points,
+      'max_points', p_max_points,
+      'difficulty', p_difficulty,
+      'is_active', true,
+      'is_maintenance', p_is_maintenance,
+      'is_dynamic', p_is_dynamic,
+      'min_points', p_min_points,
+      'decay_per_solve', p_decay_per_solve,
+      'event_id', p_event_id,
+      'flag_placeholder', p_flag_placeholder,
+      'services_count', COALESCE(array_length(p_services, 1), 0)
+    ),
+    '{}'::jsonb
+  );
+
   RETURN v_challenge_id;
 END;
 $$ LANGUAGE plpgsql
@@ -278,8 +302,27 @@ DECLARE
   v_user_id UUID := auth.uid()::uuid;
   v_solver_count INT;
   v_existing_event_id UUID;
+  v_before JSONB;
+  v_after JSONB;
 BEGIN
-  SELECT c.event_id INTO v_existing_event_id
+  SELECT c.event_id,
+    jsonb_build_object(
+      'title', c.title,
+      'description', c.description,
+      'category', c.category,
+      'points', c.points,
+      'max_points', c.max_points,
+      'difficulty', c.difficulty,
+      'is_active', c.is_active,
+      'is_maintenance', c.is_maintenance,
+      'is_dynamic', c.is_dynamic,
+      'min_points', c.min_points,
+      'decay_per_solve', c.decay_per_solve,
+      'event_id', c.event_id,
+      'flag_placeholder', c.flag_placeholder,
+      'services_count', COALESCE(array_length(c.services, 1), 0)
+    )
+  INTO v_existing_event_id, v_before
   FROM public.challenges c
   WHERE c.id = p_challenge_id;
 
@@ -326,6 +369,35 @@ BEGIN
     WHERE challenge_id = p_challenge_id;
   END IF;
 
+  SELECT jsonb_build_object(
+      'title', c.title,
+      'description', c.description,
+      'category', c.category,
+      'points', c.points,
+      'max_points', c.max_points,
+      'difficulty', c.difficulty,
+      'is_active', c.is_active,
+      'is_maintenance', c.is_maintenance,
+      'is_dynamic', c.is_dynamic,
+      'min_points', c.min_points,
+      'decay_per_solve', c.decay_per_solve,
+      'event_id', c.event_id,
+      'flag_placeholder', c.flag_placeholder,
+      'services_count', COALESCE(array_length(c.services, 1), 0)
+    )
+  INTO v_after
+  FROM public.challenges c
+  WHERE c.id = p_challenge_id;
+
+  PERFORM public.write_admin_audit_log(
+    'UPDATE',
+    'challenge',
+    p_challenge_id,
+    v_before,
+    v_after,
+    jsonb_build_object('flag_changed', p_flag IS NOT NULL)
+  );
+
   RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql
@@ -342,15 +414,30 @@ CREATE OR REPLACE FUNCTION set_challenge_active(
 RETURNS JSON AS $$
 DECLARE
   v_user_id UUID := auth.uid()::uuid;
+  v_before JSONB;
 BEGIN
   IF NOT can_manage_challenge(p_challenge_id) THEN
     RETURN json_build_object('success', false, 'message', 'Only admin can change challenge status');
   END IF;
 
+  SELECT jsonb_build_object('is_active', c.is_active, 'title', c.title, 'event_id', c.event_id)
+  INTO v_before
+  FROM public.challenges c
+  WHERE c.id = p_challenge_id;
+
   UPDATE public.challenges
   SET is_active = p_active,
       updated_at = now()
   WHERE id = p_challenge_id;
+
+  PERFORM public.write_admin_audit_log(
+    CASE WHEN p_active THEN 'PUBLISH' ELSE 'UNPUBLISH' END,
+    'challenge',
+    p_challenge_id,
+    v_before,
+    jsonb_build_object('is_active', p_active, 'title', v_before->>'title', 'event_id', v_before->'event_id'),
+    '{}'::jsonb
+  );
 
   RETURN json_build_object(
     'success', true,
@@ -370,15 +457,30 @@ CREATE OR REPLACE FUNCTION set_challenge_maintenance(
 RETURNS JSON AS $$
 DECLARE
   v_user_id UUID := auth.uid()::uuid;
+  v_before JSONB;
 BEGIN
   IF NOT can_manage_challenge(p_challenge_id) THEN
     RETURN json_build_object('success', false, 'message', 'Only admin can change maintenance status');
   END IF;
 
+  SELECT jsonb_build_object('is_maintenance', c.is_maintenance, 'title', c.title, 'event_id', c.event_id)
+  INTO v_before
+  FROM public.challenges c
+  WHERE c.id = p_challenge_id;
+
   UPDATE public.challenges
   SET is_maintenance = p_maintenance,
       updated_at = now()
   WHERE id = p_challenge_id;
+
+  PERFORM public.write_admin_audit_log(
+    'UPDATE',
+    'challenge',
+    p_challenge_id,
+    v_before,
+    jsonb_build_object('is_maintenance', p_maintenance, 'title', v_before->>'title', 'event_id', v_before->'event_id'),
+    jsonb_build_object('administrative_action', 'maintenance')
+  );
 
   RETURN json_build_object(
     'success', true,
@@ -506,12 +608,35 @@ CREATE OR REPLACE FUNCTION delete_challenge(
 RETURNS BOOLEAN AS $$
 DECLARE
   v_user_id UUID := auth.uid()::uuid;
+  v_before JSONB;
 BEGIN
   IF NOT can_manage_challenge(p_challenge_id) THEN
     RAISE EXCEPTION 'Only admin can delete challenge';
   END IF;
 
+  SELECT jsonb_build_object(
+      'title', c.title,
+      'category', c.category,
+      'points', c.points,
+      'difficulty', c.difficulty,
+      'event_id', c.event_id,
+      'is_active', c.is_active,
+      'services_count', COALESCE(array_length(c.services, 1), 0)
+    )
+  INTO v_before
+  FROM public.challenges c
+  WHERE c.id = p_challenge_id;
+
   DELETE FROM public.challenges WHERE id = p_challenge_id;
+
+  PERFORM public.write_admin_audit_log(
+    'DELETE',
+    'challenge',
+    p_challenge_id,
+    v_before,
+    NULL,
+    '{}'::jsonb
+  );
   RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql

@@ -11,6 +11,7 @@ const orderedFiles = [
 
   // 2) Tables (respect FK dependencies)
   "schema/users.sql",
+  "schema/admin_audit_logs.sql",
   "schema/events.sql",
   "schema/event_admins.sql",
   "schema/event_participants.sql",
@@ -27,6 +28,7 @@ const orderedFiles = [
 
   // 3) Query/functions (core first)
   "queries/users.sql",
+  "queries/admin_audit_logs.sql",
   "queries/event_admins.sql",
   "queries/event_membership.sql",
   "queries/challenge_flags.sql",
@@ -39,6 +41,7 @@ const orderedFiles = [
   "queries/notifications.sql",
   "queries/keep-alive.sql",
   "queries/system.sql",
+  "queries/performance_indexes.sql",
 
   // 4) Seed / maintenance last
   "seed/bootstrap.sql",

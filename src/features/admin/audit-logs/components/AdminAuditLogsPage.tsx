@@ -2,16 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ClipboardList, KeyRound } from 'lucide-react'
 import { useAuth } from '@/shared/contexts'
 import { AuthService } from '@/features/auth'
-import { AdminContentLoading, AdminPageShell } from '../../ui'
+import { AdminContentLoading, AdminPageShell, AdminStickyToolbar, AdminTabs } from '../../ui'
+import AuthAuditLogList from './AuthAuditLogList'
 import AuditLogList from './AuditLogList'
+
+type AuditLogTab = 'admin' | 'auth'
 
 export default function AdminAuditLogsPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const [accessReady, setAccessReady] = useState(false)
   const [isAllowed, setIsAllowed] = useState(false)
+  const [activeTab, setActiveTab] = useState<AuditLogTab>('admin')
 
   useEffect(() => {
     let mounted = true
@@ -41,7 +46,22 @@ export default function AdminAuditLogsPage() {
   return (
     <AdminPageShell>
       <div className="space-y-5">
-        <AuditLogList />
+        <AdminStickyToolbar
+          tabs={(
+            <AdminTabs<AuditLogTab>
+              stretch
+              className="w-full sm:w-fit"
+              value={activeTab}
+              onChange={setActiveTab}
+              items={[
+                { value: 'admin', label: 'Admin Logs', icon: ClipboardList },
+                { value: 'auth', label: 'Auth Logs', icon: KeyRound },
+              ]}
+            />
+          )}
+        />
+
+        {activeTab === 'admin' ? <AuditLogList /> : <AuthAuditLogList />}
       </div>
     </AdminPageShell>
   )
