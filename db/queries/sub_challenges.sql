@@ -65,6 +65,7 @@ DECLARE
   v_event_end TIMESTAMPTZ;
   v_event_exists BOOLEAN;
   v_event_join_mode TEXT;
+  v_always_show_challenges BOOLEAN := FALSE;
   v_is_event_member BOOLEAN := FALSE;
   v_sub_count INT := 0;
   v_is_sequential BOOLEAN := FALSE;
@@ -95,14 +96,16 @@ BEGIN
          e.start_time,
          e.end_time,
          (e.id IS NOT NULL),
-         e.join_mode
+         e.join_mode,
+         COALESCE(e.always_show_challenges, false)
   INTO v_is_active,
        v_is_maintenance,
        v_event_id,
        v_event_start,
        v_event_end,
        v_event_exists,
-       v_event_join_mode
+       v_event_join_mode,
+       v_always_show_challenges
   FROM public.challenges c
   LEFT JOIN public.events e ON e.id = c.event_id
   WHERE c.id = p_challenge_id;
@@ -145,7 +148,7 @@ BEGIN
       RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Event has not started yet');
     END IF;
 
-    IF v_event_end IS NOT NULL AND now() > v_event_end THEN
+    IF v_event_end IS NOT NULL AND now() > v_event_end AND NOT v_always_show_challenges THEN
       RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Event has ended');
     END IF;
   END IF;
