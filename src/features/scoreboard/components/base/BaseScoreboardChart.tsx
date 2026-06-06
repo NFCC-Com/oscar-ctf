@@ -575,7 +575,9 @@ export default function BaseScoreboardChart({
         caretSize: 12,
         cornerRadius: 8,
         itemSort(a, b) {
-          return a.datasetIndex - b.datasetIndex
+          const scoreA = a.parsed.y ?? 0
+          const scoreB = b.parsed.y ?? 0
+          return scoreB - scoreA || a.datasetIndex - b.datasetIndex
         },
         callbacks: {
           title(items) {

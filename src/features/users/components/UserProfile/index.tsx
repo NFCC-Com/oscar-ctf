@@ -7,10 +7,12 @@ import PageBackground from '@/shared/components/PageBackground'
 import { useUserProfile } from '../../hooks/useUserProfile'
 import { UserProfileProps } from '../../types'
 import { getUserBadges } from '../../lib/badge-utils'
+import { normalizeChallengeCategory } from '../../lib/challenge-category'
 
 import ProfileTabs from './ProfileTabs'
 import ProfileHeader from './ProfileHeader'
 import StatsGrid from './StatsGrid'
+import EventAccessSection from './EventAccessSection'
 import ProgressSection from './ProgressSection'
 import SolvedChallenges from './SolvedChallenges'
 import UnsolvedChallengesModal from './UnsolvedChallengesModal'
@@ -33,6 +35,7 @@ export default function UserProfile({
     activeTab,
     setActiveTab,
     profileEvents,
+    eventAccess,
     effectiveSelectedEvent,
     setSelectedEvent,
     showMainOption,
@@ -58,7 +61,8 @@ export default function UserProfile({
   const completedCategoryCount = useMemo(() => {
     return categoryTotals.reduce((count, { category, total_challenges }) => {
       if (!total_challenges) return count
-      const solvedInCategory = solvedChallenges.filter(c => c.category === category).length
+      const categoryKey = normalizeChallengeCategory(category)
+      const solvedInCategory = solvedChallenges.filter(c => normalizeChallengeCategory(c.category) === categoryKey).length
       return solvedInCategory >= total_challenges ? count + 1 : count
     }, 0)
   }, [categoryTotals, solvedChallenges])
@@ -192,6 +196,8 @@ export default function UserProfile({
               setShowAllModal={setShowAllModal}
               onShowUnsolved={handleShowUnsolved}
             />
+
+            <EventAccessSection eventAccess={eventAccess} />
           </div>
         ) : (
           <div key="stats-content">

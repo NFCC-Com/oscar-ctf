@@ -38,3 +38,17 @@ export type TeamInfo = {
   team: any
   members: any[]
 }
+
+export type UserEventAccess = {
+  event_id: string
+  event_name: string
+  join_mode: 'open' | 'request' | 'key'
+  is_member: boolean
+  request_status: 'pending' | 'approved' | 'rejected' | null
+  has_solve: boolean
+  challenge_count: number
+  start_time?: string | null
+  end_time?: string | null
+  always_show_challenges?: boolean | null
+  image_url?: string | null
+}

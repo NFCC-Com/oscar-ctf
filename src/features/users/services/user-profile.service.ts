@@ -1,6 +1,7 @@
 import { PostgrestSingleResponse } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 import { User, ChallengeWithSolve } from '@/shared/types'
+import type { UserEventAccess } from '../types'
 
 function callUserRpc<T = any>(name: string, args?: Record<string, unknown>) {
   return (supabase as any).rpc(name, args) as Promise<PostgrestSingleResponse<T>>
@@ -27,6 +28,10 @@ export type UserProfileLite = {
   profile_picture_url?: string | null
   solved_event_ids: string[]
   has_main_solved: boolean
+}
+
+function normalizeJoinMode(value: unknown): UserEventAccess['join_mode'] {
+  return value === 'request' || value === 'key' ? value : 'open'
 }
 
 const normalizeTimestamp = (value?: string | null): string | null => {
@@ -106,6 +111,38 @@ export async function getUserProfileLite(userId: string): Promise<UserProfileLit
   } catch (error) {
     console.error('Error fetching user profile:', error)
     return null
+  }
+}
+
+export async function getUserEventAccess(userId: string): Promise<UserEventAccess[]> {
+  try {
+    const { data, error } = await callUserRpc('get_user_event_access', {
+      p_user_id: userId,
+    })
+
+    if (error) {
+      console.error('Error fetching user event access:', error)
+      return []
+    }
+
+    return ((data as any[]) || []).map((row) => ({
+      event_id: String(row.event_id),
+      event_name: String(row.event_name || 'Untitled event'),
+      join_mode: normalizeJoinMode(row.join_mode),
+      is_member: Boolean(row.is_member),
+      request_status: row.request_status === 'pending' || row.request_status === 'approved' || row.request_status === 'rejected'
+        ? row.request_status
+        : null,
+      has_solve: Boolean(row.has_solve),
+      challenge_count: Number(row.challenge_count || 0),
+      start_time: normalizeTimestamp(row.start_time),
+      end_time: normalizeTimestamp(row.end_time),
+      always_show_challenges: Boolean(row.always_show_challenges),
+      image_url: row.image_url ?? null,
+    }))
+  } catch (error) {
+    console.error('Error fetching user event access:', error)
+    return []
   }
 }
 

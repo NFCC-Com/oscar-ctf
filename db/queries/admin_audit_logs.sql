@@ -242,6 +242,58 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_admin_audit_logs(INT, INT, UUID, TEXT, TEXT[], TEXT, UUID, TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
 
+CREATE OR REPLACE FUNCTION public.get_admin_audit_entity_snapshot(
+  p_entity_type TEXT,
+  p_entity_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_entity_type TEXT := lower(btrim(COALESCE(p_entity_type, '')));
+  v_snapshot JSONB;
+BEGIN
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Only global admin can view admin audit entity snapshots';
+  END IF;
+
+  IF p_entity_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  CASE v_entity_type
+    WHEN 'challenge' THEN
+      SELECT to_jsonb(c) INTO v_snapshot
+      FROM public.challenges c
+      WHERE c.id = p_entity_id;
+    WHEN 'event' THEN
+      SELECT to_jsonb(e) - 'join_key' INTO v_snapshot
+      FROM public.events e
+      WHERE e.id = p_entity_id;
+    WHEN 'event_join_request' THEN
+      SELECT to_jsonb(ejr) INTO v_snapshot
+      FROM public.event_join_requests ejr
+      WHERE ejr.id = p_entity_id;
+    WHEN 'solve' THEN
+      SELECT to_jsonb(s) INTO v_snapshot
+      FROM public.solves s
+      WHERE s.id = p_entity_id;
+    WHEN 'user' THEN
+      SELECT to_jsonb(u) INTO v_snapshot
+      FROM public.users u
+      WHERE u.id = p_entity_id;
+    ELSE
+      v_snapshot := NULL;
+  END CASE;
+
+  RETURN public.audit_log_strip_sensitive(v_snapshot);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_admin_audit_entity_snapshot(TEXT, UUID) TO authenticated;
+
 ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE public.admin_audit_logs FROM PUBLIC;

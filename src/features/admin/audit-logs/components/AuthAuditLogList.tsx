@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { ChevronLeft, ChevronRight, KeyRound } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Loader } from '@/shared/components'
@@ -37,6 +38,7 @@ function getPayloadText(payload: Record<string, unknown>, key: string) {
 
 function getActorLabel(log: AuthAuditLogEntry) {
   if (log.username) return log.username
+  if (log.email) return log.email
 
   const payload = log.payload
   const action = getPayloadText(payload, 'action')
@@ -49,6 +51,10 @@ function getActorLabel(log: AuthAuditLogEntry) {
   }
 
   return getPayloadText(payload, 'actor_username') || getPayloadText(payload, 'actor_id') || 'Unknown user'
+}
+
+function getActorId(log: AuthAuditLogEntry) {
+  return log.user_id || getPayloadText(log.payload, 'actor_id') || log.id
 }
 
 function getActionStyle(action: string) {
@@ -99,8 +105,9 @@ export default function AuthAuditLogList({ tabs }: { tabs?: React.ReactNode }) {
 
     return logs.filter((log) => {
       const actor = getActorLabel(log).toLowerCase()
+      const email = (log.email || '').toLowerCase()
       const actionName = getPayloadText(log.payload, 'action').toLowerCase()
-      return actor.includes(keyword) || actionName.includes(keyword)
+      return actor.includes(keyword) || email.includes(keyword) || actionName.includes(keyword)
     })
   }, [logs, search])
 
@@ -178,11 +185,34 @@ export default function AuthAuditLogList({ tabs }: { tabs?: React.ReactNode }) {
                 </div>
 
                 <div className="min-w-[220px] truncate">
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    {actor}
-                  </span>
+                  {log.username ? (
+                    <Link
+                      href={`/user/${encodeURIComponent(log.username)}`}
+                      className="text-sm font-semibold text-blue-600 transition hover:text-blue-500 hover:underline dark:text-blue-400"
+                    >
+                      {log.username}
+                    </Link>
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                      {actor}
+                    </span>
+                  )}
+                  {log.email && log.email !== actor && (
+                    <div className="truncate text-xs font-medium text-gray-500 dark:text-gray-400">
+                      {log.username ? (
+                        <Link
+                          href={`/user/${encodeURIComponent(log.username)}`}
+                          className="transition hover:text-blue-500 hover:underline"
+                        >
+                          {log.email}
+                        </Link>
+                      ) : (
+                        log.email
+                      )}
+                    </div>
+                  )}
                   <div className="truncate font-mono text-[10px] text-gray-500">
-                    {getPayloadText(log.payload, 'actor_id') || log.id}
+                    {getActorId(log)}
                   </div>
                 </div>
 

@@ -1020,6 +1020,53 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.get_admin_audit_logs(INT, INT, UUID, TEXT, TEXT[], TEXT, UUID, TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
+CREATE OR REPLACE FUNCTION public.get_admin_audit_entity_snapshot(
+  p_entity_type TEXT,
+  p_entity_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_entity_type TEXT := lower(btrim(COALESCE(p_entity_type, '')));
+  v_snapshot JSONB;
+BEGIN
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Only global admin can view admin audit entity snapshots';
+  END IF;
+  IF p_entity_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+  CASE v_entity_type
+    WHEN 'challenge' THEN
+      SELECT to_jsonb(c) INTO v_snapshot
+      FROM public.challenges c
+      WHERE c.id = p_entity_id;
+    WHEN 'event' THEN
+      SELECT to_jsonb(e) - 'join_key' INTO v_snapshot
+      FROM public.events e
+      WHERE e.id = p_entity_id;
+    WHEN 'event_join_request' THEN
+      SELECT to_jsonb(ejr) INTO v_snapshot
+      FROM public.event_join_requests ejr
+      WHERE ejr.id = p_entity_id;
+    WHEN 'solve' THEN
+      SELECT to_jsonb(s) INTO v_snapshot
+      FROM public.solves s
+      WHERE s.id = p_entity_id;
+    WHEN 'user' THEN
+      SELECT to_jsonb(u) INTO v_snapshot
+      FROM public.users u
+      WHERE u.id = p_entity_id;
+    ELSE
+      v_snapshot := NULL;
+  END CASE;
+  RETURN public.audit_log_strip_sensitive(v_snapshot);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_admin_audit_entity_snapshot(TEXT, UUID) TO authenticated;
 ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.admin_audit_logs FROM PUBLIC;
 REVOKE ALL ON TABLE public.admin_audit_logs FROM anon;
@@ -1315,6 +1362,75 @@ $$ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, auth;
 GRANT EXECUTE ON FUNCTION get_all_my_event_memberships() TO authenticated;
+CREATE OR REPLACE FUNCTION get_user_event_access(p_user_id UUID)
+RETURNS TABLE (
+  event_id UUID,
+  event_name TEXT,
+  join_mode TEXT,
+  is_member BOOLEAN,
+  request_status TEXT,
+  has_solve BOOLEAN,
+  challenge_count INT,
+  start_time TIMESTAMPTZ,
+  end_time TIMESTAMPTZ,
+  always_show_challenges BOOLEAN,
+  image_url TEXT
+) AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+  RETURN QUERY
+  SELECT
+    e.id,
+    e.name::TEXT,
+    e.join_mode::TEXT,
+    (ep.user_id IS NOT NULL),
+    ejr.status::TEXT,
+    EXISTS (
+      SELECT 1
+      FROM public.solves s
+      JOIN public.challenges c ON c.id = s.challenge_id
+      WHERE s.user_id = p_user_id
+        AND c.event_id = e.id
+    ),
+    COUNT(c.id)::INT,
+    e.start_time,
+    e.end_time,
+    COALESCE(e.always_show_challenges, false),
+    e.image_url::TEXT
+  FROM public.events e
+  LEFT JOIN public.event_participants ep
+    ON ep.event_id = e.id AND ep.user_id = p_user_id
+  LEFT JOIN public.event_join_requests ejr
+    ON ejr.event_id = e.id AND ejr.user_id = p_user_id
+  LEFT JOIN public.challenges c
+    ON c.event_id = e.id
+    AND c.is_active = true
+    AND COALESCE(c.is_maintenance, false) = false
+  GROUP BY
+    e.id,
+    e.name,
+    e.join_mode,
+    ep.user_id,
+    ejr.status,
+    e.start_time,
+    e.end_time,
+    e.always_show_challenges,
+    e.image_url
+  HAVING COUNT(c.id) > 0 OR ep.user_id IS NOT NULL OR EXISTS (
+    SELECT 1
+    FROM public.solves s
+    JOIN public.challenges solved_c ON solved_c.id = s.challenge_id
+    WHERE s.user_id = p_user_id
+      AND solved_c.event_id = e.id
+  )
+  ORDER BY e.start_time ASC NULLS FIRST, e.created_at ASC;
+END;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth;
+GRANT EXECUTE ON FUNCTION get_user_event_access(UUID) TO authenticated;
 CREATE OR REPLACE FUNCTION list_event_members(p_event_id UUID)
 RETURNS TABLE (
   event_id UUID,
@@ -4833,7 +4949,9 @@ RETURNS TABLE (
   created_at timestamptz,
   ip_address text,
   payload jsonb,
-  username text
+  user_id uuid,
+  username text,
+  email text
 )
 language plpgsql
 security definer
@@ -4844,26 +4962,45 @@ BEGIN
     RAISE EXCEPTION 'Only global admin can view audit logs';
   END IF;
   RETURN QUERY
+  WITH audit_rows AS (
+    SELECT
+      ale.id,
+      ale.created_at,
+      ale.ip_address::text AS ip_address,
+      ale.payload::jsonb AS payload,
+      NULLIF(COALESCE(
+        ale.payload->>'actor_id',
+        ale.payload->>'user_id',
+        ale.payload->'traits'->>'user_id'
+      ), '') AS payload_user_id,
+      NULLIF(COALESCE(
+        ale.payload->'traits'->>'user_email',
+        ale.payload->>'actor_username',
+        ale.payload->>'email'
+      ), '') AS payload_email
+    FROM auth.audit_log_entries ale
+    WHERE (p_action_filters IS NULL OR ale.payload->>'action' = ANY(p_action_filters))
+  )
   SELECT
-    ale.id,
-    ale.created_at,
-    ale.ip_address::text,
-    ale.payload::jsonb,
-    (
-      SELECT u.username::text
-      FROM public.users u
-      JOIN auth.users au ON au.id = u.id
-      WHERE LOWER(au.email) = LOWER(
-        CASE
-          WHEN ale.payload->>'action' = 'user_deleted' THEN COALESCE(ale.payload->'traits'->>'user_email', '')
-          ELSE COALESCE(ale.payload->>'actor_username', '')
-        END
-      )
-      LIMIT 1
-    ) AS username
-  FROM auth.audit_log_entries ale
-  WHERE (p_action_filters IS NULL OR ale.payload->>'action' = ANY(p_action_filters))
-  ORDER BY ale.created_at DESC
+    ar.id,
+    ar.created_at,
+    ar.ip_address,
+    ar.payload,
+    au.id,
+    u.username::text,
+    au.email::text
+  FROM audit_rows ar
+  LEFT JOIN auth.users au
+    ON (
+      ar.payload_user_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      AND au.id = ar.payload_user_id::uuid
+    )
+    OR (
+      ar.payload_email IS NOT NULL
+      AND lower(au.email) = lower(ar.payload_email)
+    )
+  LEFT JOIN public.users u ON u.id = au.id
+  ORDER BY ar.created_at DESC
   LIMIT p_limit OFFSET p_offset;
 END;
 $$;

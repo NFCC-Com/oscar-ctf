@@ -4,6 +4,7 @@ import APP from '@/config'
 import { AuthService } from '@/features/auth'
 import { getTeamByUserId } from '@/features/teams/services/team.service'
 import {
+  getUserEventAccess,
   getUserDetail,
   getUserProfileLite,
 } from '@/features/users/services/user-profile.service'
@@ -18,7 +19,7 @@ import {
 import { useAuth } from '@/shared/contexts'
 import { useEventContext } from '@/features/events/contexts/EventContext'
 import type { ChallengeWithSolve, Event } from '@/shared/types'
-import { UserDetail, TeamInfo } from '../types'
+import { UserDetail, TeamInfo, UserEventAccess } from '../types'
 
 export function useUserProfile(userId: string | null, isCurrentUser: boolean) {
   const router = useRouter()
@@ -27,6 +28,7 @@ export function useUserProfile(userId: string | null, isCurrentUser: boolean) {
 
   const [userDetail, setUserDetail] = useState<UserDetail | null>(null)
   const [solvedEventIds, setSolvedEventIds] = useState<string[]>([])
+  const [eventAccess, setEventAccess] = useState<UserEventAccess[]>([])
   const [hasMainSolved, setHasMainSolved] = useState(false)
   const [firstBloodIds, setFirstBloodIds] = useState<string[]>([])
   const [categoryTotals, setCategoryTotals] = useState<{ category: string; total_challenges: number }[]>([])
@@ -55,10 +57,14 @@ export function useUserProfile(userId: string | null, isCurrentUser: boolean) {
     let mounted = true
     ;(async () => {
       try {
-        const profile = await getUserProfileLite(userId)
+        const [profile, access] = await Promise.all([
+          getUserProfileLite(userId),
+          getUserEventAccess(userId),
+        ])
         if (!mounted || !profile) return
         setSolvedEventIds(profile.solved_event_ids || [])
         setHasMainSolved(!!profile.has_main_solved)
+        setEventAccess(access)
       } catch (err) {
         console.error('Error fetching profile events:', err)
       }
@@ -191,6 +197,7 @@ export function useUserProfile(userId: string | null, isCurrentUser: boolean) {
 
       const unsolved = allChallenges.filter((c: ChallengeWithSolve) => {
         if (solvedIds.has(c.id)) return false
+        if (!c.is_active || c.is_maintenance) return false
         if (!c.event_id) return true
         const ev = eventsById.get(String(c.event_id))
         return isEventActive(ev)
@@ -211,6 +218,7 @@ export function useUserProfile(userId: string | null, isCurrentUser: boolean) {
     activeTab,
     setActiveTab,
     profileEvents,
+    eventAccess,
     effectiveSelectedEvent,
     setSelectedEvent,
     showMainOption,

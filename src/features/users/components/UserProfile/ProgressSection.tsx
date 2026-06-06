@@ -4,6 +4,7 @@ import React from 'react'
 import { BarChart3 } from 'lucide-react'
 import APP from '@/config'
 import { ChallengeWithSolve } from '@/shared/types'
+import { normalizeChallengeCategory } from '../../lib/challenge-category'
 import { UserEmptyState, UserSection } from '../ui'
 import { cn } from '@/shared/lib/utils'
 import {
@@ -25,7 +26,8 @@ export default function ProgressSection({
 }: ProgressSectionProps) {
   const visibleCategories = categoryTotals
     .map(({ category, total_challenges }) => {
-      const solvedCount = solvedChallenges.filter(c => c.category === category).length
+      const categoryKey = normalizeChallengeCategory(category)
+      const solvedCount = solvedChallenges.filter(c => normalizeChallengeCategory(c.category) === categoryKey).length
       const progress = total_challenges > 0 ? (solvedCount / total_challenges) * 100 : 0
       return { category, total_challenges, solvedCount, progress }
     })

@@ -110,6 +110,78 @@ SET search_path = public, auth;
 
 GRANT EXECUTE ON FUNCTION get_all_my_event_memberships() TO authenticated;
 
+CREATE OR REPLACE FUNCTION get_user_event_access(p_user_id UUID)
+RETURNS TABLE (
+  event_id UUID,
+  event_name TEXT,
+  join_mode TEXT,
+  is_member BOOLEAN,
+  request_status TEXT,
+  has_solve BOOLEAN,
+  challenge_count INT,
+  start_time TIMESTAMPTZ,
+  end_time TIMESTAMPTZ,
+  always_show_challenges BOOLEAN,
+  image_url TEXT
+) AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    e.id,
+    e.name::TEXT,
+    e.join_mode::TEXT,
+    (ep.user_id IS NOT NULL),
+    ejr.status::TEXT,
+    EXISTS (
+      SELECT 1
+      FROM public.solves s
+      JOIN public.challenges c ON c.id = s.challenge_id
+      WHERE s.user_id = p_user_id
+        AND c.event_id = e.id
+    ),
+    COUNT(c.id)::INT,
+    e.start_time,
+    e.end_time,
+    COALESCE(e.always_show_challenges, false),
+    e.image_url::TEXT
+  FROM public.events e
+  LEFT JOIN public.event_participants ep
+    ON ep.event_id = e.id AND ep.user_id = p_user_id
+  LEFT JOIN public.event_join_requests ejr
+    ON ejr.event_id = e.id AND ejr.user_id = p_user_id
+  LEFT JOIN public.challenges c
+    ON c.event_id = e.id
+    AND c.is_active = true
+    AND COALESCE(c.is_maintenance, false) = false
+  GROUP BY
+    e.id,
+    e.name,
+    e.join_mode,
+    ep.user_id,
+    ejr.status,
+    e.start_time,
+    e.end_time,
+    e.always_show_challenges,
+    e.image_url
+  HAVING COUNT(c.id) > 0 OR ep.user_id IS NOT NULL OR EXISTS (
+    SELECT 1
+    FROM public.solves s
+    JOIN public.challenges solved_c ON solved_c.id = s.challenge_id
+    WHERE s.user_id = p_user_id
+      AND solved_c.event_id = e.id
+  )
+  ORDER BY e.start_time ASC NULLS FIRST, e.created_at ASC;
+END;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth;
+
+GRANT EXECUTE ON FUNCTION get_user_event_access(UUID) TO authenticated;
+
 CREATE OR REPLACE FUNCTION list_event_members(p_event_id UUID)
 RETURNS TABLE (
   event_id UUID,

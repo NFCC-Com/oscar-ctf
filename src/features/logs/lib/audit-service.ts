@@ -37,7 +37,9 @@ export interface AuthAuditLogEntry {
   created_at: string
   ip_address: string | null
   payload: Record<string, unknown>
+  user_id: string | null
   username: string | null
+  email: string | null
 }
 
 export type AuditLogFilters = {
@@ -76,6 +78,13 @@ function callAuthAuditRpc(args: {
   return (supabase.rpc as any)('get_auth_audit_logs', args) as ReturnType<typeof supabase.rpc>
 }
 
+function callAuditEntitySnapshotRpc(args: {
+  p_entity_type: string
+  p_entity_id: string
+}) {
+  return (supabase.rpc as any)('get_admin_audit_entity_snapshot', args) as ReturnType<typeof supabase.rpc>
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
@@ -107,7 +116,9 @@ function normalizeAuthAuditLog(row: any): AuthAuditLogEntry {
     created_at: String(row.created_at || ''),
     ip_address: row.ip_address ?? null,
     payload: isRecord(row.payload) ? row.payload : {},
+    user_id: row.user_id ?? null,
     username: row.username ?? null,
+    email: row.email ?? null,
   }
 }
 
@@ -157,4 +168,23 @@ export async function getAuthAuditLogs(
   }
 
   return (data ?? []).map(normalizeAuthAuditLog)
+}
+
+export async function getAuditEntitySnapshot(
+  entityType: string,
+  entityId: string | null
+): Promise<Record<string, unknown> | null> {
+  if (!entityId) return null
+
+  const { data, error } = await callAuditEntitySnapshotRpc({
+    p_entity_type: entityType,
+    p_entity_id: entityId,
+  })
+
+  if (error) {
+    console.error('Error fetching admin audit entity snapshot RPC:', error)
+    return null
+  }
+
+  return isRecord(data) ? data : null
 }

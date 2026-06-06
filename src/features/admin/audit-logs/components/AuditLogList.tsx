@@ -70,11 +70,12 @@ const ENTITY_OPTIONS = [
 const LIMIT_OPTIONS = [25, 50, 100, 250]
 const SENSITIVE_FIELD_PATTERN = /(password|token|session|secret|credential|flag|join_key|key)$/i
 const SENSITIVE_FIELD_NAMES = new Set(['flag', 'flag_hash', 'join_key', 'services'])
-type AuditDetailTab = 'summary' | 'changes' | 'metadata'
+type AuditDetailTab = 'summary' | 'changes' | 'data' | 'metadata'
 
 const AUDIT_DETAIL_TABS = [
   { value: 'summary' as const, label: 'Summary' },
   { value: 'changes' as const, label: 'Changes' },
+  { value: 'data' as const, label: 'Data' },
   { value: 'metadata' as const, label: 'Metadata' },
 ]
 
@@ -491,9 +492,19 @@ function SnapshotCards({ before, after }: { before: Record<string, unknown> | nu
 }
 
 function ChangesDetails({ log, fields }: { log: AuditLogEntry; fields: string[] }) {
+  const visibleFields = fields.filter((field) => !isSensitiveField(field))
+
   return (
     <div className="max-w-none">
-      <ChangedFields log={log} fields={fields} />
+      <ChangedFields log={log} fields={visibleFields} />
+    </div>
+  )
+}
+
+function DataDetails({ log }: { log: AuditLogEntry }) {
+  return (
+    <div className="max-w-none">
+      <SnapshotViewer before={log.before_data} after={log.after_data} />
     </div>
   )
 }
@@ -693,6 +704,7 @@ function AuditLogDetailDialog({
 
             {activeTab === 'summary' && <AuditSummary log={log} parsedUserAgent={parsedUserAgent} />}
             {activeTab === 'changes' && <ChangesDetails log={log} fields={fields} />}
+            {activeTab === 'data' && <DataDetails log={log} />}
             {activeTab === 'metadata' && <MetadataDetails log={log} parsedUserAgent={parsedUserAgent} />}
           </div>
         )}
@@ -880,9 +892,11 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
                       <div className="max-w-[220px] truncate font-mono text-[10px] text-gray-500">{log.entity_id || '-'}</div>
                     </TableCell>
                     <TableCell className="max-w-[320px] py-3">
-                      <div className="truncate text-xs font-semibold text-gray-600 dark:text-gray-300">
-                        {log.changed_fields.length > 0 ? log.changed_fields.join(', ') : 'No field diff'}
-                      </div>
+                      {log.changed_fields.length > 0 && (
+                        <div className="truncate text-xs font-semibold text-gray-600 dark:text-gray-300">
+                          {log.changed_fields.join(', ')}
+                        </div>
+                      )}
                       <div className="truncate font-mono text-[10px] text-gray-500">
                         {log.ip_address || 'unknown ip'}
                       </div>

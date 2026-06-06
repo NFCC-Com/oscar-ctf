@@ -32,7 +32,9 @@ RETURNS TABLE (
   created_at timestamptz,
   ip_address text,
   payload jsonb,
-  username text
+  user_id uuid,
+  username text,
+  email text
 )
 language plpgsql
 security definer
@@ -44,26 +46,45 @@ BEGIN
   END IF;
 
   RETURN QUERY
+  WITH audit_rows AS (
+    SELECT
+      ale.id,
+      ale.created_at,
+      ale.ip_address::text AS ip_address,
+      ale.payload::jsonb AS payload,
+      NULLIF(COALESCE(
+        ale.payload->>'actor_id',
+        ale.payload->>'user_id',
+        ale.payload->'traits'->>'user_id'
+      ), '') AS payload_user_id,
+      NULLIF(COALESCE(
+        ale.payload->'traits'->>'user_email',
+        ale.payload->>'actor_username',
+        ale.payload->>'email'
+      ), '') AS payload_email
+    FROM auth.audit_log_entries ale
+    WHERE (p_action_filters IS NULL OR ale.payload->>'action' = ANY(p_action_filters))
+  )
   SELECT
-    ale.id,
-    ale.created_at,
-    ale.ip_address::text,
-    ale.payload::jsonb,
-    (
-      SELECT u.username::text
-      FROM public.users u
-      JOIN auth.users au ON au.id = u.id
-      WHERE LOWER(au.email) = LOWER(
-        CASE
-          WHEN ale.payload->>'action' = 'user_deleted' THEN COALESCE(ale.payload->'traits'->>'user_email', '')
-          ELSE COALESCE(ale.payload->>'actor_username', '')
-        END
-      )
-      LIMIT 1
-    ) AS username
-  FROM auth.audit_log_entries ale
-  WHERE (p_action_filters IS NULL OR ale.payload->>'action' = ANY(p_action_filters))
-  ORDER BY ale.created_at DESC
+    ar.id,
+    ar.created_at,
+    ar.ip_address,
+    ar.payload,
+    au.id,
+    u.username::text,
+    au.email::text
+  FROM audit_rows ar
+  LEFT JOIN auth.users au
+    ON (
+      ar.payload_user_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      AND au.id = ar.payload_user_id::uuid
+    )
+    OR (
+      ar.payload_email IS NOT NULL
+      AND lower(au.email) = lower(ar.payload_email)
+    )
+  LEFT JOIN public.users u ON u.id = au.id
+  ORDER BY ar.created_at DESC
   LIMIT p_limit OFFSET p_offset;
 END;
 $$;
