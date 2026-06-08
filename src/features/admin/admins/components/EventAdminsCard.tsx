@@ -37,17 +37,17 @@ const EventAdminsCard: React.FC<EventAdminsCardProps> = ({ admins, onAskRemove }
           <Table>
             <TableHeader>
               <TableRow className="border-b border-gray-200/80 hover:bg-transparent dark:border-gray-800">
-                <TableHead className="px-5">Username</TableHead>
-                <TableHead>Event</TableHead>
-                <TableHead className="w-[120px] text-right px-5">Action</TableHead>
+                <TableHead className="pl-6 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Username</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event</TableHead>
+                <TableHead className="pr-6 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {admins.map((admin) => (
                 <TableRow key={`${admin.user_id}:${admin.event_id}`} className={ADMIN_ROW_CLASS}>
-                  <TableCell className="font-medium px-5 py-3">{admin.username}</TableCell>
-                  <TableCell className="py-3">{admin.event_name}</TableCell>
-                  <TableCell className="text-right px-5 py-3">
+                  <TableCell className="pl-6 font-medium">{admin.username}</TableCell>
+                  <TableCell>{admin.event_name}</TableCell>
+                  <TableCell className="pr-6 text-right">
                     <Button variant="outline" size="sm" onClick={() => onAskRemove(admin)} className="rounded-xl">
                       Remove
                     </Button>

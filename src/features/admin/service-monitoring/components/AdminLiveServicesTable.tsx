@@ -268,31 +268,23 @@ export default function AdminLiveServicesTable({
                       )}
                     </TableCell>
 
-                    <TableCell>
-                      <div className="max-w-[160px]">
-                        <div className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          {row.name}
-                        </div>
+                    <TableCell className="min-w-[160px]">
+                      <div className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {row.name}
                       </div>
                     </TableCell>
 
-                    <TableCell>
-                      <AdminServiceStatusBadge status={row.status} />
-                    </TableCell>
-
-                    <TableCell>
-                      {(row.status === 'running' || row.status === 'container_only') && remaining !== null ? (
-                        <span className="flex items-center gap-1 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400">
-                          <Clock className="h-3 w-3" />
-                          {formatDuration(remaining)}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400 dark:text-gray-600">-</span>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="pr-6" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex min-w-[250px] flex-wrap items-center justify-end gap-1.5">
+                    <TableCell className="pr-6 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-2.5">
+                        {(row.status === 'running' || row.status === 'container_only') && remaining !== null ? (
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap font-mono text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                            <Clock className="h-3 w-3 shrink-0" />
+                            {formatDuration(remaining)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 dark:text-gray-600"></span>
+                        )}
+                        <AdminServiceStatusBadge status={row.status} />
                         {actionTarget ? (
                           <LiveNxctlActions
                             row={row}
@@ -311,7 +303,7 @@ export default function AdminLiveServicesTable({
 
                   {hasEndpoints && isExpanded && (
                     <TableRow className="border-b border-gray-100/80 bg-gray-50/10 hover:bg-gray-50/10 dark:border-gray-800/70 dark:bg-gray-950/5 dark:hover:bg-gray-950/5">
-                      <TableCell colSpan={5} className="pl-16 pr-6 py-3">
+                      <TableCell colSpan={3} className="pl-16 pr-6 py-3">
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                           {endpoints.map((ep) => (
                             <div key={ep.key} className="flex items-center min-w-0">

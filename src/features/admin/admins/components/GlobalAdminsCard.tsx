@@ -35,15 +35,15 @@ const GlobalAdminsCard: React.FC<GlobalAdminsCardProps> = ({ admins }) => {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-gray-200/80 hover:bg-transparent dark:border-gray-800">
-                <TableHead className="px-5">Username</TableHead>
-                <TableHead className="px-5">User ID</TableHead>
+                <TableHead className="pl-6 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Username</TableHead>
+                <TableHead className="pr-6 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">User ID</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {admins.map((admin) => (
                 <TableRow key={admin.id} className={ADMIN_ROW_CLASS}>
-                  <TableCell className="font-medium px-5 py-3">{admin.username}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground px-5 py-3">{admin.id}</TableCell>
+                  <TableCell className="pl-6 font-medium">{admin.username}</TableCell>
+                  <TableCell className="pr-6 font-mono text-xs text-muted-foreground">{admin.id}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

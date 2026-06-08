@@ -2,12 +2,15 @@
 
 import React, { useState } from 'react'
 import { Check, UserPlus, Users, X } from 'lucide-react'
-import { Button, SearchInput } from '@/shared/ui'
+import { Button, SearchInput, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui'
+import { FILTER_CONTROL_CLASS } from '@/shared/ui/filter'
 import {
+  ADMIN_ROW_CLASS,
   AdminDataSurface,
   AdminEmptyState,
   AdminFilterSelect,
   AdminStatusBadge,
+  AdminTableSurface,
   AdminTabs,
 } from '@/features/admin/ui'
 import type { Event, EventJoinRequestRow, EventMemberRow, UserLite } from '../types'
@@ -120,109 +123,126 @@ const EventMembersCard: React.FC<EventMembersCardProps> = ({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {activeTab === 'members' ? (
-          <div className="grid min-h-full gap-0 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-            <section className="border-b border-gray-200/70 p-4 dark:border-gray-800/70 lg:border-b-0 lg:border-r">
-              <div className="space-y-3">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Add Members</h3>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Search users and add them to the selected event.</p>
-                </div>
-                <SearchInput
-                  placeholder="Type username..."
-                  value={assignUserQuery}
-                  onChange={onAssignUserQueryChange}
-                  containerClassName="max-w-none"
-                  inputClassName="text-sm"
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={onSelectAllCandidates} disabled={candidateUsers.length === 0} className="rounded-xl">
-                    Select All
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={onClearCandidateSelection} disabled={selectedCandidateUserIds.length === 0} className="rounded-xl">
-                    Clear
-                  </Button>
-                  <Button
+          <div className="flex min-h-full flex-col">
+            <div className="border-b border-gray-200/70 p-3 dark:border-gray-800/70">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[180px] flex-1">
+                  <SearchInput
+                    placeholder="Type username..."
+                    value={assignUserQuery}
+                    onChange={onAssignUserQueryChange}
                     size="sm"
-                    onClick={onQuickAddSelectedMembers}
-                    disabled={memberActionUserId === '__bulk__' || selectedCandidateUserIds.length === 0}
-                    className="rounded-xl"
-                  >
-                    Add Selected ({selectedCandidateUserIds.length})
-                  </Button>
-                </div>
-              </div>
+                    containerClassName="max-w-none"
+                    inputClassName={FILTER_CONTROL_CLASS}
+                    showSearchIcon={false}
+                    showClearButton={false}
+                  />
 
-              <div className="mt-4 divide-y divide-gray-150 overflow-hidden rounded-xl border border-gray-200/70 dark:divide-gray-800/85 dark:border-gray-800/80">
-                {manageEventId === '' ? (
-                  <div className="p-4 text-sm text-gray-500 dark:text-gray-400">Select event first</div>
-                ) : assignUserQuery.trim().length < 2 ? (
-                  <div className="p-4 text-sm text-gray-500 dark:text-gray-400">Type at least 2 characters to search users</div>
-                ) : loadingUserSearch ? (
-                  <div className="p-4 text-sm text-gray-500 dark:text-gray-400">Searching users...</div>
-                ) : candidateUsers.length === 0 ? (
-                  <div className="p-4 text-sm text-gray-500 dark:text-gray-400">No matching users or all are already members</div>
-                ) : (
-                  candidateUsers.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between gap-3 px-3.5 py-3 transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-900/25">
-                      <label className="flex min-w-0 cursor-pointer items-start gap-2">
-                        <input
-                          type="checkbox"
-                          className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          checked={selectedCandidateUserIds.includes(user.id)}
-                          onChange={() => onToggleCandidateSelection(user.id)}
-                        />
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{user.username}</span>
-                          <span className="block truncate font-mono text-[10px] text-gray-500">{user.id}</span>
-                        </span>
-                      </label>
-                      <Button size="sm" onClick={() => onQuickAddMember(user.id)} disabled={memberActionUserId === user.id} className="rounded-xl">
-                        Add
-                      </Button>
+                  {candidateUsers.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border bg-white shadow-lg dark:bg-gray-900 border-gray-200 dark:border-gray-700 overflow-hidden">
+                      <div className="max-h-60 overflow-y-auto">
+                        {candidateUsers.map((user) => (
+                          <label key={user.id} className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                checked={selectedCandidateUserIds.includes(user.id)}
+                                onChange={() => onToggleCandidateSelection(user.id)}
+                              />
+                              <div className="min-w-0">
+                                <span className="block truncate text-sm font-medium text-gray-900 dark:text-gray-100">{user.username}</span>
+                                <span className="block truncate font-mono text-[10px] text-gray-500">{user.id}</span>
+                              </div>
+                            </div>
+                            <Button size="sm" onClick={() => onQuickAddMember(user.id)} disabled={memberActionUserId === user.id} className="h-7 shrink-0 rounded-lg px-2 text-xs">
+                              Add
+                            </Button>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section className="min-h-0 p-4">
-              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Current Members</h3>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Users currently registered for this event.</p>
+                  )}
                 </div>
+
+                <Button size="sm" variant="outline" onClick={onSelectAllCandidates} disabled={candidateUsers.length === 0} className="h-9 rounded-xl px-3 text-xs font-semibold">
+                  Select All
+                </Button>
+                <Button size="sm" variant="ghost" onClick={onClearCandidateSelection} disabled={selectedCandidateUserIds.length === 0} className="h-9 rounded-xl px-3 text-xs font-semibold">
+                  Clear
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={onQuickAddSelectedMembers}
+                  disabled={memberActionUserId === '__bulk__' || selectedCandidateUserIds.length === 0}
+                  className="h-9 rounded-xl px-3 text-xs font-semibold"
+                >
+                  Add Selected ({selectedCandidateUserIds.length})
+                </Button>
+              </div>
+
+              {manageEventId !== '' && assignUserQuery.trim().length >= 2 && candidateUsers.length === 0 && !loadingUserSearch && (
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">No matching users or all are already members</p>
+              )}
+              {loadingUserSearch && (
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Searching users...</p>
+              )}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Current Members</h3>
                 <SearchInput
                   placeholder="Search current member..."
                   value={memberQuery}
                   onChange={onMemberQueryChange}
+                  size="sm"
                   containerClassName="max-w-none sm:w-[260px]"
-                  inputClassName="text-sm"
+                  inputClassName={FILTER_CONTROL_CLASS}
+                  showSearchIcon={false}
+                  showClearButton={false}
                 />
               </div>
 
-              <div className="divide-y divide-gray-150 overflow-hidden rounded-xl border border-gray-200/70 dark:divide-gray-800/85 dark:border-gray-800/80">
-                {loadingEventMembers ? (
-                  <div className="p-5 text-sm text-gray-500 dark:text-gray-400">Loading members...</div>
-                ) : filteredEventMembers.length === 0 ? (
-                  <div className="p-6">
-                    <AdminEmptyState title="No members yet" description="Search users on the left to add members." />
-                  </div>
-                ) : (
-                  filteredEventMembers.map((member) => (
-                    <div key={member.user_id} className="flex items-center justify-between gap-3 px-3.5 py-3 transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-900/25">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{member.username}</p>
-                        <p className="truncate font-mono text-[10px] text-gray-500">{member.user_id}</p>
-                        <p className="mt-1 text-[10px] font-semibold text-gray-500">Joined {formatDate(member.joined_at)}</p>
-                      </div>
-                      <Button size="sm" variant="destructive" onClick={() => onRemoveMember(member.user_id)} disabled={memberActionUserId === member.user_id} className="rounded-xl">
-                        Remove
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
+              <AdminTableSurface>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-gray-200/80 hover:bg-transparent dark:border-gray-800">
+                      <TableHead className="pl-6 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Username</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">User ID</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Joined</TableHead>
+                      <TableHead className="pr-6 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loadingEventMembers ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="p-5 text-center text-sm text-gray-500 dark:text-gray-400">Loading members...</TableCell>
+                      </TableRow>
+                    ) : filteredEventMembers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="p-6">
+                          <AdminEmptyState title="No members yet" description="Search users above to add members." />
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredEventMembers.map((member) => (
+                        <TableRow key={member.user_id} className={ADMIN_ROW_CLASS}>
+                          <TableCell className="pl-6 font-medium text-gray-900 dark:text-gray-100">{member.username}</TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">{member.user_id}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{formatDate(member.joined_at)}</TableCell>
+                          <TableCell className="pr-6 text-right">
+                            <Button size="sm" variant="destructive" onClick={() => onRemoveMember(member.user_id)} disabled={memberActionUserId === member.user_id} className="h-8 rounded-lg px-2.5 text-xs">
+                              Remove
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </AdminTableSurface>
+            </div>
           </div>
         ) : (
           <section className="p-4">

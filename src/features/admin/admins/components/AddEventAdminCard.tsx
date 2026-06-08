@@ -1,7 +1,7 @@
 import React from 'react'
+import { cn } from '@/shared/lib/utils'
 import {
   Button,
-  Label,
   SearchInput,
   Select,
   SelectContent,
@@ -9,12 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui'
-import { AdminDataSurface } from '@/features/admin/ui'
+import { FILTER_CONTROL_CLASS } from '@/shared/ui/filter'
 import {
-  ADMIN_FORM_FIELD_CLASS,
-  ADMIN_FORM_GRID_CLASS,
-  ADMIN_FORM_HELPER_CLASS,
-  ADMIN_INPUT_CLASS,
   ADMIN_SELECT_CONTENT_CLASS,
   ADMIN_SELECT_TRIGGER_CLASS,
 } from '@/features/admin/ui/form-field-styles'
@@ -52,21 +48,19 @@ const AddEventAdminCard: React.FC<AddEventAdminCardProps> = ({
   onReset,
 }) => {
   return (
-    <AdminDataSurface className="p-6" contentClassName="space-y-4">
-      <div className="border-b border-gray-150 dark:border-gray-800/60 pb-4 mb-4">
-        <h2 className="text-base font-bold text-gray-900 dark:text-white">Add Event Admin</h2>
-      </div>
-
-      <div className={ADMIN_FORM_GRID_CLASS}>
-        <div className={ADMIN_FORM_FIELD_CLASS}>
-          <Label>Search Username</Label>
+    <div className="rounded-lg border border-gray-200/70 bg-white p-3 dark:border-gray-800/70 dark:bg-[#0d121d]">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-[180px] flex-1">
           <div className="relative">
             <SearchInput
               value={usernameQuery}
               onChange={onUsernameChange}
               placeholder="Type username..."
+              size="sm"
               containerClassName="max-w-none"
-              inputClassName={ADMIN_INPUT_CLASS}
+              inputClassName={FILTER_CONTROL_CLASS}
+              showSearchIcon={false}
+              showClearButton={false}
             />
 
             {userResults.length > 0 && !selectedUser && (
@@ -87,42 +81,31 @@ const AddEventAdminCard: React.FC<AddEventAdminCardProps> = ({
               </div>
             )}
           </div>
-
-          <div className={ADMIN_FORM_HELPER_CLASS}>Choose a user, then select an event.</div>
         </div>
 
-        <div className={ADMIN_FORM_FIELD_CLASS}>
-          <Label>Event</Label>
-          <Select value={selectedEventId} onValueChange={onEventChange}>
-            <SelectTrigger className={ADMIN_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder="Pick an event" />
-            </SelectTrigger>
-            <SelectContent className={ADMIN_SELECT_CONTENT_CLASS}>
-              {events.map((e) => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <Select value={selectedEventId} onValueChange={onEventChange}>
+          <SelectTrigger className={cn(FILTER_CONTROL_CLASS, ADMIN_SELECT_TRIGGER_CLASS, 'w-[180px] gap-1')}>
+            <SelectValue placeholder="Pick event" />
+          </SelectTrigger>
+          <SelectContent className={ADMIN_SELECT_CONTENT_CLASS}>
+            {events.map((e) => (
+              <SelectItem key={e.id} value={e.id}>
+                {e.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          {selectedEventName ? (
-            <div className={ADMIN_FORM_HELPER_CLASS}>
-              Selected: <span className="font-medium">{selectedEventName}</span>
-            </div>
-          ) : null}
+        <div className="flex items-center gap-1.5">
+          <Button onClick={onSubmit} disabled={!canSubmit} className="h-9 rounded-xl px-3 text-xs font-semibold">
+            {submitting ? 'Adding...' : 'Add'}
+          </Button>
+          <Button variant="ghost" onClick={onReset} disabled={submitting} className="h-9 rounded-xl px-3 text-xs font-semibold">
+            Reset
+          </Button>
         </div>
       </div>
-
-      <div className="mt-4 flex gap-2">
-        <Button onClick={onSubmit} disabled={!canSubmit} className="rounded-xl">
-          {submitting ? 'Adding...' : 'Add'}
-        </Button>
-        <Button variant="ghost" onClick={onReset} disabled={submitting} className="rounded-xl">
-          Reset
-        </Button>
-      </div>
-    </AdminDataSurface>
+    </div>
   )
 }
 

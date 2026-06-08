@@ -41,12 +41,7 @@ export default function UserRolesTab() {
 
   return (
     <>
-      <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)]">
-        <div className="space-y-5">
-          <EventAdminsCard admins={eventAdmins} onAskRemove={askRemove} />
-          <GlobalAdminsCard admins={globalAdmins} />
-        </div>
-
+      <div className="space-y-5">
         <AddEventAdminCard
           events={events}
           usernameQuery={usernameQuery}
@@ -69,6 +64,11 @@ export default function UserRolesTab() {
           onSubmit={doGrant}
           onReset={resetGrantForm}
         />
+
+        <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-2">
+          <GlobalAdminsCard admins={globalAdmins} />
+          <EventAdminsCard admins={eventAdmins} onAskRemove={askRemove} />
+        </div>
       </div>
 
       <RemoveEventAdminConfirmDialog

@@ -222,47 +222,47 @@ export default function AdminPlatformChallengesTable({
                     className={`${ADMIN_ROW_CLASS} cursor-pointer`}
                     onClick={() => toggleGroup(group.id)}
                   >
-                    <TableCell className="pl-6">
-                      <div className="flex min-w-[260px] items-center gap-3">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 rounded-lg"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            toggleGroup(group.id)
-                          }}
-                          aria-label={isExpanded ? 'Collapse challenge details' : 'Expand challenge details'}
-                        >
-                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        </Button>
+                    <TableCell className="pl-6 pr-6">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 rounded-lg"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              toggleGroup(group.id)
+                            }}
+                            aria-label={isExpanded ? 'Collapse challenge details' : 'Expand challenge details'}
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          </Button>
 
-                        <div className="min-w-0 space-y-1">
-                          <div className={groupNameInvalid ? 'truncate font-semibold text-red-700 dark:text-red-300' : 'truncate font-semibold text-gray-900 dark:text-gray-100'}>
-                            {group.name}
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            <ReasonBadge active={challengeRows.length > 0} label={`${challengeRows.length} challenge${challengeRows.length === 1 ? '' : 's'}`} />
-                            <ReasonBadge active={group.keyCount > 1} label={`${group.keyCount} keys`} />
-                            <ReasonBadge active={group.keyCount === 1} label="1 key" />
-                            <ReasonBadge active={group.serviceCount > 1} label={`${group.serviceCount} services`} />
+                          <div className="min-w-0 space-y-1">
+                            <div className={groupNameInvalid ? 'truncate font-semibold text-red-700 dark:text-red-300' : 'truncate font-semibold text-gray-900 dark:text-gray-100'}>
+                              {group.name}
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              <ReasonBadge active={challengeRows.length > 0} label={`${challengeRows.length} challenge${challengeRows.length === 1 ? '' : 's'}`} />
+                              <ReasonBadge active={group.keyCount > 1} label={`${group.keyCount} keys`} />
+                              <ReasonBadge active={group.keyCount === 1} label="1 key" />
+                              <ReasonBadge active={group.serviceCount > 1} label={`${group.serviceCount} services`} />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
 
-                    <TableCell className="text-center">
-                      <CountBadge count={metrics.validKeys} tone="valid" />
-                    </TableCell>
-                    <TableCell className="pr-6 text-center">
-                      <CountBadge count={metrics.invalidKeys} tone="invalid" />
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <CountBadge count={metrics.validKeys} tone="valid" />
+                          <CountBadge count={metrics.invalidKeys} tone="invalid" />
+                        </div>
+                      </div>
                     </TableCell>
                   </TableRow>
 
                   {isExpanded && (
                     <TableRow className="border-b border-gray-100/80 hover:bg-transparent dark:border-gray-800/70">
-                      <TableCell colSpan={3} className="bg-gray-50/70 px-3 py-2 dark:bg-[#0d121d]/70">
+                      <TableCell colSpan={1} className="bg-gray-50/70 px-3 py-2 dark:bg-[#0d121d]/70">
                         <div className="space-y-1.5">
                           {[...group.keyGroups]
                             .sort((a, b) => {
