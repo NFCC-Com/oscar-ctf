@@ -594,6 +594,8 @@ export type Database = {
       };
       can_manage_event: { Args: { p_event_id: string }; Returns: boolean };
       cleanup_orphaned_users_and_solves: { Args: Record<PropertyKey, never>; Returns: undefined };
+      check_email_exists: { Args: { p_email: string }; Returns: boolean };
+      check_username_exists: { Args: { p_username: string }; Returns: boolean };
       create_notification: {
         Args: { p_level?: string; p_message: string; p_title: string };
         Returns: string;

@@ -140,9 +140,6 @@ export const AuthService = {
       if (authError) {
         return { user: null, error: authError.message }
       }
-      if (authError) {
-        return { user: null, error: authError.message }
-      }
 
       if (!authData.user) {
         return { user: null, error: 'Failed to create account' }

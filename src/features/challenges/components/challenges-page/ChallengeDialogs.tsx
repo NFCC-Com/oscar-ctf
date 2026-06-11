@@ -43,10 +43,10 @@ export default function ChallengeDialogs({ data }: ChallengeDialogsProps) {
         showQuestionTab={!!data.selectedSubChallengeState?.hasQuestions}
         setChallengeTab={(tab) => {
           if ((tab === 'solvers' || tab === 'question') && data.selectedChallenge) {
-            data.handleTabChange(tab, data.selectedChallenge.id)
-          } else {
-            data.setChallengeTab(tab)
+            return data.handleTabChange(tab, data.selectedChallenge.id)
           }
+
+          data.setChallengeTab(tab)
         }}
         onClose={() => {
           data.closeChallenge()

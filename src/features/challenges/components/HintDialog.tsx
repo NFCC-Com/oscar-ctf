@@ -9,17 +9,43 @@ interface HintDialogProps {
   hintIdx?: number;
   open: boolean;
   onClose: () => void;
+  onRestoreWindowScroll?: () => void;
 }
 
-const HintDialog: React.FC<HintDialogProps> = ({ challenge, hintIdx = 0, open, onClose }) => {
+const HintDialog: React.FC<HintDialogProps> = ({
+  challenge,
+  hintIdx = 0,
+  open,
+  onClose,
+  onRestoreWindowScroll,
+}) => {
+  React.useEffect(() => {
+    if (!open) return
+    onRestoreWindowScroll?.()
+  }, [onRestoreWindowScroll, open])
+
   if (!challenge) return null
 
   const hints: string[] = Array.isArray(challenge.hint) ? challenge.hint : []
   const hintText = hints[hintIdx]?.trim()
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
-      <DialogContent className={`${DIALOG_GLASS_CONTENT_MD_CLASS} max-h-[85dvh] overflow-y-auto scroll-hidden p-4 sm:p-5`}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (isOpen) return
+      onRestoreWindowScroll?.()
+      onClose()
+    }}>
+      <DialogContent
+        className={`${DIALOG_GLASS_CONTENT_MD_CLASS} max-h-[85dvh] overflow-y-auto scroll-hidden p-4 sm:p-5`}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          onRestoreWindowScroll?.()
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          onRestoreWindowScroll?.()
+        }}
+      >
         <DialogHeader className="select-none space-y-0">
           <div className="flex items-start justify-between gap-4">
             <DialogTitle className="flex min-w-0 items-center gap-3 text-lg font-bold tracking-tight text-gray-900 dark:text-white">

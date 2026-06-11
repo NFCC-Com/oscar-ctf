@@ -55,7 +55,7 @@ interface ChallengeDetailDialogProps {
   solvers: Solver[]
   challengeTab: ChallengeDialogTab
   showQuestionTab: boolean
-  setChallengeTab: (tab: ChallengeDialogTab, challengeId?: string) => void
+  setChallengeTab: (tab: ChallengeDialogTab, challengeId?: string) => void | Promise<unknown>
   onClose: () => void
   flagInputs: KeyedStringMap
   handleFlagInputChange: (challengeId: string, value: string) => void
@@ -139,6 +139,34 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
     if (!open) return
     windowScrollRef.current = { x: window.scrollX, y: window.scrollY }
   }, [open])
+
+  const handleTabChange = React.useCallback((tab: ChallengeDialogTab, challengeId?: string) => {
+    const scrollPosition = windowScrollRef.current
+    const result = setChallengeTab(tab, challengeId)
+
+    const restore = () => window.scrollTo({
+      left: scrollPosition.x,
+      top: scrollPosition.y,
+      behavior: 'auto',
+    })
+
+    const restoreAfterRender = () => requestAnimationFrame(() => {
+      restore()
+      requestAnimationFrame(restore)
+    })
+
+    restore()
+    restoreAfterRender()
+
+    if (result && typeof result === 'object' && 'finally' in result) {
+      result.finally(restoreAfterRender)
+    }
+  }, [setChallengeTab])
+
+  React.useEffect(() => {
+    if (!open || challengeTab === 'challenge') return
+    restoreWindowScroll()
+  }, [challengeTab, open, restoreWindowScroll, solvers.length, subChallengeLoaded, subChallengeLoading])
 
   const solverCount = solvers.length > 0 ? solvers.length : (challenge?.total_solves ?? 0)
 
@@ -261,7 +289,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
             challengeId={challenge.id}
             tabs={tabs}
             activeTab={challengeTab}
-            onTabChange={setChallengeTab}
+            onTabChange={handleTabChange}
           />
         </div>
 
@@ -289,7 +317,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
                 {showQuestionTab && (
                   <ChallengeTasksTeaser
                     challengeId={challenge.id}
-                    onTabChange={setChallengeTab}
+                    onTabChange={handleTabChange}
                   />
                 )}
 
@@ -363,6 +391,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
         hintIdx={showHintModal.hintIdx}
         open={!!showHintModal.challenge}
         onClose={() => setShowHintModal({ challenge: null })}
+        onRestoreWindowScroll={restoreWindowScroll}
       />
     </Dialog>
   )
