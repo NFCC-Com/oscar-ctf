@@ -23,6 +23,7 @@ export default function ForgotPasswordForm() {
     error,
     success,
     setCaptchaToken,
+    turnstileKey,
     captchaEnabled,
     captchaSiteKey
   } = useForgotPassword()
@@ -49,6 +50,7 @@ export default function ForgotPasswordForm() {
         {captchaEnabled && (
           <div className="w-full flex justify-center">
             <Turnstile
+              key={turnstileKey}
               siteKey={captchaSiteKey}
               onSuccess={(token) => setCaptchaToken(token)}
               onExpire={() => setCaptchaToken(null)}

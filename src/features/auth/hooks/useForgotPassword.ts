@@ -8,6 +8,7 @@ export function useForgotPassword() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [turnstileKey, setTurnstileKey] = useState(0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,6 +32,8 @@ export function useForgotPassword() {
     } catch {
       setError('Failed to send reset email')
     } finally {
+      setCaptchaToken(null)
+      setTurnstileKey((k) => k + 1)
       setLoading(false)
     }
   }
@@ -43,6 +46,7 @@ export function useForgotPassword() {
     error,
     success,
     setCaptchaToken,
+    turnstileKey,
     captchaEnabled: Config.captchaEnabled,
     captchaSiteKey: Config.captchaSiteKey
   }

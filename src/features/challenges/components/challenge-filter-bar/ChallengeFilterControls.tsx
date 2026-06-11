@@ -86,7 +86,7 @@ export default function ChallengeFilterControls({
       {showSearch && (
         <>
           <label htmlFor="challenge-filter-search" className="sr-only">Search challenges</label>
-          <div data-tour="challenge-search-control" className="flex-1 min-w-[180px]">
+          <div data-tour="challenge-search-control" className={`flex-1 min-w-[180px] ${hideSidebarFiltersOnDesktop ? 'xl:hidden' : ''}`}>
             {hideSidebarFiltersOnDesktop ? (
               <FilterInput
                 id="challenge-filter-search"

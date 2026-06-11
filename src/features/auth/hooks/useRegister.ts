@@ -9,6 +9,7 @@ export function useRegister() {
   const router = useRouter()
   const { setUser } = useAuth()
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [turnstileKey, setTurnstileKey] = useState(0)
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -38,7 +39,8 @@ export function useRegister() {
     setError('')
     setSuccess('')
 
-    const usernameError = isValidUsername(formData.username)
+    const usernameTrimmed = formData.username.trim()
+    const usernameError = isValidUsername(usernameTrimmed)
     if (usernameError) {
       setError(usernameError)
       setLoading(false)
@@ -61,7 +63,7 @@ export function useRegister() {
       const { user, error, message, emailConfirmationRequired } = await AuthService.signUp(
         formData.email,
         formData.password,
-        formData.username,
+        usernameTrimmed,
         captchaToken ?? undefined
       )
 
@@ -74,7 +76,6 @@ export function useRegister() {
           password: '',
           confirmPassword: ''
         }))
-        setCaptchaToken(null)
       } else if (user) {
         setUser(user)
         router.push('/challenges')
@@ -82,6 +83,8 @@ export function useRegister() {
     } catch {
       setError('Registration failed')
     } finally {
+      setCaptchaToken(null)
+      setTurnstileKey((k) => k + 1)
       setLoading(false)
     }
   }
@@ -104,6 +107,7 @@ export function useRegister() {
     error,
     success,
     setCaptchaToken,
+    turnstileKey,
     captchaEnabled: Config.captchaEnabled,
     captchaSiteKey: Config.captchaSiteKey
   }

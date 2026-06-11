@@ -1,10 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import type { CSSProperties } from 'react'
 import { Lock } from 'lucide-react'
 import APP from '@/config'
-import { Loader, EmptyState, PageLoader } from '@/shared/components'
+import { EmptyState, PageLoader } from '@/shared/components'
 import type { ChallengeWithSolve } from '@/shared/types'
 import type { ChallengeFilterSettings, EventSelectorValue } from '../../types'
 import { CHALLENGE_LAYOUT_MODES, type ChallengeLayoutMode } from '../../lib'
@@ -33,27 +31,6 @@ type ChallengeListContentProps = {
   onOpenChallenge: (challenge: ChallengeWithSolve) => void
 }
 
-const INITIAL_CHALLENGE_RENDER_COUNT = 28
-const CHALLENGE_RENDER_CHUNK_SIZE = 36
-const CHALLENGE_REVEAL_DELAY_STEP_MS = 28
-const CHALLENGE_REVEAL_DELAY_LIMIT = 12
-
-function getChallengeRevealStyle(index: number): CSSProperties {
-  return {
-    '--challenge-reveal-delay': `${Math.min(index, CHALLENGE_REVEAL_DELAY_LIMIT) * CHALLENGE_REVEAL_DELAY_STEP_MS}ms`,
-  } as CSSProperties
-}
-
-function scheduleChallengeRender(callback: () => void) {
-  if ('requestIdleCallback' in window) {
-    const id = window.requestIdleCallback(callback, { timeout: 120 })
-    return () => window.cancelIdleCallback(id)
-  }
-
-  const id = globalThis.setTimeout(callback, 60)
-  return () => globalThis.clearTimeout(id)
-}
-
 export default function ChallengeListContent({
   initialLoading,
   eventMembershipLoading,
@@ -75,30 +52,6 @@ export default function ChallengeListContent({
   formatRemaining,
   onOpenChallenge,
 }: ChallengeListContentProps) {
-  const categoryOrderedChallenges = useMemo(
-    () => orderedKeys.flatMap((category) => grouped[category] ?? []),
-    [grouped, orderedKeys]
-  )
-  const totalVisibleChallenges = layoutMode === CHALLENGE_LAYOUT_MODES.COMPACT
-    ? sortedFilteredChallenges.length
-    : categoryOrderedChallenges.length
-  const [visibleCount, setVisibleCount] = useState(() =>
-    Math.min(INITIAL_CHALLENGE_RENDER_COUNT, totalVisibleChallenges)
-  )
-
-  useEffect(() => {
-    setVisibleCount(Math.min(INITIAL_CHALLENGE_RENDER_COUNT, totalVisibleChallenges))
-  }, [layoutMode, orderedKeys, sortedFilteredChallenges, totalVisibleChallenges])
-
-  useEffect(() => {
-    if (visibleCount >= totalVisibleChallenges) return
-
-    return scheduleChallengeRender(() => {
-      setVisibleCount((current) =>
-        Math.min(current + CHALLENGE_RENDER_CHUNK_SIZE, totalVisibleChallenges)
-      )
-    })
-  }, [totalVisibleChallenges, visibleCount])
 
   if (initialLoading) {
     return <PageLoader />
@@ -135,15 +88,12 @@ export default function ChallengeListContent({
   }
 
   if (layoutMode === CHALLENGE_LAYOUT_MODES.COMPACT) {
-    const visibleChallenges = sortedFilteredChallenges.slice(0, visibleCount)
-
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-max">
-        {visibleChallenges.map((challenge, index) => (
+        {sortedFilteredChallenges.map((challenge) => (
           <div
             key={challenge.id}
             className="challenge-card-reveal relative w-full overflow-visible"
-            style={getChallengeRevealStyle(index)}
           >
             <ChallengeCard
               challenge={challenge}
@@ -157,15 +107,14 @@ export default function ChallengeListContent({
   }
 
   if (layoutMode === CHALLENGE_LAYOUT_MODES.CATEGORY_COMPACT) {
-    const visibleChallenges = categoryOrderedChallenges.slice(0, visibleCount)
+    const categoryOrderedChallenges = orderedKeys.flatMap((category) => grouped[category] ?? [])
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-max">
-        {visibleChallenges.map((challenge, index) => (
+        {categoryOrderedChallenges.map((challenge) => (
           <div
             key={challenge.id}
             className="challenge-card-reveal relative w-full overflow-visible"
-            style={getChallengeRevealStyle(index)}
           >
             <ChallengeCard
               challenge={challenge}
@@ -178,20 +127,12 @@ export default function ChallengeListContent({
     )
   }
 
-  let remainingVisibleChallenges = visibleCount
-
   return (
     <>
       {orderedKeys.map((category) => {
         const categoryChallenges = grouped[category] ?? []
-        const categoryVisibleCount = Math.min(
-          categoryChallenges.length,
-          Math.max(remainingVisibleChallenges, 0)
-        )
-        const visibleChallenges = categoryChallenges.slice(0, categoryVisibleCount)
-        remainingVisibleChallenges -= categoryVisibleCount
 
-        if (visibleChallenges.length === 0) return null
+        if (categoryChallenges.length === 0) return null
 
         return (
           <div
@@ -207,11 +148,10 @@ export default function ChallengeListContent({
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-max">
-              {visibleChallenges.map((challenge, index) => (
+              {categoryChallenges.map((challenge) => (
                 <div
                   key={challenge.id}
                   className="challenge-card-reveal relative w-full overflow-visible"
-                  style={getChallengeRevealStyle(index)}
                 >
                   <ChallengeCard
                     challenge={challenge}

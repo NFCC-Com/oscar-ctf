@@ -111,14 +111,18 @@ export const AuthService = {
    */
   async signUp(email: string, password: string, username: string, captchaToken?: string): Promise<AuthResponse> {
     try {
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('username', username)
-        .single()
+      const { data: usernameExists } = await supabase
+        .rpc('check_username_exists', { p_username: username })
 
-      if (existingUser) {
+      if (usernameExists) {
         return { user: null, error: 'Username already taken' }
+      }
+
+      const { data: emailExists } = await supabase
+        .rpc('check_email_exists', { p_email: email })
+
+      if (emailExists) {
+        return { user: null, error: 'Email already registered' }
       }
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -133,8 +137,8 @@ export const AuthService = {
         }
       })
 
-      if (authError?.message === 'User already registered') {
-        return { user: null, error: "Email already registered" }
+      if (authError) {
+        return { user: null, error: authError.message }
       }
       if (authError) {
         return { user: null, error: authError.message }

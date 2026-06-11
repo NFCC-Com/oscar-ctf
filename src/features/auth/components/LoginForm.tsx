@@ -26,6 +26,7 @@ export default function LoginForm() {
     loading,
     error,
     setCaptchaToken,
+    turnstileKey,
     captchaEnabled,
     captchaSiteKey
   } = useLogin()
@@ -90,6 +91,7 @@ export default function LoginForm() {
         {captchaEnabled && (
           <div className="w-full flex justify-center">
             <Turnstile
+              key={turnstileKey}
               siteKey={captchaSiteKey}
               onSuccess={(token) => setCaptchaToken(token)}
               onExpire={() => setCaptchaToken(null)}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Crown, EyeOff, Flag, Gauge, Layers, LayoutGrid, ListChecks, ListFilter, Search, ServerCog, X } from 'lucide-react'
+import { CheckCircle2, EyeOff, Flag, Gauge, Layers, LayoutGrid, ListChecks, ListFilter, Search, ServerCog, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import type { ElementType } from 'react'
 import APP from '@/config'
@@ -128,28 +128,11 @@ export default function DesktopChallengeFilterSidebar({
               <span className="w-full text-center tabular-nums text-gray-400 dark:text-gray-500">N/A</span>
             ) : (
               <>
-                <span className="flex items-center gap-1 tabular-nums text-gray-700 dark:text-gray-200">
-                  {stats.solved > 0 && stats.rank ? (
-                    <>
-                      <Crown
-                        size={13}
-                        strokeWidth={2.5}
-                        className={
-                          stats.rank <= 1
-                            ? 'text-yellow-500'
-                            : stats.rank <= 2
-                              ? 'text-gray-400 dark:text-gray-300'
-                              : stats.rank <= 3
-                                ? 'text-orange-600 dark:text-orange-500'
-                                : 'text-gray-700 dark:text-gray-200'
-                        }
-                      />
-                      <span>#{stats.rank}</span>
-                    </>
-                  ) : (
-                    <span>N/A</span>
-                  )}
-                </span>
+                {stats.solved > 0 && stats.rank ? (
+                  <span className="tabular-nums text-gray-700 dark:text-gray-200">#{stats.rank}</span>
+                ) : (
+                  <span className="tabular-nums text-gray-400 dark:text-gray-500">N/A</span>
+                )}
                 <div className="flex items-center gap-1.5">
                   <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
                     {stats.solved}/{stats.total}

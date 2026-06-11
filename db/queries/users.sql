@@ -608,6 +608,36 @@ SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION create_profile(UUID, TEXT) TO authenticated;
 
+CREATE OR REPLACE FUNCTION check_username_exists(p_username TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.users WHERE username = p_username
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION check_username_exists(TEXT) TO anon, authenticated;
+
+CREATE OR REPLACE FUNCTION check_email_exists(p_email TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM auth.users WHERE email = p_email
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION check_email_exists(TEXT) TO anon, authenticated;
+
 -- UPDATE
 CREATE OR REPLACE FUNCTION update_username(p_id uuid, p_username text)
 RETURNS json AS $$

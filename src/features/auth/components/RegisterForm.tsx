@@ -29,6 +29,7 @@ export default function RegisterForm() {
     error,
     success,
     setCaptchaToken,
+    turnstileKey,
     captchaEnabled,
     captchaSiteKey
   } = useRegister()
@@ -137,6 +138,7 @@ export default function RegisterForm() {
         {captchaEnabled && (
           <div className="w-full flex justify-center">
             <Turnstile
+              key={turnstileKey}
               siteKey={captchaSiteKey}
               onSuccess={(token) => setCaptchaToken(token)}
               onExpire={() => setCaptchaToken(null)}

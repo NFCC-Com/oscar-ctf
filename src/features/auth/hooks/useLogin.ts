@@ -9,6 +9,7 @@ export function useLogin() {
   const { setUser } = useAuth()
   const [formData, setFormData] = useState({ identifier: '', password: '' })
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [turnstileKey, setTurnstileKey] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -41,6 +42,8 @@ export function useLogin() {
     } catch {
       setError('Login failed')
     } finally {
+      setCaptchaToken(null)
+      setTurnstileKey((k) => k + 1)
       setLoading(false)
     }
   }
@@ -63,6 +66,7 @@ export function useLogin() {
     loading,
     error,
     setCaptchaToken,
+    turnstileKey,
     captchaEnabled: Config.captchaEnabled,
     captchaSiteKey: Config.captchaSiteKey
   }

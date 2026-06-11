@@ -70,8 +70,8 @@ export default function JoinEventDialog({
         </DialogHeader>
 
         <form onSubmit={(e) => { e.preventDefault(); handleJoin() }}>
-          <div className="space-y-5 my-4">
-            <div className="p-4 bg-blue-500/[0.03] border border-blue-500/10 rounded-xl">
+          <div>
+            <div className="p-2 bg-blue-500/[0.03] border border-blue-500/10 rounded-xl">
               <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
                 {event?.name || 'Unknown Event'}
               </h3>
@@ -81,7 +81,7 @@ export default function JoinEventDialog({
             </div>
 
             {joinMode === 'key' && (
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 my-2">
                 <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   Event Access Key
                 </label>
@@ -95,7 +95,7 @@ export default function JoinEventDialog({
             )}
 
             {joinMode === 'request' && (
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 my-2">
                 <label className="block text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   Join Request Note
                 </label>
