@@ -85,7 +85,7 @@ const AddEventAdminCard: React.FC<AddEventAdminCardProps> = ({
           </div>
 
           <Select value={selectedEventId} onValueChange={onEventChange}>
-            <SelectTrigger className={cn(FILTER_CONTROL_CLASS, ADMIN_SELECT_TRIGGER_CLASS, 'w-[180px] gap-1')}>
+            <SelectTrigger className={cn(FILTER_CONTROL_CLASS, ADMIN_SELECT_TRIGGER_CLASS, 'w-full sm:w-[180px] gap-1')}>
               <SelectValue placeholder="Pick event" />
             </SelectTrigger>
             <SelectContent className={ADMIN_SELECT_CONTENT_CLASS}>

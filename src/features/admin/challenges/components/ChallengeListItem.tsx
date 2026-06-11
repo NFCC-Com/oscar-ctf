@@ -49,7 +49,7 @@ const ChallengeListItem: React.FC<ChallengeListItemProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1 justify-end order-1 sm:order-2 w-[180px] shrink-0">
+        <div className="flex items-center gap-1 justify-end order-1 sm:order-2 w-full sm:w-auto sm:min-w-[180px] shrink-0">
           <Button
             variant="ghost"
             size="icon"

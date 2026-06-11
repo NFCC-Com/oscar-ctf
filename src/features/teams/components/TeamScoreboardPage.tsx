@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useCallback } from 'react'
+import { useEffect, useMemo, useCallback, useState } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { Coins, Sparkles, Trophy, Rocket } from 'lucide-react'
+import { Coins, Sparkles, Trophy, Rocket, Globe, Users } from 'lucide-react'
 
 import { APP } from '@/config'
 import Loader from '@/shared/components/Loader'
@@ -24,6 +24,7 @@ import TeamScoreboardChart from './TeamScoreboardChart'
 import TeamScoreboardTable from './TeamScoreboardTable'
 import { useTeamScoreboard } from '../hooks/useTeamScoreboard'
 import ScoreboardExportActions from '@/features/scoreboard/components/ScoreboardExportActions'
+import ScoreboardScopeTabs from '@/features/scoreboard/components/ScoreboardScopeTabs'
 import { buildScoreboard, getOrderedProgressSeries } from '@/features/scoreboard/lib/build-scoreboard'
 import type { ScoreboardExportSnapshot } from '@/features/scoreboard/lib/scoreboard-export-data'
 import {
@@ -31,6 +32,7 @@ import {
   getTopTeamProgressByNames,
   getTopTeamUniqueProgressByNames,
 } from '../services/team.service'
+import { getSolvedEventIds } from '@/features/events/services/event.service'
 import type { TeamProgressSeries, TeamScoreboardEntry } from '../types'
 
 import { cn } from '@/shared/lib/utils'
@@ -40,6 +42,7 @@ export default function TeamScoreboardPage() {
   const { theme } = useTheme()
   const router = useRouter()
   const { startedEvents, selectedEvent, setSelectedEvent } = useEventContext()
+  const [solvedEventIds, setSolvedEventIds] = useState<string[] | null>(null)
 
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -56,6 +59,16 @@ export default function TeamScoreboardPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }, [searchParams, pathname, router])
 
+  const view: 'top' | 'all' = useMemo(() => {
+    const value = searchParams.get('view')
+    return value === 'all' ? 'all' : 'top'
+  }, [searchParams])
+  const setView = useCallback((tab: 'top' | 'all') => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('view', tab)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [searchParams, pathname, router])
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login')
@@ -68,7 +81,21 @@ export default function TeamScoreboardPage() {
     }
   }, [authLoading, user, router])
 
-  const { loading, entries, series, currentTeamName } = useTeamScoreboard(user, showTotalScore, selectedEvent)
+  useEffect(() => {
+    getSolvedEventIds().then(setSolvedEventIds)
+  }, [])
+
+  const filteredStartedEvents = useMemo(() => {
+    if (solvedEventIds === null) return startedEvents
+    const solved = startedEvents.filter((e) => solvedEventIds.includes(String(e.id)))
+    const selectedInList = selectedEvent === 'all' || selectedEvent === 'main' || solved.some((e) => String(e.id) === String(selectedEvent))
+    if (selectedInList) return solved
+    const currentEvent = startedEvents.find((e) => String(e.id) === String(selectedEvent))
+    if (currentEvent) return [...solved, currentEvent]
+    return solved
+  }, [startedEvents, solvedEventIds, selectedEvent])
+
+  const { loading, entries, series, currentTeamName } = useTeamScoreboard(user, showTotalScore, selectedEvent, view)
 
   const isDark = theme === 'dark'
   const scoreLabel = showTotalScore ? 'Total Score' : 'Unique Score'
@@ -143,17 +170,25 @@ export default function TeamScoreboardPage() {
       contentClassName={cn(PAGE_MAIN_CONTAINER_6XL, "space-y-4 py-4 sm:py-6")}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Event Filter */}
-        <div className="w-full sm:w-auto">
-          <EventSelect
-            value={String(selectedEvent)}
-            onChange={setSelectedEvent as any}
-            events={startedEvents}
-            className="w-full max-w-full sm:w-[180px]"
-            defaultValue="all"
-            clearable
-            getEventLabel={(ev: any) => String(ev?.name ?? ev?.title ?? 'Untitled')}
+        <div className="flex flex-wrap items-center gap-3">
+          <ScoreboardScopeTabs
+            view={view}
+            onViewChange={setView}
           />
+
+          <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-800 hidden sm:block mx-1" />
+
+          <div className="w-full sm:w-auto">
+            <EventSelect
+              value={String(selectedEvent)}
+              onChange={setSelectedEvent as any}
+              events={filteredStartedEvents}
+              className="w-full max-w-full sm:w-[180px]"
+              defaultValue="all"
+              clearable
+              getEventLabel={(ev: any) => String(ev?.name ?? ev?.title ?? 'Untitled')}
+            />
+          </div>
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -202,7 +237,7 @@ export default function TeamScoreboardPage() {
         key={`${showTotalScore}-${selectedEvent}`}
         className="space-y-6"
       >
-        {series.length > 0 && !showTotalScore && (
+        {series.length > 0 && !showTotalScore && view !== 'all' && (
           <TeamScoreboardChart
             series={series}
             isDark={isDark}

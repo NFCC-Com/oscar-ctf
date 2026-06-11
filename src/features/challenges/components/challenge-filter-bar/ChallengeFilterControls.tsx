@@ -88,29 +88,16 @@ export default function ChallengeFilterControls({
           <label htmlFor="challenge-filter-search" className="sr-only">Search challenges</label>
           <div data-tour="challenge-search-control" className="flex-1 min-w-[180px]">
             {hideSidebarFiltersOnDesktop ? (
-              <>
-                <FilterInput
-                  id="challenge-filter-search"
-                  value={filters.search}
-                  defaultValue=""
-                  onChange={(value) => onFilterChange({ ...filters, search: value })}
-                  placeholder="Search challenge..."
-                  active={dirtyState.isSearchDirty}
-                  clearable
-                  wrapperClassName="xl:hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => document.dispatchEvent(new Event('challenge-search-open'))}
-                  title="Open challenge search"
-                  aria-label="Open challenge search"
-                  className={`hidden h-9 w-full items-center rounded-xl border px-3 text-left text-xs font-semibold shadow-sm backdrop-blur-md transition focus:ring-2 focus:ring-blue-500/30 xl:flex ${dirtyState.isSearchDirty ? SURFACE_FILTER_ITEM_ACTIVE_CLASS : SURFACE_FILTER_ITEM_CLASS}`}
-                >
-                  <span className={`truncate ${filters.search ? '' : 'text-gray-400 dark:text-gray-500'}`}>
-                    {filters.search || 'Search challenge...'}
-                  </span>
-                </button>
-              </>
+              <FilterInput
+                id="challenge-filter-search"
+                value={filters.search}
+                defaultValue=""
+                onChange={(value) => onFilterChange({ ...filters, search: value })}
+                placeholder="Search challenge..."
+                active={dirtyState.isSearchDirty}
+                clearable
+                wrapperClassName="xl:hidden"
+              />
             ) : (
               <FilterInput
                 id="challenge-filter-search"

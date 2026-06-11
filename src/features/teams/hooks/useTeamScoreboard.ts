@@ -3,7 +3,7 @@ import { getMyTeam, getTeamScoreboard, getTopTeamProgressByNames, getTopTeamUniq
 import { buildScoreboard, getOrderedProgressSeries } from '@/features/scoreboard/lib/build-scoreboard'
 import { TeamScoreboardEntry, TeamProgressSeries } from '../types'
 
-export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEvent: string | number) {
+export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEvent: string | number, view: 'top' | 'all' = 'top') {
   const [loading, setLoading] = useState(true)
   const [entries, setEntries] = useState<TeamScoreboardEntry[]>([])
   const [series, setSeries] = useState<TeamProgressSeries[]>([])
@@ -19,8 +19,9 @@ export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEv
       const p_event_id = (selectedEvent === 'all' || selectedEvent === 'main') ? null : String(selectedEvent)
       const p_event_mode = selectedEvent === 'all' ? 'any' : selectedEvent === 'main' ? 'main' : 'event'
 
+      const fetchLimit = view === 'all' ? 1000 : 100
       const [{ entries: data, error: scoreboardError }, teamResult] = await Promise.all([
-        getTeamScoreboard(250, 0, p_event_id, p_event_mode),
+        getTeamScoreboard(fetchLimit, 0, p_event_id, p_event_mode),
         getMyTeam(p_event_id, p_event_mode),
       ])
 
@@ -39,7 +40,7 @@ export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEv
         nameKey: 'team_name',
         scoreKey,
         filterZero: true,
-        limit: 250
+        limit: fetchLimit
       })
 
       // Preserve original structure for UI compatibility
@@ -54,7 +55,7 @@ export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEv
       })
 
       entriesCountRef.current = teamEntries.length
-      setEntries(teamEntries)
+      setEntries(view === 'top' ? teamEntries.slice(0, 100) : teamEntries)
 
       const progressData = showTotalScore
         ? await getTopTeamProgressByNames(result.topNames, p_event_id, p_event_mode)
@@ -65,7 +66,7 @@ export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEv
       if (isFirstLoad) setLoading(false)
     }
     fetchData()
-  }, [user, showTotalScore, selectedEvent])
+  }, [user, showTotalScore, selectedEvent, view])
 
   return {
     loading,

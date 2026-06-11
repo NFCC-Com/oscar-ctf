@@ -4,20 +4,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Flag,
-  Sparkles,
-  CheckCircle2,
+  Flame,
   Clock,
   ExternalLink,
-  Target
 } from "lucide-react";
+import { ElementType } from 'react'
+import { getCategoryIcon, getCategoryDetails } from '@/features/challenges/lib/challenge-utils'
 
 import { PageLoader, EmptyState } from '@/shared/components';
 import { formatRelativeDate } from '@/shared/lib'
 import { useLogs } from '@/features/logs/contexts/LogsContext';
-import { Button } from "@/shared/ui";
 import {
   SURFACE_GLASS_CARD_COMPACT_CLASS,
-  SURFACE_GLASS_CONTROL_COMPACT_CLASS,
   SURFACE_INTERACTIVE_HOVER_CLASS,
 } from "@/shared/styles";
 
@@ -84,103 +82,64 @@ export default function LogsList({
 import { persistSelectedChallenge } from '@/features/challenges/lib/challenge-persistence'
 
 function LogItem({ notif }: { notif: LogEntry }) {
-  const getLogTypeDetails = (type: LogEntry["log_type"]) => {
-    switch (type) {
-      case "new_challenge":
-        return {
-          icon: <Flag size={18} />,
-          color: "text-blue-500",
-          bgColor: "bg-blue-50 dark:bg-blue-900/20",
-          borderColor: "border-blue-100 dark:border-blue-900/30",
-          label: "New Challenge"
-        };
-      case "first_blood":
-        return {
-          icon: <Sparkles size={18} />,
-          color: "text-red-500",
-          bgColor: "bg-red-50 dark:bg-red-900/20",
-          borderColor: "border-red-100 dark:border-red-900/30",
-          label: "First Blood"
-        };
-      case "solve":
-        return {
-          icon: <CheckCircle2 size={18} />,
-          color: "text-emerald-500",
-          bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
-          borderColor: "border-emerald-100 dark:border-emerald-900/30",
-          label: "Solved"
-        };
-      default:
-        return {
-          icon: <Target size={18} />,
-          color: "text-gray-500",
-          bgColor: "bg-gray-50 dark:bg-gray-800",
-          borderColor: "border-gray-100 dark:border-gray-800",
-          label: "Activity"
-        };
-    }
-  };
-
-  const details = getLogTypeDetails(notif.log_type);
+  const CategoryIcon = getCategoryIcon(notif.log_category) as ElementType
+  const { color: catColor } = getCategoryDetails(notif.log_category)
 
   return (
     <div
-      className={`group relative overflow-hidden p-2.5 ${SURFACE_GLASS_CARD_COMPACT_CLASS} ${SURFACE_INTERACTIVE_HOVER_CLASS}`}
+      className={`group flex items-center gap-2.5 p-2.5 ${SURFACE_GLASS_CARD_COMPACT_CLASS} ${SURFACE_INTERACTIVE_HOVER_CLASS}`}
     >
-      <div className="flex items-center gap-2.5">
-        {/* Type Icon */}
-        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${details.bgColor} ${details.color} ${details.borderColor} border shadow-sm transition-transform group-hover:scale-105`}>
-          {details.icon}
-        </div>
+      <CategoryIcon size={14} className={`shrink-0 ${catColor}`} />
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className={`text-[10px] font-black uppercase tracking-widest ${details.color}`}>
-              {details.label}
+      <p className="flex-1 min-w-0 text-sm text-gray-900 dark:text-gray-100 truncate">
+        {notif.log_type === 'new_challenge' ? (
+          <span className="text-gray-500 dark:text-gray-400">
+            <span className={`${catColor} font-medium`}>{notif.log_category}</span> challenge
+            &nbsp;<span className="font-semibold text-gray-900 dark:text-gray-100">&quot;{notif.log_challenge_title}&quot;</span>
+            &nbsp;has been deployed.
+          </span>
+        ) : notif.log_type === 'first_blood' ? (
+          <span>
+            <Link
+              href={`/user/${encodeURIComponent(notif.log_username || '')}`}
+              className="font-semibold hover:underline"
+            >
+              {notif.log_username}
+            </Link>
+            <span className="text-gray-500 dark:text-gray-400">
+              &nbsp;solved&nbsp;
             </span>
-            <span className="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-700" />
-            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 flex items-center gap-1">
-              <Clock size={10} />
-              {formatRelativeDate(notif.log_created_at)}
+            <span className="font-semibold">&quot;{notif.log_challenge_title}&quot;</span>
+            <Flame size={12} className="inline-block ml-1 -mt-0.5 text-red-500 fill-red-500" />
+          </span>
+        ) : (
+          <span>
+            <Link
+              href={`/user/${encodeURIComponent(notif.log_username || '')}`}
+              className="font-semibold hover:underline"
+            >
+              {notif.log_username}
+            </Link>
+            <span className="text-gray-500 dark:text-gray-400">
+              &nbsp;solved&nbsp;
             </span>
-          </div>
+            <span className="font-semibold">&quot;{notif.log_challenge_title}&quot;</span>
+            <Flag size={12} className="inline-block ml-1 -mt-0.5 text-emerald-500" />
+          </span>
+        )}
+      </p>
 
-          <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
-            {notif.log_type === 'new_challenge' ? (
-              <span>
-                <span className="text-blue-600 dark:text-blue-400">[{notif.log_category}]</span> challenge <span className="font-bold text-gray-700 dark:text-gray-300">&quot;{notif.log_challenge_title}&quot;</span> has been deployed.
-              </span>
-            ) : notif.log_type === 'first_blood' ? (
-              <span>
-                <Link href={`/user/${encodeURIComponent(notif.log_username || '')}`} className="hover:text-red-500 transition-colors">
-                  {notif.log_username}
-                </Link> secured first blood on <span className="text-red-500 font-black">&quot;{notif.log_challenge_title}&quot;</span>!
-              </span>
-            ) : (
-              <span>
-                <Link href={`/user/${encodeURIComponent(notif.log_username || '')}`} className="hover:text-emerald-500 transition-colors">
-                  {notif.log_username}
-                </Link> solved <span className="font-bold text-gray-700 dark:text-gray-300">&quot;{notif.log_challenge_title}&quot;</span>.
-              </span>
-            )}
-          </h4>
-        </div>
+      <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+        {formatRelativeDate(notif.log_created_at)}
+      </span>
 
-        {/* Action / Link */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-          <Link
-            href="/challenges"
-            onClick={() => persistSelectedChallenge(notif.log_challenge_id)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
-          >
-            <ExternalLink size={14} />
-          </Link>
-        </div>
-      </div>
-
-      {/* Decorative hover effect */}
-      <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-gradient-to-r from-transparent via-blue-500 to-transparent transition-all duration-500 group-hover:w-full" />
+      <Link
+        href="/challenges"
+        onClick={() => persistSelectedChallenge(notif.log_challenge_id)}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+      >
+        <ExternalLink size={12} />
+      </Link>
     </div>
   );
 }

@@ -58,12 +58,12 @@ export default function LogsPageContent() {
       {/* Compact Navigation Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Event Filter */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <EventSelect
             value={selectedEvent}
             onChange={setSelectedEvent}
             events={startedEvents as any}
-            className="min-w-[180px]"
+            className="w-full sm:min-w-[180px]"
             getEventLabel={(ev: any) => String(ev?.name ?? ev?.title ?? 'Untitled')}
           />
         </div>
@@ -77,6 +77,8 @@ export default function LogsPageContent() {
           value={tabType}
           onValueChange={setTabType}
           variant="panel"
+          stretch
+          className="w-full sm:w-fit"
         />
       </div>
 

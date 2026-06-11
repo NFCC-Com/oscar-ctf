@@ -11,7 +11,7 @@ type Props = {
   fallbackBg?: string
 }
 
-export default function ImageWithFallback({ src, alt = '', size = 36, className = '', rounded = true, fallbackBg = 'bg-gray-200 dark:bg-gray-800' }: Props) {
+export default function ImageWithFallback({ src, alt = '', size = 36, className = '', rounded = true, fallbackBg = 'bg-blue-500/10 dark:bg-blue-500/20' }: Props) {
   const [error, setError] = useState(false)
 
   useEffect(() => {

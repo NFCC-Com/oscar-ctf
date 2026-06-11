@@ -168,22 +168,22 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
         <div className="p-4 md:px-6 pb-0 shrink-0">
           <div className="flex flex-col gap-3 mb-5">
             {/* ROW 1: Title & Event */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-2">
               <DialogTitle asChild>
-                <h2 className="select-text text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight leading-tight">
+                <h2 className="select-text text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight leading-tight">
                   {dialogTitle}
                 </h2>
               </DialogTitle>
               {eventName && (
-                <span className="select-none text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mt-2 shrink-0 font-medium">
+                <span className="select-none text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mt-1.5 sm:mt-2 shrink-0 font-medium">
                   {eventName}
                 </span>
               )}
             </div>
 
             {/* ROW 2: Metadata & Points */}
-            <div className={`flex items-center justify-between border-b pb-4 ${categoryBorderColor}`}>
-              <div className="flex items-center gap-4">
+            <div className={`flex flex-wrap items-center justify-between gap-y-2 border-b pb-4 ${categoryBorderColor}`}>
+              <div className="flex flex-wrap items-center gap-3">
                 {/* Category Badge */}
                 <div className="flex items-center gap-2">
                   <div className={`select-none text-[12px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${categoryBadgeColor}`}>

@@ -148,6 +148,17 @@ export default function Navbar() {
     }
   }, [docsOpen])
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileMenuOpen])
+
   return (
     <>
       <nav className={SURFACE_NAVBAR_CLASS}>
@@ -405,7 +416,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] bg-white/95 backdrop-blur-xl transition-all duration-200 dark:bg-[#0b0f19]/95 md:hidden">
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-white/95 backdrop-blur-xl transition-all duration-200 dark:bg-[#0b0f19]/95 md:hidden">
           <div className="flex items-center justify-between border-b border-gray-200/80 px-4 py-3 dark:border-gray-800/90">
             <span className={`text-lg font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Menu</span>
             <button

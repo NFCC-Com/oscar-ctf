@@ -235,7 +235,7 @@ const EventFormDialog: React.FC<EventFormDialogProps> = ({
             </section>
           </div>
 
-          <DialogFooter className="flex shrink-0 flex-row items-center justify-end gap-2 border-t pt-3 dark:border-gray-800">
+          <DialogFooter className="flex shrink-0 flex-col-reverse sm:flex-row items-center justify-end gap-2 border-t pt-3 dark:border-gray-800">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
               Cancel
             </Button>

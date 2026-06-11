@@ -78,7 +78,7 @@ export default function ProfileHeader({
           </div>
 
           <p className="max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-400 font-medium">
-            {userDetail.bio?.trim() || 'CTF player on NXCTF'}
+            {userDetail.bio?.trim() || 'Empty bio. This user has not added a bio yet.'}
           </p>
 
           <div className="flex w-full flex-col items-center justify-between gap-4 sm:flex-row sm:items-start">

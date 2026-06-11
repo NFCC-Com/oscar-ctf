@@ -196,7 +196,7 @@ export default function TeamsPage() {
 
             {!team ? (
               <div className="grid grid-cols-1 items-start gap-6 pt-2 md:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.75fr)]">
-                <div className={cn("space-y-4 p-6", SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS)}>
+                <div className={cn("space-y-4 p-4 sm:p-6", SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS)}>
                   <div className="space-y-2">
                     <h2 className={TYPO_PAGE_TITLE_CLASS}>
                       Squad up for the <span className="text-blue-600 dark:text-blue-400">Next Conquest.</span>

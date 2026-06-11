@@ -175,14 +175,14 @@ export default function AuthAuditLogList({ tabs }: { tabs?: React.ReactNode }) {
               className={`${ADMIN_ROW_CLASS} px-5 py-3`}
             >
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
-                <div className="flex min-w-[170px] items-center gap-2">
+                <div className="flex min-w-0 sm:min-w-[170px] items-center gap-2">
                   <KeyRound className={cn('h-4 w-4', getActionStyle(actionName))} />
                   <span className={cn('text-[10px] font-black uppercase tracking-widest', getActionStyle(actionName))}>
                     {actionName}
                   </span>
                 </div>
 
-                <div className="min-w-[220px] truncate">
+                <div className="min-w-0 sm:min-w-[220px] truncate">
                   {log.username ? (
                     <Link
                       href={`/user/${encodeURIComponent(log.username)}`}

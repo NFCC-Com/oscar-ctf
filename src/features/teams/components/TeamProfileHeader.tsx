@@ -43,7 +43,7 @@ export default function TeamProfileHeader({
   isMember = false,
   memberCount = 0,
 }: TeamProfileHeaderProps) {
-  const teamInitials = team.name.slice(0, 2).toUpperCase()
+  const teamInitials = team.name.charAt(0).toUpperCase()
 
   return (
     <SurfaceCard variant="glass" padding="none" className="relative overflow-hidden rounded-xl p-4 sm:p-5">

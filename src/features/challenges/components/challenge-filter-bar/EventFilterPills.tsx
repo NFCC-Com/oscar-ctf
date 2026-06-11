@@ -142,15 +142,13 @@ export default function EventFilterPills({
   }, [sortedEvents, hideAllEventOption, hideMainEventOption, updateScrollState])
 
   React.useEffect(() => {
-    if (eventNavigationMode !== 'select') return
-
     const selectedNode = optionButtonRefs.current.get(selectedEventId ?? null)
     selectedNode?.scrollIntoView({
       behavior: 'smooth',
       block: 'nearest',
       inline: 'center',
     })
-  }, [eventNavigationMode, eventOptions, selectedEventId])
+  }, [eventOptions, selectedEventId])
 
   const scrollEvents = (direction: 'left' | 'right') => {
     const node = scrollRef.current
@@ -194,11 +192,11 @@ export default function EventFilterPills({
       {showNavigationButtons && (
         <button
           type="button"
-          onClick={() => isSelectNavigation ? navigateEvent('left') : scrollEvents('left')}
-          disabled={isSelectNavigation ? !canNavigateLeft : !scrollState.canScrollLeft}
+          onClick={() => navigateEvent('left')}
+          disabled={!canNavigateLeft}
           className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition disabled:opacity-35 ${SURFACE_FILTER_ITEM_CLASS}`}
-          aria-label={isSelectNavigation ? 'Previous event' : 'Scroll events left'}
-          title={isSelectNavigation ? 'Previous event' : 'Scroll events left'}
+          aria-label="Previous event"
+          title="Previous event"
         >
           <ChevronLeft size={15} />
         </button>
@@ -287,20 +285,14 @@ export default function EventFilterPills({
       {showNavigationButtons && (
         <button
           type="button"
-          onClick={() => isSelectNavigation ? navigateEvent('right') : scrollEvents('right')}
-          disabled={isSelectNavigation ? !canNavigateRight : !scrollState.canScrollRight}
+          onClick={() => navigateEvent('right')}
+          disabled={!canNavigateRight}
           className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition disabled:opacity-35 ${SURFACE_FILTER_ITEM_CLASS}`}
-          aria-label={isSelectNavigation ? 'Next event' : 'Scroll events right'}
-          title={isSelectNavigation ? 'Next event' : 'Scroll events right'}
+          aria-label="Next event"
+          title="Next event"
         >
           <ChevronRight size={15} />
         </button>
-      )}
-
-      {showEventState && selectedTimingLabel && (
-        <div className="sm:hidden mt-2 text-xs text-gray-600 dark:text-gray-300">
-          {selectedTimingLabel}
-        </div>
       )}
     </div>
   )

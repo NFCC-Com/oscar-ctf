@@ -209,7 +209,7 @@ const ChallengeFormDialog: React.FC<ChallengeFormDialogProps> = (props) => {
               </div>
             )}
 
-            <DialogFooter className="flex flex-row items-center justify-end gap-2 shrink-0 pt-3 border-t dark:border-gray-800">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 shrink-0 pt-3 border-t dark:border-gray-800">
               <Button
                 type="button"
                 variant="ghost"
