@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { MarkdownRenderer } from '@/shared/markdown/MarkdownRenderer'
@@ -63,12 +63,44 @@ function QuestionCard({
   onAnswerChange,
   onSubmit,
 }: QuestionCardProps) {
+  const scrollPositionRef = useRef({ x: 0, y: 0 })
+  const submitScrollPositionRef = useRef({ x: 0, y: 0 })
   const questionContent = normalizeQuestionMarkdown(question.question)
   const cardClassName = completed
     ? `min-w-0 overflow-x-hidden space-y-2 p-2.5 opacity-90 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`
     : current
       ? `min-w-0 overflow-x-hidden space-y-2 p-2.5 border-blue-500/40 shadow-lg shadow-blue-500/10 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`
       : `min-w-0 overflow-x-hidden space-y-2 p-2.5 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`
+  const saveWindowScroll = useCallback(() => {
+    scrollPositionRef.current = { x: window.scrollX, y: window.scrollY }
+  }, [])
+  const restoreWindowScroll = useCallback(() => {
+    const scrollPosition = scrollPositionRef.current
+
+    requestAnimationFrame(() => {
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
+    })
+  }, [])
+  const restoreWindowScrollAfterSubmit = useCallback((scrollPosition: { x: number; y: number }) => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
+    })
+    window.setTimeout(() => {
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
+    }, 50)
+    window.setTimeout(() => {
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
+    }, 150)
+  }, [])
+  const saveSubmitScrollPosition = useCallback(() => {
+    submitScrollPositionRef.current = { x: window.scrollX, y: window.scrollY }
+  }, [])
+  const submitWithoutScrollJump = useCallback(() => {
+    const scrollPosition = submitScrollPositionRef.current
+
+    onSubmit()
+    restoreWindowScrollAfterSubmit(scrollPosition)
+  }, [onSubmit, restoreWindowScrollAfterSubmit])
 
   return (
     <div className={cardClassName}>
@@ -99,7 +131,18 @@ function QuestionCard({
         <input
           type="text"
           value={answer}
-          onChange={completed ? undefined : (event) => onAnswerChange(event.target.value)}
+          onMouseDown={completed ? undefined : saveWindowScroll}
+          onTouchStart={completed ? undefined : saveWindowScroll}
+          onFocus={completed ? undefined : restoreWindowScroll}
+          onChange={
+            completed
+              ? undefined
+              : (event) => {
+                saveWindowScroll()
+                onAnswerChange(event.target.value)
+                restoreWindowScroll()
+              }
+          }
           placeholder={completed ? 'Answer saved' : 'Type your answer...'}
           readOnly={completed}
           className={
@@ -112,14 +155,17 @@ function QuestionCard({
           onKeyDown={(event) => {
             if (!completed && event.key === 'Enter') {
               event.preventDefault()
-              onSubmit()
+              saveSubmitScrollPosition()
+              submitWithoutScrollJump()
             }
           }}
         />
         {!completed && (
           <button
             type="button"
-            onClick={onSubmit}
+            onMouseDown={saveSubmitScrollPosition}
+            onTouchStart={saveSubmitScrollPosition}
+            onClick={submitWithoutScrollJump}
             disabled={submitting || !answer?.trim()}
             className="select-none rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-500 disabled:opacity-50"
           >
@@ -153,6 +199,7 @@ export default function SubChallengePanel({
   onReset,
 }: SubChallengePanelProps) {
   const [copiedFlag, setCopiedFlag] = useState<Record<string, boolean>>({})
+  const submitAllScrollPositionRef = useRef({ x: 0, y: 0 })
   const subChallengeFlagCopyKey = `${challengeId}-sub-flag`
   const hasQuestions =
     mode === 'non_sequential'
@@ -161,6 +208,23 @@ export default function SubChallengePanel({
         ? !!nextQuestion || completed
         : false
   const isShowingEmptyQuestionMessage = !loading && loaded && !hasQuestions
+  const saveSubmitAllScrollPosition = useCallback(() => {
+    submitAllScrollPositionRef.current = { x: window.scrollX, y: window.scrollY }
+  }, [])
+  const submitAllWithoutScrollJump = useCallback(() => {
+    const scrollPosition = submitAllScrollPositionRef.current
+
+    onSubmit()
+    requestAnimationFrame(() => {
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
+    })
+    window.setTimeout(() => {
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
+    }, 50)
+    window.setTimeout(() => {
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
+    }, 150)
+  }, [onSubmit])
 
   return (
     <div className="space-y-3 min-w-0 overflow-x-hidden">
@@ -230,7 +294,9 @@ export default function SubChallengePanel({
         <button
           type="button"
           disabled={submitting || !Object.values(answers).some((value) => value?.trim())}
-          onClick={() => onSubmit()}
+          onMouseDown={saveSubmitAllScrollPosition}
+          onTouchStart={saveSubmitAllScrollPosition}
+          onClick={submitAllWithoutScrollJump}
           className="select-none rounded-xl border border-blue-500/30 bg-blue-600/90 px-5 py-2 font-bold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-500 disabled:opacity-50"
         >
           {submitting ? '...' : 'Submit All Answers'}

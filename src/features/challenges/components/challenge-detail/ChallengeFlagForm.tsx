@@ -26,7 +26,38 @@ export default function ChallengeFlagForm({
   handleFlagSubmit,
 }: ChallengeFlagFormProps) {
   const overlayRef = React.useRef<HTMLDivElement>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const submitScrollPositionRef = React.useRef({ x: 0, y: 0 })
   const [isDeleting, setIsDeleting] = React.useState(false)
+
+  const restoreWindowScroll = React.useCallback((scrollPosition: { x: number; y: number }) => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
+    })
+  }, [])
+  const restoreWindowScrollAfterSubmit = React.useCallback((scrollPosition: { x: number; y: number }) => {
+    restoreWindowScroll(scrollPosition)
+    window.setTimeout(() => restoreWindowScroll(scrollPosition), 50)
+    window.setTimeout(() => restoreWindowScroll(scrollPosition), 150)
+  }, [restoreWindowScroll])
+  const saveSubmitScrollPosition = React.useCallback(() => {
+    submitScrollPositionRef.current = { x: window.scrollX, y: window.scrollY }
+  }, [])
+  const submitFlagWithoutScrollJump = React.useCallback(() => {
+    const scrollPosition = submitScrollPositionRef.current
+
+    handleFlagSubmit(challenge.id)
+    restoreWindowScrollAfterSubmit(scrollPosition)
+  }, [challenge.id, handleFlagSubmit, restoreWindowScrollAfterSubmit])
+
+  React.useEffect(() => {
+    const scrollPosition = { x: window.scrollX, y: window.scrollY }
+
+    requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true })
+      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
+    })
+  }, [challenge.id])
 
   return (
     <div className="flex flex-col relative w-full">
@@ -46,7 +77,7 @@ export default function ChallengeFlagForm({
         className="flex gap-2"
         onSubmit={(event) => {
           event.preventDefault()
-          handleFlagSubmit(challenge.id)
+          submitFlagWithoutScrollJump()
         }}
       >
         <div className={`relative flex-1 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/40 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`}>
@@ -60,12 +91,17 @@ export default function ChallengeFlagForm({
             </div>
           )}
           <input
+            ref={inputRef}
             type="text"
             onScroll={(event) => {
               if (overlayRef.current) overlayRef.current.scrollLeft = event.currentTarget.scrollLeft
             }}
             value={flagInputs[challenge.id] || ''}
             onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                saveSubmitScrollPosition()
+              }
+
               if (event.key === 'Backspace') {
                 setIsDeleting(true)
               } else {
@@ -73,6 +109,7 @@ export default function ChallengeFlagForm({
               }
             }}
             onChange={(event) => {
+              const scrollPosition = { x: window.scrollX, y: window.scrollY }
               const value = event.target.value
               const mask = placeholders[challenge.id]
 
@@ -81,10 +118,11 @@ export default function ChallengeFlagForm({
               } else {
                 handleFlagInputChange(challenge.id, value)
               }
+
+              restoreWindowScroll(scrollPosition)
             }}
             placeholder={challenge.flag_placeholder && placeholders[challenge.id] ? '' : 'Enter flag here...'}
             className="w-full h-[38px] pl-4 pr-6 bg-transparent text-gray-900 dark:text-white focus:outline-none relative z-10 font-mono text-sm"
-            autoFocus
             spellCheck={false}
             autoComplete="off"
           />
@@ -96,6 +134,8 @@ export default function ChallengeFlagForm({
             !flagInputs[challenge.id]?.trim() ||
             (challenge.flag_placeholder && placeholders[challenge.id] ? (flagInputs[challenge.id] || '').length !== placeholders[challenge.id].length : false)
           }
+          onMouseDown={saveSubmitScrollPosition}
+          onTouchStart={saveSubmitScrollPosition}
           className="flex h-[38px] shrink-0 select-none items-center justify-center rounded-xl bg-blue-600 px-6 text-[13px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-30"
         >
           {submitting[challenge.id] ? '...' : 'Submit'}
