@@ -61,7 +61,7 @@ export const QuestionFooter: React.FC<QuestionFooterProps> = ({
 
   const handleResetConfirm = React.useCallback(async () => {
     saveResetScrollPosition()
-    const restoreDialogScroll = resetScrollRestoreRef.current || preserveDialogScroll?.() || null
+    const restoreDialogScroll = preserveDialogScroll?.() || null
     const restoreAfterReset = restoreDialogScroll || restoreResetScrollPosition
 
     try {

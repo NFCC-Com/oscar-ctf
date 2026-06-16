@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/shared/ui/dialog"
 import { Button } from "@/shared/ui/button"
@@ -51,10 +51,7 @@ export default function ConfirmDialog({
     }
   }, [open, isExternallyControlled])
 
-  useEffect(() => {
-    if (!open) return
-    onRestoreWindowScroll?.()
-  }, [onRestoreWindowScroll, open])
+
 
   const handleConfirm = async () => {
     setLoading(true)
@@ -140,6 +137,7 @@ export default function ConfirmDialog({
         <DialogFooter className="gap-2">
           <Button
             variant="ghost"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => onOpenChange(false)}
             disabled={loading}
             className="text-xs font-medium"
@@ -148,6 +146,7 @@ export default function ConfirmDialog({
           </Button>
           <Button
             variant={confirmVariant}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={handleConfirm}
             disabled={loading || confirmDisabled || (verificationText !== undefined && verificationValue !== verificationText)}
             className="text-xs font-medium"

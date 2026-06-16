@@ -200,7 +200,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   React.useEffect(() => {
     if (!open || challengeTab === 'challenge') return
     restoreWindowScroll()
-  }, [challengeTab, open, restoreWindowScroll, solvers.length, subChallengeLoaded, subChallengeLoading])
+  }, [challengeTab, open, restoreWindowScroll])
 
   const solverCount = solvers.length > 0 ? solvers.length : (challenge?.total_solves ?? 0)
 
