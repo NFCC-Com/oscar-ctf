@@ -274,7 +274,7 @@ export function useNotifications() {
     if (!user || !APP.notifSolves) return;
     const unsubscribe = subscribeToSolves(({ username, challenge, isFirstBlood }) => {
       setSolveNotif({ username, challenge, isFirstBlood })
-      if (solveSoundEnabled && username !== user.username) {
+      if (solveSoundEnabled && (isFirstBlood || username !== user.username)) {
         try {
           const soundFile = isFirstBlood ? '/sounds/first-blood.mp3' : '/sounds/notif_solves.mp3';
           const audio = new Audio(soundFile)
