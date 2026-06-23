@@ -4,6 +4,25 @@
 -- ==============================================
 
 -- SELECT
+CREATE OR REPLACE FUNCTION public.resolve_profile_picture(
+  p_profile_picture_url TEXT,
+  p_raw_user_meta_data JSONB
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+  RETURN COALESCE(
+    p_profile_picture_url,
+    p_raw_user_meta_data->>'picture',
+    p_raw_user_meta_data->>'avatar_url'
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.resolve_profile_picture(TEXT, JSONB) TO authenticated, anon;
+
 CREATE OR REPLACE FUNCTION is_admin()
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -100,11 +119,7 @@ BEGIN
   SELECT
     u.id,
     u.username::TEXT,
-    COALESCE(
-      u.profile_picture_url,
-      au.raw_user_meta_data->>'picture',
-      au.raw_user_meta_data->>'avatar_url'
-    )::TEXT AS picture,
+    resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::TEXT AS picture,
     u.profile_picture_url::TEXT,
     COALESCE(
       (
@@ -154,11 +169,7 @@ BEGIN
   END IF;
 
   SELECT
-    COALESCE(
-      v_user.profile_picture_url,
-      au.raw_user_meta_data->>'picture',
-      au.raw_user_meta_data->>'avatar_url'
-    ),
+    resolve_profile_picture(v_user.profile_picture_url, au.raw_user_meta_data),
     NULLIF(
       GREATEST(
         COALESCE(au.last_sign_in_at, 'epoch'::timestamptz),
@@ -176,16 +187,8 @@ BEGIN
     SELECT
       u.id,
       RANK() OVER (
-        ORDER BY COALESCE(SUM(CASE WHEN (
-          p_event_mode = 'any'
-          OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-          OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-        ) THEN c.points ELSE 0 END), 0) DESC,
-                 MAX(CASE WHEN (
-          p_event_mode = 'any'
-          OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-          OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-        ) THEN s.created_at ELSE NULL END) ASC
+        ORDER BY COALESCE(SUM(CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN c.points ELSE 0 END), 0) DESC,
+                 MAX(CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN s.created_at ELSE NULL END) ASC
       ) AS rank
     FROM public.users u
     LEFT JOIN public.solves s ON u.id = s.user_id
@@ -194,11 +197,7 @@ BEGIN
   ) r
   WHERE r.id = p_id;
 
-  SELECT COALESCE(SUM(CASE WHEN (
-    p_event_mode = 'any'
-    OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-    OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-  ) THEN c.points ELSE 0 END), 0)
+  SELECT COALESCE(SUM(CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN c.points ELSE 0 END), 0)
   INTO v_score
   FROM public.solves s
   JOIN public.challenges c ON s.challenge_id = c.id
@@ -222,11 +221,7 @@ BEGIN
   FROM public.solves s
   JOIN public.challenges c ON s.challenge_id = c.id
   WHERE s.user_id = p_id
-    AND (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-      OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-    );
+    AND public.match_event_mode(p_event_mode, p_event_id, c.event_id);
 
   RETURN json_build_object(
     'success', true,
@@ -263,16 +258,8 @@ BEGIN
     SELECT
       u.id,
       RANK() OVER (
-        ORDER BY COALESCE(SUM(CASE WHEN (
-          p_event_mode = 'any'
-          OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-          OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-        ) THEN c.points ELSE 0 END), 0) DESC,
-                 MAX(CASE WHEN (
-          p_event_mode = 'any'
-          OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-          OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-        ) THEN s.created_at ELSE NULL END) ASC
+        ORDER BY COALESCE(SUM(CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN c.points ELSE 0 END), 0) DESC,
+                 MAX(CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN s.created_at ELSE NULL END) ASC
       ) AS rank
     FROM public.users u
     LEFT JOIN public.solves s ON u.id = s.user_id
@@ -286,11 +273,7 @@ BEGIN
   FROM public.solves s
   JOIN public.challenges c ON s.challenge_id = c.id
   WHERE s.user_id = p_id
-    AND (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-      OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-    );
+    AND public.match_event_mode(p_event_mode, p_event_id, c.event_id);
 
   RETURN json_build_object(
     'success', true,
@@ -324,39 +307,19 @@ BEGIN
     u.username::TEXT,
     COALESCE(
       SUM(
-        CASE WHEN (
-          p_event_mode = 'any'
-          OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-          OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-        ) THEN c.points ELSE 0 END
+        CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN c.points ELSE 0 END
       ), 0
     ) AS score,
     MAX(
-      CASE WHEN (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-        OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-      ) THEN s.created_at ELSE NULL END
+      CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN s.created_at ELSE NULL END
     ) AS last_solve,
     ROW_NUMBER() OVER (
       ORDER BY COALESCE(
-        SUM(CASE WHEN (
-          p_event_mode = 'any'
-          OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-          OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-        ) THEN c.points ELSE 0 END), 0
+        SUM(CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN c.points ELSE 0 END), 0
       ) DESC,
-      MAX(CASE WHEN (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-        OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-      ) THEN s.created_at ELSE NULL END) ASC
+      MAX(CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN s.created_at ELSE NULL END) ASC
     ) AS rank,
-    COALESCE(
-      u.profile_picture_url,
-      au.raw_user_meta_data->>'picture',
-      au.raw_user_meta_data->>'avatar_url'
-    )::TEXT AS picture
+    resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::TEXT AS picture
   FROM public.users u
   LEFT JOIN auth.users au ON au.id = u.id
   LEFT JOIN public.solves s ON u.id = s.user_id
@@ -364,11 +327,7 @@ BEGIN
   GROUP BY u.id, u.username, au.raw_user_meta_data, u.profile_picture_url
   HAVING COALESCE(
     SUM(
-      CASE WHEN (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-        OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-      ) THEN c.points ELSE 0 END
+      CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id) THEN c.points ELSE 0 END
     ), 0
   ) > 0
   ORDER BY score DESC, last_solve ASC
@@ -387,11 +346,7 @@ SET search_path = public, auth
 LANGUAGE sql
 AS $$
   SELECT u.id, u.username::TEXT,
-    COALESCE(
-      u.profile_picture_url,
-      au.raw_user_meta_data->>'picture',
-      au.raw_user_meta_data->>'avatar_url'
-    )::TEXT AS picture
+    resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::TEXT AS picture
   FROM public.users u
   LEFT JOIN auth.users au ON au.id = u.id
   WHERE u.id = ANY(p_user_ids);
@@ -423,11 +378,7 @@ BEGIN
   JOIN public.challenges c ON c.id = s.challenge_id
   JOIN public.users u ON u.id = s.user_id
   WHERE s.user_id = ANY(p_user_ids)
-    AND (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'is_null' AND c.event_id IS NULL)
-      OR (p_event_mode = 'equals' AND c.event_id = p_event_id)
-    )
+    AND public.match_event_mode(p_event_mode, p_event_id, c.event_id)
   ORDER BY s.created_at ASC
   LIMIT p_limit OFFSET p_offset;
 END;
@@ -832,11 +783,7 @@ BEGIN
       COALESCE(u.is_admin, false) AS is_admin,
       u.bio::text,
       u.sosmed,
-      COALESCE(
-        u.profile_picture_url,
-        au.raw_user_meta_data->>'picture',
-        au.raw_user_meta_data->>'avatar_url'
-      )::text AS profile_picture_url,
+      resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::text AS profile_picture_url,
       u.created_at,
       u.updated_at,
       u.banned_until,

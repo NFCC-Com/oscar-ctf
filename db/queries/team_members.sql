@@ -4,7 +4,7 @@
 -- ==============================================
 
 -- SELECT
-DROP FUNCTION IF EXISTS get_my_team();
+DROP FUNCTION IF EXISTS get_my_team(uuid, text);
 CREATE OR REPLACE FUNCTION get_my_team(
   p_event_id uuid DEFAULT NULL,
   p_event_mode text DEFAULT 'any'
@@ -41,74 +41,7 @@ BEGIN
   FROM public.teams t
   WHERE t.id = v_team_id;
 
-  WITH team_users AS (
-    SELECT tm.user_id, tm.joined_at
-    FROM public.team_members tm
-    WHERE tm.team_id = v_team_id
-  ), team_first AS (
-    SELECT DISTINCT ON (s.challenge_id)
-      s.challenge_id,
-      s.user_id,
-      s.created_at
-    FROM public.solves s
-    JOIN team_users tu ON tu.user_id = s.user_id
-    JOIN public.challenges c ON c.id = s.challenge_id
-    WHERE (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'main' AND c.event_id IS NULL)
-      OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-    )
-    ORDER BY s.challenge_id, s.created_at ASC, s.id ASC
-  ), user_stats AS (
-    SELECT
-      tu.user_id,
-      COALESCE(SUM(c.points), 0) AS solo_score
-    FROM team_users tu
-    LEFT JOIN public.solves s ON s.user_id = tu.user_id
-    LEFT JOIN public.challenges c ON c.id = s.challenge_id
-      AND (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'main' AND c.event_id IS NULL)
-        OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-      )
-    GROUP BY tu.user_id
-  ), first_stats AS (
-    SELECT
-      tf.user_id,
-      COALESCE(COUNT(*), 0) AS first_solves,
-      COALESCE(SUM(c.points), 0) AS first_solve_score
-    FROM team_first tf
-    JOIN public.challenges c ON c.id = tf.challenge_id
-    GROUP BY tf.user_id
-  )
-  SELECT COALESCE(
-    json_agg(
-      json_build_object(
-        'user_id', u.id,
-        'username', u.username,
-        'role', CASE WHEN u.id = t.captain_user_id THEN 'captain' ELSE 'member' END,
-        'joined_at', tm.joined_at,
-        'solo_score', COALESCE(us.solo_score, 0),
-        'first_solve_count', COALESCE(fs.first_solves, 0),
-        'first_solve_score', COALESCE(fs.first_solve_score, 0),
-        'picture', COALESCE(
-          u.profile_picture_url,
-          au.raw_user_meta_data->>'picture',
-          au.raw_user_meta_data->>'avatar_url'
-        )::TEXT
-      )
-      ORDER BY (u.id = t.captain_user_id) DESC, tm.joined_at ASC
-    ),
-    '[]'::json
-  )
-  INTO v_members
-  FROM public.team_members tm
-  JOIN public.users u ON u.id = tm.user_id
-  JOIN public.teams t ON t.id = tm.team_id
-  LEFT JOIN auth.users au ON au.id = tm.user_id
-  LEFT JOIN user_stats us ON us.user_id = tm.user_id
-  LEFT JOIN first_stats fs ON fs.user_id = tm.user_id
-  WHERE tm.team_id = v_team_id;
+  v_members := public.get_team_members_with_stats(v_team_id, p_event_id, p_event_mode);
 
   SELECT COALESCE(
     array_agg(DISTINCT c.event_id) FILTER (WHERE c.event_id IS NOT NULL),
@@ -131,11 +64,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_my_team(uuid, text) TO authenticated;
 
-DROP FUNCTION IF EXISTS get_my_team_summary();
+DROP FUNCTION IF EXISTS get_my_team_summary(uuid, text);
 CREATE OR REPLACE FUNCTION get_my_team_summary(
   p_event_id uuid DEFAULT NULL,
   p_event_mode text DEFAULT 'any'
@@ -145,11 +78,7 @@ DECLARE
   v_user_id UUID := auth.uid()::uuid;
   v_team_id UUID;
   v_team JSON;
-  v_unique_score BIGINT := 0;
-  v_total_score BIGINT := 0;
-  v_unique_challenges INT := 0;
-  v_total_solves BIGINT := 0;
-  v_rank BIGINT := 0;
+  v_stats JSON;
 BEGIN
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
@@ -179,79 +108,63 @@ BEGIN
   FROM public.teams t
   WHERE t.id = v_team_id;
 
-  WITH team_users AS (
-    SELECT user_id FROM public.team_members WHERE team_id = v_team_id
-  ), solves_filtered AS (
-    SELECT s.challenge_id, c.points
-    FROM public.solves s
-    JOIN team_users tu ON tu.user_id = s.user_id
-    JOIN public.challenges c ON c.id = s.challenge_id
-    WHERE (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'main' AND c.event_id IS NULL)
-      OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-    )
-  ), unique_calc AS (
-    SELECT
-      COALESCE(SUM(t.points), 0)::BIGINT AS unique_score,
-      COALESCE(COUNT(*), 0)::INT AS unique_challenges
-    FROM (
-      SELECT sf.challenge_id, MAX(sf.points) AS points
-      FROM solves_filtered sf
-      GROUP BY sf.challenge_id
-    ) t
-  ), totals AS (
-    SELECT
-      COALESCE(SUM(sf.points), 0)::BIGINT AS total_score,
-      COALESCE(COUNT(*), 0)::BIGINT AS total_solves
-    FROM solves_filtered sf
-  )
-  SELECT
-    uc.unique_score,
-    t.total_score,
-    uc.unique_challenges,
-    t.total_solves
-  INTO v_unique_score, v_total_score, v_unique_challenges, v_total_solves
-  FROM unique_calc uc
-  CROSS JOIN totals t;
+  v_stats := public.get_team_summary_stats(v_team_id, p_event_id, p_event_mode);
 
-  -- rank team
-  SELECT COUNT(*) + 1 INTO v_rank
-  FROM (
-    SELECT
-      t_inner.team_id,
-      SUM(t_inner.points)::BIGINT AS unique_score
-    FROM (
-      SELECT tm_inner.team_id, s_inner.challenge_id, MAX(c_inner.points) AS points
-      FROM public.team_members tm_inner
-      JOIN public.solves s_inner ON s_inner.user_id = tm_inner.user_id
-      JOIN public.challenges c_inner ON c_inner.id = s_inner.challenge_id
-      WHERE (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'main' AND c_inner.event_id IS NULL)
-        OR (p_event_id IS NOT NULL AND c_inner.event_id = p_event_id)
-      )
-      GROUP BY tm_inner.team_id, s_inner.challenge_id
-    ) t_inner
-    GROUP BY t_inner.team_id
-  ) scores
-  WHERE scores.unique_score > v_unique_score;
-
-  RETURN json_build_object('success', true, 'team', v_team, 'stats', json_build_object(
-    'unique_score', v_unique_score,
-    'total_score', v_total_score,
-    'unique_challenges', v_unique_challenges,
-    'total_solves', v_total_solves,
-    'rank', v_rank
-  ));
+  RETURN json_build_object('success', true, 'team', v_team, 'stats', v_stats);
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_my_team_summary(uuid, text) TO authenticated;
 
-DROP FUNCTION IF EXISTS get_my_team_challenges();
+CREATE OR REPLACE FUNCTION public.get_team_challenges_by_id(
+  p_team_id UUID,
+  p_event_id UUID DEFAULT NULL,
+  p_event_mode TEXT DEFAULT 'any'
+)
+RETURNS TABLE (
+  challenge_id UUID,
+  title TEXT,
+  category TEXT,
+  points INTEGER,
+  first_solved_at TIMESTAMPTZ,
+  first_solver_username TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    c.id AS challenge_id,
+    c.title::TEXT,
+    c.category::TEXT,
+    c.points,
+    MIN(s.created_at) AS first_solved_at,
+    (
+      SELECT u.username::TEXT
+      FROM public.solves s2
+      JOIN public.team_members tm2 ON tm2.user_id = s2.user_id
+      JOIN public.users u ON u.id = s2.user_id
+      JOIN public.challenges c2 ON c2.id = s2.challenge_id
+      WHERE tm2.team_id = p_team_id AND s2.challenge_id = c.id
+      AND public.match_event_mode(p_event_mode, p_event_id, c2.event_id)
+      ORDER BY s2.created_at ASC, s2.id ASC
+      LIMIT 1
+    ) AS first_solver_username
+  FROM public.solves s
+  JOIN public.team_members tm ON tm.user_id = s.user_id
+  JOIN public.challenges c ON c.id = s.challenge_id
+  WHERE tm.team_id = p_team_id
+  AND public.match_event_mode(p_event_mode, p_event_id, c.event_id)
+  GROUP BY c.id, c.title, c.category, c.points
+  ORDER BY first_solved_at DESC;
+END;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions;
+
+GRANT EXECUTE ON FUNCTION public.get_team_challenges_by_id(UUID, UUID, TEXT) TO authenticated;
+
+DROP FUNCTION IF EXISTS get_my_team_challenges(uuid, text);
 CREATE OR REPLACE FUNCTION get_my_team_challenges(
   p_event_id uuid DEFAULT NULL,
   p_event_mode text DEFAULT 'any'
@@ -281,46 +194,15 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT
-    c.id AS challenge_id,
-    c.title::TEXT,
-    c.category::TEXT,
-    c.points,
-    MIN(s.created_at) AS first_solved_at,
-    (
-      SELECT u.username::TEXT
-      FROM public.solves s2
-      JOIN public.team_members tm2 ON tm2.user_id = s2.user_id
-      JOIN public.users u ON u.id = s2.user_id
-      JOIN public.challenges c2 ON c2.id = s2.challenge_id
-      WHERE tm2.team_id = v_team_id AND s2.challenge_id = c.id
-      AND (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'main' AND c2.event_id IS NULL)
-        OR (p_event_id IS NOT NULL AND c2.event_id = p_event_id)
-      )
-      ORDER BY s2.created_at ASC, s2.id ASC
-      LIMIT 1
-    ) AS first_solver_username
-  FROM public.solves s
-  JOIN public.team_members tm ON tm.user_id = s.user_id
-  JOIN public.challenges c ON c.id = s.challenge_id
-  WHERE tm.team_id = v_team_id
-  AND (
-    p_event_mode = 'any'
-    OR (p_event_mode = 'main' AND c.event_id IS NULL)
-    OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-  )
-  GROUP BY c.id, c.title, c.category, c.points
-  ORDER BY first_solved_at DESC;
+  SELECT * FROM public.get_team_challenges_by_id(v_team_id, p_event_id, p_event_mode);
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_my_team_challenges(uuid, text) TO authenticated;
 
-DROP FUNCTION IF EXISTS get_team_challenges_by_name(TEXT);
+DROP FUNCTION IF EXISTS get_team_challenges_by_name(TEXT, uuid, text);
 CREATE OR REPLACE FUNCTION get_team_challenges_by_name(
   p_name TEXT,
   p_event_id uuid DEFAULT NULL,
@@ -347,42 +229,11 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT
-    c.id AS challenge_id,
-    c.title::TEXT,
-    c.category::TEXT,
-    c.points,
-    MIN(s.created_at) AS first_solved_at,
-    (
-      SELECT u.username::TEXT
-      FROM public.solves s2
-      JOIN public.team_members tm2 ON tm2.user_id = s2.user_id
-      JOIN public.users u ON u.id = s2.user_id
-      JOIN public.challenges c2 ON c2.id = s2.challenge_id
-      WHERE tm2.team_id = v_team_id AND s2.challenge_id = c.id
-      AND (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'main' AND c2.event_id IS NULL)
-        OR (p_event_id IS NOT NULL AND c2.event_id = p_event_id)
-      )
-      ORDER BY s2.created_at ASC, s2.id ASC
-      LIMIT 1
-    ) AS first_solver_username
-  FROM public.solves s
-  JOIN public.team_members tm ON tm.user_id = s.user_id
-  JOIN public.challenges c ON c.id = s.challenge_id
-  WHERE tm.team_id = v_team_id
-  AND (
-    p_event_mode = 'any'
-    OR (p_event_mode = 'main' AND c.event_id IS NULL)
-    OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-  )
-  GROUP BY c.id, c.title, c.category, c.points
-  ORDER BY first_solved_at DESC;
+  SELECT * FROM public.get_team_challenges_by_id(v_team_id, p_event_id, p_event_mode);
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_team_challenges_by_name(TEXT, uuid, text) TO authenticated;
 

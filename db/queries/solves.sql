@@ -41,11 +41,7 @@ BEGIN
     FROM public.challenges c
     LEFT JOIN public.events e ON e.id = c.event_id
     WHERE c.is_active = true
-      AND (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'main' AND c.event_id IS NULL)
-        OR (p_event_mode = 'event' AND c.event_id = p_event_id)
-      )
+      AND public.match_event_mode(p_event_mode, p_event_id, c.event_id)
       AND (
         c.event_id IS NULL
         OR (
@@ -73,11 +69,7 @@ BEGIN
     JOIN public.solves s ON s.challenge_id = c.id AND s.created_at = fs.first_solve
     JOIN public.users u ON u.id = s.user_id
     WHERE c.is_active = true
-      AND (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'main' AND c.event_id IS NULL)
-        OR (p_event_mode = 'event' AND c.event_id = p_event_id)
-      )
+      AND public.match_event_mode(p_event_mode, p_event_id, c.event_id)
       AND (
         c.event_id IS NULL
         OR (
@@ -122,11 +114,7 @@ BEGIN
   JOIN public.users u ON u.id = s.user_id
   JOIN public.challenges c ON c.id = s.challenge_id
   LEFT JOIN public.events e ON e.id = c.event_id
-  WHERE (
-    p_event_mode = 'any'
-    OR (p_event_mode = 'main' AND c.event_id IS NULL)
-    OR (p_event_mode = 'event' AND c.event_id = p_event_id)
-  )
+  WHERE public.match_event_mode(p_event_mode, p_event_id, c.event_id)
   AND (
     c.event_id IS NULL
     OR (

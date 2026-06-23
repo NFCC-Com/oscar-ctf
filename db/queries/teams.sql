@@ -32,75 +32,42 @@ SET search_path = public, auth;
 
 GRANT EXECUTE ON FUNCTION is_team_captain(UUID) TO authenticated;
 
-DROP FUNCTION IF EXISTS get_team_by_name(TEXT);
-CREATE OR REPLACE FUNCTION get_team_by_name(
-  p_name TEXT,
-  p_event_id uuid DEFAULT NULL,
-  p_event_mode text DEFAULT 'any'
+CREATE OR REPLACE FUNCTION public.validate_team_name(p_name TEXT)
+RETURNS VOID AS $$
+DECLARE
+  v_name TEXT := trim(p_name);
+BEGIN
+  IF v_name IS NULL OR v_name = '' THEN
+    RAISE EXCEPTION 'Team name cannot be empty';
+  END IF;
+
+  IF length(v_name) > 64 THEN
+    RAISE EXCEPTION 'Team name cannot exceed 64 characters';
+  END IF;
+
+  IF NOT v_name ~ '^[a-zA-Z0-9_. -]+$' THEN
+    RAISE EXCEPTION 'Team name can only contain letters, numbers, spaces, ".", "_", and "-".';
+  END IF;
+END;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions;
+
+GRANT EXECUTE ON FUNCTION public.validate_team_name(TEXT) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_team_members_with_stats(
+  p_team_id UUID,
+  p_event_id UUID DEFAULT NULL,
+  p_event_mode TEXT DEFAULT 'any'
 )
 RETURNS JSON AS $$
 DECLARE
-  v_user_id UUID := auth.uid()::uuid;
-  v_team_id UUID;
-  v_team JSON;
   v_members JSON;
-  v_unique_score BIGINT := 0;
-  v_total_score BIGINT := 0;
-  v_unique_challenges INT := 0;
-  v_total_solves BIGINT := 0;
-  v_can_view_invite BOOLEAN := FALSE;
-  v_solved_event_ids UUID[];
-  v_has_main_solved BOOLEAN := FALSE;
-  v_rank BIGINT := 0;
 BEGIN
-  -- ambil team id
-  SELECT id INTO v_team_id
-  FROM public.teams
-  WHERE lower(name) = lower(p_name)
-  LIMIT 1;
-
-  IF v_team_id IS NULL THEN
-    RETURN json_build_object('success', false, 'message', 'Team not found');
-  END IF;
-
-  -- cek akses invite
-  IF v_user_id IS NOT NULL THEN
-    SELECT EXISTS(
-      SELECT 1 FROM public.team_members
-      WHERE team_id = v_team_id AND user_id = v_user_id
-    ) OR is_admin()
-    INTO v_can_view_invite;
-  END IF;
-
-  -- info team
-  SELECT json_build_object(
-    'id', t.id,
-    'name', t.name,
-    'invite_code', CASE WHEN v_can_view_invite THEN t.invite_code ELSE NULL END,
-    'picture_url', t.picture_url,
-    'created_at', t.created_at
-  )
-  INTO v_team
-  FROM public.teams t
-  WHERE t.id = v_team_id;
-
-  -- 🔥 NEW: ambil solved event ids (INI YANG PENTING)
-  SELECT COALESCE(
-    array_agg(DISTINCT c.event_id) FILTER (WHERE c.event_id IS NOT NULL),
-    '{}'::uuid[]
-  ),
-  COALESCE(bool_or(c.event_id IS NULL), FALSE)
-  INTO v_solved_event_ids, v_has_main_solved
-  FROM public.solves s
-  JOIN public.challenges c ON c.id = s.challenge_id
-  JOIN public.team_members tm ON tm.user_id = s.user_id
-  WHERE tm.team_id = v_team_id;
-
-  -- members + stats per user
   WITH team_users AS (
     SELECT tm.user_id, tm.joined_at
     FROM public.team_members tm
-    WHERE tm.team_id = v_team_id
+    WHERE tm.team_id = p_team_id
   ), team_first AS (
     SELECT DISTINCT ON (s.challenge_id)
       s.challenge_id,
@@ -109,11 +76,7 @@ BEGIN
     FROM public.solves s
     JOIN team_users tu ON tu.user_id = s.user_id
     JOIN public.challenges c ON c.id = s.challenge_id
-    WHERE (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'main' AND c.event_id IS NULL)
-      OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-    )
+    WHERE public.match_event_mode(p_event_mode, p_event_id, c.event_id)
     ORDER BY s.challenge_id, s.created_at ASC, s.id ASC
   ), user_stats AS (
     SELECT
@@ -122,11 +85,7 @@ BEGIN
     FROM team_users tu
     LEFT JOIN public.solves s ON s.user_id = tu.user_id
     LEFT JOIN public.challenges c ON c.id = s.challenge_id
-      AND (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'main' AND c.event_id IS NULL)
-        OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-      )
+      AND public.match_event_mode(p_event_mode, p_event_id, c.event_id)
     GROUP BY tu.user_id
   ), first_stats AS (
     SELECT
@@ -147,11 +106,7 @@ BEGIN
         'solo_score', COALESCE(us.solo_score, 0),
         'first_solve_count', COALESCE(fs.first_solves, 0),
         'first_solve_score', COALESCE(fs.first_solve_score, 0),
-        'picture', COALESCE(
-          u.profile_picture_url,
-          au.raw_user_meta_data->>'picture',
-          au.raw_user_meta_data->>'avatar_url'
-        )::TEXT
+        'picture', public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)
       )
       ORDER BY (u.id = t.captain_user_id) DESC, tm.joined_at ASC
     ),
@@ -164,21 +119,38 @@ BEGIN
   LEFT JOIN auth.users au ON au.id = tm.user_id
   LEFT JOIN user_stats us ON us.user_id = tm.user_id
   LEFT JOIN first_stats fs ON fs.user_id = tm.user_id
-  WHERE tm.team_id = v_team_id;
+  WHERE tm.team_id = p_team_id;
 
+  RETURN v_members;
+END;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions;
+
+GRANT EXECUTE ON FUNCTION public.get_team_members_with_stats(UUID, UUID, TEXT) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_team_summary_stats(
+  p_team_id UUID,
+  p_event_id UUID DEFAULT NULL,
+  p_event_mode TEXT DEFAULT 'any'
+)
+RETURNS JSON AS $$
+DECLARE
+  v_unique_score BIGINT := 0;
+  v_total_score BIGINT := 0;
+  v_unique_challenges INT := 0;
+  v_total_solves BIGINT := 0;
+  v_rank BIGINT := 0;
+BEGIN
   -- stats team
   WITH team_users AS (
-    SELECT user_id FROM public.team_members WHERE team_id = v_team_id
+    SELECT user_id FROM public.team_members WHERE team_id = p_team_id
   ), solves_filtered AS (
     SELECT s.challenge_id, c.points
     FROM public.solves s
     JOIN team_users tu ON tu.user_id = s.user_id
     JOIN public.challenges c ON c.id = s.challenge_id
-    WHERE (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'main' AND c.event_id IS NULL)
-      OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-    )
+    WHERE public.match_event_mode(p_event_mode, p_event_id, c.event_id)
   ), unique_calc AS (
     SELECT
       COALESCE(SUM(t.points), 0)::BIGINT AS unique_score,
@@ -214,38 +186,106 @@ BEGIN
       FROM public.team_members tm_inner
       JOIN public.solves s_inner ON s_inner.user_id = tm_inner.user_id
       JOIN public.challenges c_inner ON c_inner.id = s_inner.challenge_id
-      WHERE (
-        p_event_mode = 'any'
-        OR (p_event_mode = 'main' AND c_inner.event_id IS NULL)
-        OR (p_event_id IS NOT NULL AND c_inner.event_id = p_event_id)
-      )
+      WHERE public.match_event_mode(p_event_mode, p_event_id, c_inner.event_id)
       GROUP BY tm_inner.team_id, s_inner.challenge_id
     ) t_inner
     GROUP BY t_inner.team_id
   ) scores
   WHERE scores.unique_score > v_unique_score;
 
-  -- 🔥 RETURN FINAL
   RETURN json_build_object(
-    'success', true,
-    'team', v_team,
-    'members', v_members,
-    'solved_event_ids', v_solved_event_ids, -- ✅ NEW
-    'has_main_solved', v_has_main_solved,
-    'stats', json_build_object(
-      'unique_score', v_unique_score,
-      'total_score', v_total_score,
-      'unique_challenges', v_unique_challenges,
-      'total_solves', v_total_solves,
-      'rank', v_rank
-    )
+    'unique_score', v_unique_score,
+    'total_score', v_total_score,
+    'unique_challenges', v_unique_challenges,
+    'total_solves', v_total_solves,
+    'rank', v_rank
   );
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
+
+GRANT EXECUTE ON FUNCTION public.get_team_summary_stats(UUID, UUID, TEXT) TO authenticated;
+
+DROP FUNCTION IF EXISTS get_team_by_name(TEXT);
+CREATE OR REPLACE FUNCTION get_team_by_name(
+  p_name TEXT,
+  p_event_id uuid DEFAULT NULL,
+  p_event_mode text DEFAULT 'any'
+)
+RETURNS JSON AS $$
+DECLARE
+  v_user_id UUID := auth.uid()::uuid;
+  v_team_id UUID;
+  v_team JSON;
+  v_members JSON;
+  v_solved_event_ids UUID[];
+  v_has_main_solved BOOLEAN := FALSE;
+  v_can_view_invite BOOLEAN := FALSE;
+  v_stats JSON;
+BEGIN
+  -- ambil team id
+  SELECT id INTO v_team_id
+  FROM public.teams
+  WHERE lower(name) = lower(p_name)
+  LIMIT 1;
+
+  IF v_team_id IS NULL THEN
+    RETURN json_build_object('success', false, 'message', 'Team not found');
+  END IF;
+
+  -- cek akses invite
+  IF v_user_id IS NOT NULL THEN
+    SELECT EXISTS(
+      SELECT 1 FROM public.team_members
+      WHERE team_id = v_team_id AND user_id = v_user_id
+    ) OR is_admin()
+    INTO v_can_view_invite;
+  END IF;
+
+  -- info team
+  SELECT json_build_object(
+    'id', t.id,
+    'name', t.name,
+    'invite_code', CASE WHEN v_can_view_invite THEN t.invite_code ELSE NULL END,
+    'picture_url', t.picture_url,
+    'created_at', t.created_at
+  )
+  INTO v_team
+  FROM public.teams t
+  WHERE t.id = v_team_id;
+
+  -- ambil solved event ids
+  SELECT COALESCE(
+    array_agg(DISTINCT c.event_id) FILTER (WHERE c.event_id IS NOT NULL),
+    '{}'::uuid[]
+  ),
+  COALESCE(bool_or(c.event_id IS NULL), FALSE)
+  INTO v_solved_event_ids, v_has_main_solved
+  FROM public.solves s
+  JOIN public.challenges c ON c.id = s.challenge_id
+  JOIN public.team_members tm ON tm.user_id = s.user_id
+  WHERE tm.team_id = v_team_id;
+
+  v_members := public.get_team_members_with_stats(v_team_id, p_event_id, p_event_mode);
+  v_stats := public.get_team_summary_stats(v_team_id, p_event_id, p_event_mode);
+
+  -- RETURN FINAL
+  RETURN json_build_object(
+    'success', true,
+    'team', v_team,
+    'members', v_members,
+    'solved_event_ids', v_solved_event_ids,
+    'has_main_solved', v_has_main_solved,
+    'stats', v_stats
+  );
+END;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_team_by_name(TEXT, uuid, text) TO authenticated;
+
 
 DROP FUNCTION IF EXISTS get_team_scoreboard(integer, integer, uuid, text);
 CREATE OR REPLACE FUNCTION get_team_scoreboard(
@@ -278,11 +318,7 @@ BEGIN
     FROM public.team_members tm
     JOIN public.solves s ON s.user_id = tm.user_id
     JOIN public.challenges c ON c.id = s.challenge_id
-    WHERE (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'main' AND c.event_id IS NULL)
-      OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-    )
+    WHERE public.match_event_mode(p_event_mode, p_event_id, c.event_id)
   ),
   agg AS (
     SELECT
@@ -320,11 +356,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_team_scoreboard(integer, integer, uuid, text) TO authenticated;
 
-CREATE OR REPLACE FUNCTION get_team_solves_by_names(p_names TEXT[], p_event_id uuid DEFAULT NULL, p_event_mode text DEFAULT 'any')
+DROP FUNCTION IF EXISTS get_team_solves_by_names(TEXT[], uuid, text);
+CREATE OR REPLACE FUNCTION get_team_solves_by_names(
+  p_names TEXT[] DEFAULT NULL,
+  p_event_id uuid DEFAULT NULL,
+  p_event_mode text DEFAULT 'any'
+)
 RETURNS TABLE (
   team_name TEXT,
   created_at TIMESTAMPTZ,
@@ -340,24 +381,21 @@ BEGIN
   JOIN public.team_members tm ON tm.team_id = t.id
   JOIN public.solves s ON s.user_id = tm.user_id
   JOIN public.challenges c ON c.id = s.challenge_id
-  WHERE lower(t.name) = ANY (
+  WHERE (p_names IS NULL OR lower(t.name) = ANY (
     SELECT lower(x) FROM unnest(p_names) AS x
-  )
-  AND (
-    p_event_mode = 'any'
-    OR (p_event_mode = 'main' AND c.event_id IS NULL)
-    OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-  )
+  ))
+  AND public.match_event_mode(p_event_mode, p_event_id, c.event_id)
   ORDER BY t.name ASC, s.created_at ASC;
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_team_solves_by_names(TEXT[], uuid, text) TO authenticated;
 
+DROP FUNCTION IF EXISTS get_team_unique_solves_by_names(TEXT[], uuid, text, boolean);
 CREATE OR REPLACE FUNCTION get_team_unique_solves_by_names(
-  p_names TEXT[],
+  p_names TEXT[] DEFAULT NULL,
   p_event_id uuid DEFAULT NULL,
   p_event_mode text DEFAULT 'any',
   p_show_name_chall boolean DEFAULT false
@@ -384,14 +422,10 @@ BEGIN
     JOIN public.team_members tm ON tm.team_id = t.id
     JOIN public.solves s ON s.user_id = tm.user_id
     JOIN public.challenges c ON c.id = s.challenge_id
-    WHERE lower(t.name) = ANY (
+    WHERE (p_names IS NULL OR lower(t.name) = ANY (
       SELECT lower(x) FROM unnest(p_names) AS x
-    )
-    AND (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'main' AND c.event_id IS NULL)
-      OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-    )
+    ))
+    AND public.match_event_mode(p_event_mode, p_event_id, c.event_id)
     GROUP BY t.name, s.challenge_id
   )
   SELECT
@@ -406,10 +440,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_team_unique_solves_by_names(TEXT[], uuid, text, boolean) TO authenticated;
 
+DROP FUNCTION IF EXISTS get_team_solves(uuid, text);
 CREATE OR REPLACE FUNCTION get_team_solves(p_event_id uuid DEFAULT NULL, p_event_mode text DEFAULT 'any')
 RETURNS TABLE (
   team_name TEXT,
@@ -418,27 +453,15 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT
-    t.name::TEXT AS team_name,
-    s.created_at,
-    c.points
-  FROM public.teams t
-  JOIN public.team_members tm ON tm.team_id = t.id
-  JOIN public.solves s ON s.user_id = tm.user_id
-  JOIN public.challenges c ON c.id = s.challenge_id
-  WHERE (
-    p_event_mode = 'any'
-    OR (p_event_mode = 'main' AND c.event_id IS NULL)
-    OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-  )
-  ORDER BY t.name ASC, s.created_at ASC;
+  SELECT * FROM get_team_solves_by_names(NULL, p_event_id, p_event_mode);
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_team_solves(uuid, text) TO authenticated;
 
+DROP FUNCTION IF EXISTS get_team_unique_solves(uuid, text);
 CREATE OR REPLACE FUNCTION get_team_unique_solves(p_event_id uuid DEFAULT NULL, p_event_mode text DEFAULT 'any')
 RETURNS TABLE (
   team_name TEXT,
@@ -447,33 +470,12 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
   RETURN QUERY
-  WITH team_solves AS (
-    SELECT
-      t.name::TEXT AS team_name,
-      s.challenge_id,
-      MIN(s.created_at) AS created_at,
-      MAX(c.points) AS points
-    FROM public.teams t
-    JOIN public.team_members tm ON tm.team_id = t.id
-    JOIN public.solves s ON s.user_id = tm.user_id
-    JOIN public.challenges c ON c.id = s.challenge_id
-    WHERE (
-      p_event_mode = 'any'
-      OR (p_event_mode = 'main' AND c.event_id IS NULL)
-      OR (p_event_id IS NOT NULL AND c.event_id = p_event_id)
-    )
-    GROUP BY t.name, s.challenge_id
-  )
-  SELECT
-    ts.team_name,
-    ts.created_at,
-    ts.points
-  FROM team_solves ts
-  ORDER BY ts.team_name ASC, ts.created_at ASC;
+  SELECT ts.team_name, ts.created_at, ts.points
+  FROM get_team_unique_solves_by_names(NULL, p_event_id, p_event_mode, false) ts;
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_team_unique_solves(uuid, text) TO authenticated;
 
@@ -510,11 +512,7 @@ BEGIN
         'username', u.username,
         'role', CASE WHEN u.id = t.captain_user_id THEN 'captain' ELSE 'member' END,
         'joined_at', tm.joined_at,
-        'picture', COALESCE(
-          u.profile_picture_url,
-          au.raw_user_meta_data->>'picture',
-          au.raw_user_meta_data->>'avatar_url'
-        )::TEXT
+        'picture', public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)
       )
       ORDER BY (u.id = t.captain_user_id) DESC, tm.joined_at ASC
     ),
@@ -531,7 +529,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION get_team_by_user_id(UUID) TO authenticated;
 
@@ -554,16 +552,10 @@ BEGIN
     RAISE EXCEPTION 'User already in a team';
   END IF;
 
-  IF length(p_name) > 64 THEN
-    RAISE EXCEPTION 'Team name cannot exceed 64 characters';
-  END IF;
-
-  IF NOT p_name ~ '^[a-zA-Z0-9_. -]+$' THEN
-    RAISE EXCEPTION 'Team name can only contain letters, numbers, spaces, ".", "_", and "-".';
-  END IF;
+  PERFORM public.validate_team_name(p_name);
 
   INSERT INTO public.teams(name, invite_code, captain_user_id)
-  VALUES (p_name, generate_team_invite_code(), v_user_id)
+  VALUES (trim(p_name), generate_team_invite_code(), v_user_id)
   RETURNING id INTO v_team_id;
 
   INSERT INTO public.team_members(team_id, user_id)
@@ -573,7 +565,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION create_team(TEXT) TO authenticated;
 
@@ -597,49 +589,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION regenerate_team_invite_code(UUID) TO authenticated;
 
 CREATE OR REPLACE FUNCTION rename_team(p_team_id UUID, p_new_name TEXT)
 RETURNS BOOLEAN AS $$
 DECLARE
-  v_requester UUID := auth.uid()::uuid;
+  v_picture_url TEXT;
 BEGIN
-  IF v_requester IS NULL THEN
-    RAISE EXCEPTION 'Not authenticated';
-  END IF;
-
-  IF public.get_system_setting('disable_edit_team') = 'true' AND NOT public.is_admin() THEN
-    RAISE EXCEPTION 'Editing team details is currently disabled';
-  END IF;
-
-  IF NOT is_admin() AND NOT is_team_captain(p_team_id) THEN
-    RAISE EXCEPTION 'Only captain or admin can rename team';
-  END IF;
-
-  IF p_new_name IS NULL OR trim(p_new_name) = '' THEN
-    RAISE EXCEPTION 'Team name cannot be empty';
-  END IF;
-
-  IF length(p_new_name) > 64 THEN
-    RAISE EXCEPTION 'Team name cannot exceed 64 characters';
-  END IF;
-
-  IF NOT p_new_name ~ '^[a-zA-Z0-9_. -]+$' THEN
-    RAISE EXCEPTION 'Team name can only contain letters, numbers, spaces, ".", "_", and "-".';
-  END IF;
-
-  UPDATE public.teams
-  SET name = trim(p_new_name),
-      updated_at = now()
+  SELECT picture_url INTO v_picture_url
+  FROM public.teams
   WHERE id = p_team_id;
 
+  PERFORM public.update_team_profile(p_team_id, p_new_name, v_picture_url);
   RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION rename_team(UUID, TEXT) TO authenticated;
 
@@ -672,17 +640,7 @@ BEGIN
     RAISE EXCEPTION 'Only captain or admin can update team profile';
   END IF;
 
-  IF v_name IS NULL OR v_name = '' THEN
-    RAISE EXCEPTION 'Team name cannot be empty';
-  END IF;
-
-  IF length(v_name) > 64 THEN
-    RAISE EXCEPTION 'Team name cannot exceed 64 characters';
-  END IF;
-
-  IF NOT v_name ~ '^[a-zA-Z0-9_. -]+$' THEN
-    RAISE EXCEPTION 'Team name can only contain letters, numbers, spaces, ".", "_", and "-".';
-  END IF;
+  PERFORM public.validate_team_name(v_name);
 
   IF v_picture_url IS NOT NULL AND length(v_picture_url) > 2048 THEN
     RAISE EXCEPTION 'Team image URL cannot exceed 2048 characters';
@@ -711,7 +669,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION update_team_profile(UUID, TEXT, TEXT) TO authenticated;
 
@@ -728,7 +686,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth;
+SET search_path = public, auth, extensions;
 
 GRANT EXECUTE ON FUNCTION delete_team(UUID) TO authenticated;
 

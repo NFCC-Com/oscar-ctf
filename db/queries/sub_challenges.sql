@@ -58,15 +58,6 @@ RETURNS JSON AS $$
 DECLARE
   v_user_id UUID := auth.uid()::uuid;
   v_is_admin_override BOOLEAN := FALSE;
-  v_is_maintenance BOOLEAN;
-  v_is_active BOOLEAN;
-  v_event_id UUID;
-  v_event_start TIMESTAMPTZ;
-  v_event_end TIMESTAMPTZ;
-  v_event_exists BOOLEAN;
-  v_event_join_mode TEXT;
-  v_always_show_challenges BOOLEAN := FALSE;
-  v_is_event_member BOOLEAN := FALSE;
   v_sub_count INT := 0;
   v_is_sequential BOOLEAN := FALSE;
   v_questions JSONB := '[]'::jsonb;
@@ -77,14 +68,14 @@ DECLARE
   v_completed BOOLEAN := FALSE;
   v_flag TEXT := NULL;
   r_sc RECORD;
+  v_access JSON;
 BEGIN
-  IF v_user_id IS NULL THEN
-    RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Not authenticated');
+  v_access := public.validate_challenge_access(p_challenge_id, v_user_id);
+  IF NOT (v_access->>'success')::BOOLEAN THEN
+    RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', v_access->>'message');
   END IF;
 
-  IF public.is_banned(v_user_id) THEN
-    RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'You are currently banned');
-  END IF;
+  v_is_admin_override := is_admin() OR can_manage_challenge(p_challenge_id);
 
   IF p_answers IS NULL THEN
     p_answers := '{}'::jsonb;
@@ -92,69 +83,6 @@ BEGIN
 
   IF jsonb_typeof(p_answers) <> 'object' THEN
     RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'answers must be a JSON object');
-  END IF;
-
-  SELECT c.is_active,
-         c.is_maintenance,
-         c.event_id,
-         e.start_time,
-         e.end_time,
-         (e.id IS NOT NULL),
-         e.join_mode,
-         COALESCE(e.always_show_challenges, false)
-  INTO v_is_active,
-       v_is_maintenance,
-       v_event_id,
-       v_event_start,
-       v_event_end,
-       v_event_exists,
-       v_event_join_mode,
-       v_always_show_challenges
-  FROM public.challenges c
-  LEFT JOIN public.events e ON e.id = c.event_id
-  WHERE c.id = p_challenge_id;
-
-  IF v_is_active IS NULL THEN
-    RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Challenge not found');
-  END IF;
-
-  v_is_admin_override := is_admin() OR can_manage_challenge(p_challenge_id);
-
-  IF NOT v_is_admin_override THEN
-    IF COALESCE(v_is_maintenance, false) THEN
-      RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Challenge is under maintenance');
-    END IF;
-
-    IF NOT COALESCE(v_is_active, true) THEN
-      RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Challenge is not active');
-    END IF;
-  END IF;
-
-  IF v_event_id IS NOT NULL AND NOT COALESCE(v_event_exists, false) THEN
-    RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Event not found');
-  END IF;
-
-  IF NOT v_is_admin_override AND v_event_id IS NOT NULL THEN
-    IF COALESCE(v_event_join_mode, 'open') <> 'open' THEN
-      SELECT EXISTS (
-        SELECT 1
-        FROM public.event_participants ep
-        WHERE ep.event_id = v_event_id
-          AND ep.user_id = v_user_id
-      ) INTO v_is_event_member;
-
-      IF NOT v_is_event_member THEN
-        RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Join this event first before opening sub-challenges');
-      END IF;
-    END IF;
-
-    IF v_event_start IS NOT NULL AND now() < v_event_start THEN
-      RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Event has not started yet');
-    END IF;
-
-    IF v_event_end IS NOT NULL AND now() > v_event_end AND NOT v_always_show_challenges THEN
-      RETURN json_build_object('mode', 'none', 'questions', '[]'::jsonb, 'message', 'Event has ended');
-    END IF;
   END IF;
 
   SELECT COUNT(*), COALESCE(bool_or(sc.is_sequential), false)
@@ -255,92 +183,23 @@ DECLARE
   v_flag TEXT := NULL;
   v_sub_count INT := 0;
   v_is_admin_override BOOLEAN := FALSE;
-  v_is_maintenance BOOLEAN;
-  v_is_active BOOLEAN;
-  v_event_id UUID;
-  v_event_start TIMESTAMPTZ;
-  v_event_end TIMESTAMPTZ;
-  v_event_exists BOOLEAN;
-  v_event_join_mode TEXT;
-  v_is_event_member BOOLEAN := FALSE;
   v_key TEXT;
   v_val TEXT;
   v_order INT;
   v_expected TEXT;
   v_ok BOOLEAN;
+  v_access JSON;
 BEGIN
-  IF v_user_id IS NULL THEN
-    RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'Not authenticated');
-  END IF;
-
-  IF public.is_banned(v_user_id) THEN
-    RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'You are currently banned');
+  v_access := public.validate_challenge_access(p_challenge_id, v_user_id);
+  IF NOT (v_access->>'success')::BOOLEAN THEN
+    RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', v_access->>'message');
   END IF;
 
   IF p_answers IS NULL OR jsonb_typeof(p_answers) <> 'object' THEN
     RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'answers must be a JSON object');
   END IF;
 
-  SELECT c.is_active,
-         c.is_maintenance,
-         c.event_id,
-         e.start_time,
-         e.end_time,
-         (e.id IS NOT NULL),
-         e.join_mode
-  INTO v_is_active,
-       v_is_maintenance,
-       v_event_id,
-       v_event_start,
-       v_event_end,
-       v_event_exists,
-       v_event_join_mode
-  FROM public.challenges c
-  LEFT JOIN public.events e ON e.id = c.event_id
-  WHERE c.id = p_challenge_id;
-
-  IF v_is_active IS NULL THEN
-    RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'Challenge not found');
-  END IF;
-
   v_is_admin_override := is_admin() OR can_manage_challenge(p_challenge_id);
-
-  IF NOT v_is_admin_override THEN
-    IF COALESCE(v_is_maintenance, false) THEN
-      RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'Challenge is under maintenance');
-    END IF;
-
-    IF NOT COALESCE(v_is_active, true) THEN
-      RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'Challenge is not active');
-    END IF;
-  END IF;
-
-  IF v_event_id IS NOT NULL AND NOT COALESCE(v_event_exists, false) THEN
-    RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'Event not found');
-  END IF;
-
-  IF NOT v_is_admin_override AND v_event_id IS NOT NULL THEN
-    IF COALESCE(v_event_join_mode, 'open') <> 'open' THEN
-      SELECT EXISTS (
-        SELECT 1
-        FROM public.event_participants ep
-        WHERE ep.event_id = v_event_id
-          AND ep.user_id = v_user_id
-      ) INTO v_is_event_member;
-
-      IF NOT v_is_event_member THEN
-        RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'Join this event first before submitting answers');
-      END IF;
-    END IF;
-
-    IF v_event_start IS NOT NULL AND now() < v_event_start THEN
-      RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'Event has not started yet');
-    END IF;
-
-    IF v_event_end IS NOT NULL AND now() > v_event_end THEN
-      RETURN json_build_object('results', '{}'::jsonb, 'completed', false, 'message', 'Event has ended');
-    END IF;
-  END IF;
 
   SELECT COUNT(*)
   INTO v_sub_count
