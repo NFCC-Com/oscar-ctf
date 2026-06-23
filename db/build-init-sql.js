@@ -11,6 +11,7 @@ const orderedFiles = [
 
   // 2) Tables (respect FK dependencies)
   "schema/users.sql",
+  "schema/system_settings.sql",
   "schema/admin_audit_logs.sql",
   "schema/events.sql",
   "schema/event_admins.sql",

@@ -546,6 +546,10 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
+  IF public.get_system_setting('disable_create_team') = 'true' AND NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Team creation is currently disabled';
+  END IF;
+
   IF EXISTS (SELECT 1 FROM public.team_members WHERE user_id = v_user_id) THEN
     RAISE EXCEPTION 'User already in a team';
   END IF;
@@ -606,6 +610,10 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
+  IF public.get_system_setting('disable_edit_team') = 'true' AND NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Editing team details is currently disabled';
+  END IF;
+
   IF NOT is_admin() AND NOT is_team_captain(p_team_id) THEN
     RAISE EXCEPTION 'Only captain or admin can rename team';
   END IF;
@@ -645,9 +653,19 @@ DECLARE
   v_requester UUID := auth.uid()::uuid;
   v_name TEXT := trim(p_new_name);
   v_picture_url TEXT := NULLIF(trim(COALESCE(p_picture_url, '')), '');
+  v_old_name TEXT;
 BEGIN
   IF v_requester IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT name INTO v_old_name FROM public.teams WHERE id = p_team_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Team not found';
+  END IF;
+
+  IF v_name IS DISTINCT FROM v_old_name AND public.get_system_setting('disable_edit_team') = 'true' AND NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Editing team name is currently disabled';
   END IF;
 
   IF NOT is_admin() AND NOT is_team_captain(p_team_id) THEN

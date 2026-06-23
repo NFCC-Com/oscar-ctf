@@ -173,18 +173,22 @@ export default function EditProfileModal({
       return
     }
 
-    const { error: errUsername, username: newUsername } = await updateUsername(userId, usernameTrimmed)
-    if (errUsername) {
-      setError(errUsername)
-      setLoading(false)
-      return
+    let finalUsername = currentUsername
+
+    if (usernameTrimmed !== currentUsername) {
+      const { error: errUsername, username: newUsername } = await updateUsername(userId, usernameTrimmed)
+      if (errUsername) {
+        setError(errUsername)
+        setLoading(false)
+        return
+      }
+      finalUsername = newUsername || usernameTrimmed
+      setUsername(finalUsername)
+      onUsernameChange?.(finalUsername)
     }
 
-    setUsername(newUsername || username)
-    onUsernameChange?.(newUsername || username)
-
     onProfileChange?.({
-      username: newUsername || username,
+      username: finalUsername,
       bio,
       profile_picture_url: profilePictureUrl.trim() || null,
       sosmed,

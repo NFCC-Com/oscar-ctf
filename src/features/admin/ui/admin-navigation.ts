@@ -7,6 +7,7 @@ import {
   Server,
   Users,
   ShieldCheck,
+  Settings,
 } from 'lucide-react'
 
 export type AdminNavItem = {
@@ -58,6 +59,11 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: '/admin/audit-logs',
     label: 'Audit Logs',
     icon: ShieldCheck,
+  },
+  {
+    href: '/admin/settings',
+    label: 'Settings',
+    icon: Settings,
   },
 ]
 

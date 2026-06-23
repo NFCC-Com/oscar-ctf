@@ -129,3 +129,42 @@ export async function revokeEventAdmin(userId: string, eventId: string): Promise
   const message = (data as any)?.message ? String((data as any).message) : undefined
   return { success, deleted, message }
 }
+
+export type SystemSetting = {
+  key: string
+  value: string
+  description: string
+  updated_at: string
+}
+
+export async function getSystemSettings(): Promise<SystemSetting[]> {
+  const { data, error } = await (supabase as any)
+    .from('system_settings')
+    .select('key, value, description, updated_at')
+    .order('key', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching system settings:', error)
+    return []
+  }
+
+  return (data || []).map((s: any) => ({
+    key: String(s.key),
+    value: String(s.value),
+    description: String(s.description || ''),
+    updated_at: String(s.updated_at),
+  }))
+}
+
+export async function updateSystemSettings(settings: Record<string, string>): Promise<{ success: boolean; message?: string }> {
+  const { data, error } = await (supabase as any).rpc('update_system_settings', {
+    p_settings: settings,
+  })
+
+  if (error) {
+    console.error('Error updating system settings:', error)
+    throw error
+  }
+
+  return { success: !!data }
+}

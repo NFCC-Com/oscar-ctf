@@ -265,7 +265,7 @@ export const AuthService = {
    * Sign out user
    */
   async signOut(): Promise<void> {
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: 'local' })
   },
 
   /**

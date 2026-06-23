@@ -398,6 +398,10 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
+  IF public.get_system_setting('disable_join_team') = 'true' AND NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Joining teams is currently disabled';
+  END IF;
+
   IF EXISTS (SELECT 1 FROM public.team_members WHERE user_id = v_user_id) THEN
     RAISE EXCEPTION 'User already in a team';
   END IF;
@@ -477,6 +481,10 @@ DECLARE
 BEGIN
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF public.get_system_setting('disable_join_team') = 'true' AND NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Leaving teams is currently disabled';
   END IF;
 
   SELECT team_id INTO v_team_id
