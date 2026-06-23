@@ -32,6 +32,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    if (!user) return
+
+    let timer: any
+
+    const checkSession = async () => {
+      try {
+        const { AuthService } = await import('@/features/auth/services/auth.service')
+        const active = await AuthService.isCurrentSessionActive()
+        if (!active) {
+          await AuthService.signOut()
+          setUser(null)
+          const toast = (await import('react-hot-toast')).default
+          toast.error('Sesi Anda telah berakhir karena Anda masuk di perangkat lain.', {
+            id: 'session-expired-toast',
+            duration: 6000,
+          })
+        }
+      } catch (err) {
+        console.error('Session check failed:', err)
+      }
+    }
+
+    // Check periodically every 20 seconds
+    timer = setInterval(checkSession, 20000)
+
+    // Check when window gets focused
+    const handleFocus = () => {
+      void checkSession()
+    }
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [user])
+
   const isBanned = user && !user.is_admin && user.banned_until && new Date(user.banned_until) > new Date()
 
   return (

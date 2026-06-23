@@ -976,6 +976,7 @@ export type Database = {
       };
       has_admin_access: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_current_session_active: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_sub_answer_correct: {
         Args: { p_expected: string; p_submitted: string };
         Returns: boolean;

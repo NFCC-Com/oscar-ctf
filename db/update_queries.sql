@@ -993,6 +993,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = auth, public, extensions;
 GRANT EXECUTE ON FUNCTION public.admin_change_password(UUID, TEXT) TO authenticated;
+-- Single session active enforcement (1 device at a time)
+CREATE OR REPLACE FUNCTION public.limit_user_sessions()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Delete all other sessions for this user
+  DELETE FROM auth.sessions
+  WHERE user_id = NEW.user_id AND id <> NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = auth;
+-- Trigger to execute after a new session is inserted
+DROP TRIGGER IF EXISTS tr_limit_user_sessions ON auth.sessions;
+CREATE TRIGGER tr_limit_user_sessions
+AFTER INSERT ON auth.sessions
+FOR EACH ROW
+EXECUTE FUNCTION public.limit_user_sessions();
+-- RPC function to verify if caller's session is still active
+CREATE OR REPLACE FUNCTION public.is_current_session_active()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM auth.sessions WHERE id = (auth.jwt() ->> 'session_id')::uuid
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = auth, public;
+GRANT EXECUTE ON FUNCTION public.is_current_session_active() TO authenticated, anon;
 
 -- <<< END: queries/users.sql
 

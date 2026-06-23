@@ -397,5 +397,18 @@ export const AuthService = {
     } catch {
       return { error: 'Failed to unlink Google account.' }
     }
+  },
+
+  /**
+   * Check if the current session is still active in the database
+   */
+  async isCurrentSessionActive(): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.rpc('is_current_session_active')
+      if (error) return false
+      return !!data
+    } catch {
+      return false
+    }
   }
 }
