@@ -26,7 +26,6 @@ type SubChallengePanelProps = {
   onAnswerChange: (orderNumber: number, value: string) => void
   onSubmit: (orderNumber?: number) => void | Promise<unknown>
   onReset: () => void | Promise<unknown>
-  preserveDialogScroll?: () => () => void
 }
 
 function normalizeQuestionMarkdown(value: string) {
@@ -84,7 +83,8 @@ function restoreScrollAnchor(snapshot: ScrollAnchorSnapshot | null) {
   if (!snapshot) return
 
   const restore = () => {
-    window.scrollTo({ left: snapshot.windowScroll.x, top: snapshot.windowScroll.y, behavior: 'auto' })
+    // Only restore scroll parent (dialog content area), not window scroll
+    // since Radix Dialog locks body scroll while open
 
     const nextElement = snapshot.selector
       ? document.querySelector<HTMLElement>(snapshot.selector)
@@ -94,8 +94,6 @@ function restoreScrollAnchor(snapshot: ScrollAnchorSnapshot | null) {
     if (!element) {
       if (snapshot.scrollParent) {
         snapshot.scrollParent.scrollTo({ top: snapshot.scrollTop, behavior: 'auto' })
-      } else {
-        window.scrollTo({ left: snapshot.windowScroll.x, top: snapshot.windowScroll.y, behavior: 'auto' })
       }
       return
     }
@@ -109,14 +107,7 @@ function restoreScrollAnchor(snapshot: ScrollAnchorSnapshot | null) {
         top: snapshot.scrollParent.scrollTop + delta,
         behavior: 'auto',
       })
-      return
     }
-
-    window.scrollTo({
-      left: snapshot.windowScroll.x,
-      top: window.scrollY + delta,
-      behavior: 'auto',
-    })
   }
 
   restore()
@@ -157,8 +148,6 @@ function QuestionCard({
   onSubmitScrollAnchorClear,
 }: QuestionCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
-  const scrollPositionRef = useRef({ x: 0, y: 0 })
-  const submitScrollPositionRef = useRef({ x: 0, y: 0 })
   const submitScrollAnchorRef = useRef<ScrollAnchorSnapshot | null>(null)
   const questionContent = normalizeQuestionMarkdown(question.question)
   const cardAnchorSelector = `[data-sub-question-card-id="${cardAnchorId}"]`
@@ -167,45 +156,16 @@ function QuestionCard({
     : current
       ? `min-w-0 overflow-x-hidden space-y-2 p-2.5 border-blue-500/40 shadow-lg shadow-blue-500/10 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`
       : `min-w-0 overflow-x-hidden space-y-2 p-2.5 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`
-  const saveWindowScroll = useCallback(() => {
-    scrollPositionRef.current = { x: window.scrollX, y: window.scrollY }
-  }, [])
-  const restoreWindowScroll = useCallback(() => {
-    const scrollPosition = scrollPositionRef.current
-
-    requestAnimationFrame(() => {
-      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
-    })
-  }, [])
-  const restoreWindowScrollAfterSubmit = useCallback((scrollPosition: { x: number; y: number }) => {
-    requestAnimationFrame(() => {
-      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
-    })
-    window.setTimeout(() => {
-      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
-    }, 50)
-    window.setTimeout(() => {
-      window.scrollTo({ left: scrollPosition.x, top: scrollPosition.y, behavior: 'auto' })
-    }, 150)
-  }, [])
-  const saveSubmitScrollPosition = useCallback(() => {
-    submitScrollPositionRef.current = { x: window.scrollX, y: window.scrollY }
-  }, [])
   const prepareSubmitScrollRestore = useCallback(() => {
-    saveSubmitScrollPosition()
     submitScrollAnchorRef.current = captureScrollAnchor(cardRef.current, cardAnchorSelector)
     onSubmitScrollAnchorCapture?.(submitScrollAnchorRef.current)
-  }, [cardAnchorSelector, onSubmitScrollAnchorCapture, saveSubmitScrollPosition])
+  }, [cardAnchorSelector, onSubmitScrollAnchorCapture])
   const submitWithoutScrollJump = useCallback(() => {
-    const scrollPosition = submitScrollPositionRef.current
     const scrollAnchor = submitScrollAnchorRef.current
     const restoreAfterLayoutChange = () => {
       if (scrollAnchor) {
         restoreScrollAnchor(scrollAnchor)
-        return
       }
-
-      restoreWindowScrollAfterSubmit(scrollPosition)
     }
     const result = onSubmit()
     const clearAnchor = () => onSubmitScrollAnchorClear?.(scrollAnchor)
@@ -221,7 +181,7 @@ function QuestionCard({
     }
 
     clearAnchor()
-  }, [onSubmit, onSubmitScrollAnchorClear, restoreWindowScrollAfterSubmit])
+  }, [onSubmit, onSubmitScrollAnchorClear])
 
   return (
     <div ref={cardRef} data-sub-question-card-id={cardAnchorId} className={cardClassName}>
@@ -252,16 +212,12 @@ function QuestionCard({
         <input
           type="text"
           value={answer}
-          onMouseDown={completed ? undefined : saveWindowScroll}
-          onTouchStart={completed ? undefined : saveWindowScroll}
-          onFocus={completed ? undefined : restoreWindowScroll}
+          onFocus={undefined}
           onChange={
             completed
               ? undefined
               : (event) => {
-                saveWindowScroll()
                 onAnswerChange(event.target.value)
-                restoreWindowScroll()
               }
           }
           placeholder={completed ? 'Answer saved' : 'Type your answer...'}

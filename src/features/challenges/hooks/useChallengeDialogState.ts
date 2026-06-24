@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   getChallengeDetail,
   getSolversByChallenge,
@@ -42,19 +42,9 @@ export function useChallengeDialogState({
   const [challengeDetailCache] = useState(() => new Map<string, ChallengeWithSolve>())
   const [solversCache] = useState(() => new Map<string, Solver[]>())
 
-  const preserveWindowScroll = useCallback(() => {
-    const scrollX = window.scrollX
-    const scrollY = window.scrollY
-    const restore = () => window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' })
+  const scrollPositionRef = useRef({ x: 0, y: 0 })
 
-    restore()
-    requestAnimationFrame(() => {
-      restore()
-      requestAnimationFrame(restore)
-    })
-    window.setTimeout(restore, 50)
-    window.setTimeout(restore, 150)
-  }, [])
+
 
   const fetchSolversForChallenge = useCallback(async (challengeId: string, force = false) => {
     const cached = solversCache.get(challengeId)
@@ -90,7 +80,8 @@ export function useChallengeDialogState({
   }, [fetchSolversForChallenge, refreshSubChallenges])
 
   const openChallenge = useCallback(async (challenge: ChallengeWithSolve) => {
-    preserveWindowScroll()
+    scrollPositionRef.current = { x: window.scrollX, y: window.scrollY }
+
     persistSelectedChallenge(challenge.id)
     setChallengeTab('challenge')
     setSolvers([])
@@ -115,7 +106,6 @@ export function useChallengeDialogState({
           attachments: Array.isArray((challenge as any).attachments) ? (challenge as any).attachments : [],
         } as any
     )
-    preserveWindowScroll()
 
     const freshDetail = await getChallengeDetail(challenge.id)
     if (!freshDetail) return
@@ -124,15 +114,19 @@ export function useChallengeDialogState({
       if (!prev || prev.id !== challenge.id) return prev
       return { ...prev, ...freshDetail, hint: normalizeChallengeHints((freshDetail as any).hint) } as any
     })
-    preserveWindowScroll()
-  }, [challengeDetailCache, placeholders, preserveWindowScroll, refreshSubChallenges])
+  }, [challengeDetailCache, placeholders, refreshSubChallenges])
 
   const closeChallenge = useCallback(() => {
-    preserveWindowScroll()
     persistSelectedChallenge(null)
     setSelectedChallenge(null)
-    preserveWindowScroll()
-  }, [preserveWindowScroll])
+    // Restore scroll position after Radix releases its body scroll lock.
+    // We need a small delay because Radix's react-remove-scroll cleanup
+    // runs asynchronously after the dialog unmounts.
+    const { x, y } = scrollPositionRef.current
+    requestAnimationFrame(() => {
+      window.scrollTo({ left: x, top: y, behavior: 'auto' })
+    })
+  }, [])
 
   useEffect(() => {
     if (initialLoading || challenges.length === 0 || selectedChallenge) return
@@ -160,7 +154,6 @@ export function useChallengeDialogState({
 
     if (!hasChanged) return
 
-    preserveWindowScroll()
     setSelectedChallenge((prev) => {
       if (!prev || prev.id !== updatedChallenge.id) return prev
       return {
@@ -171,8 +164,7 @@ export function useChallengeDialogState({
         attachments: Array.isArray((prev as any).attachments) ? (prev as any).attachments : [],
       } as any
     })
-    preserveWindowScroll()
-  }, [challenges, preserveWindowScroll, selectedChallenge])
+  }, [challenges, selectedChallenge])
 
   const downloadFile = useCallback(async (attachment: Attachment, attachmentKey: string) => {
     setDownloading((prev) => ({ ...prev, [attachmentKey]: true }))
@@ -215,5 +207,6 @@ export function useChallengeDialogState({
     closeChallenge,
     downloadFile,
     fetchSolversForChallenge,
+    scrollPositionRef,
   }
 }

@@ -77,6 +77,7 @@ export default function ChallengeDialogs({ data }: ChallengeDialogsProps) {
         submissionsRemaining={data.submissionsRemaining}
         cooldownSeconds={data.cooldownSeconds}
         services={data.selectedChallenge?.services || []}
+        scrollPositionRef={data.scrollPositionRef}
         onSubChallengeAnswerChange={(orderNumber, value) => {
           if (!data.selectedChallenge) return
           data.handleSubChallengeAnswerChange(data.selectedChallenge.id, orderNumber, value)

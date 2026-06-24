@@ -33,6 +33,7 @@ import type {
   SubChallengeQuestion,
 } from '../types'
 import { getCategoryDetails, getDifficultyStyle, getChallengeFeatureType } from '../lib'
+import type { MutableRefObject } from 'react'
 
 const ChallengeDescription = React.memo(function ChallengeDescription({ description }: { description: string }) {
   return (
@@ -85,6 +86,7 @@ interface ChallengeDetailDialogProps {
   submissionsRemaining?: number
   cooldownSeconds?: number
   services?: string[]
+  scrollPositionRef: MutableRefObject<{ x: number; y: number }>
 }
 
 const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
@@ -123,88 +125,14 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   submissionsRemaining = 10,
   cooldownSeconds = 0,
   services = [],
+  scrollPositionRef,
 }) => {
   const [solvesSortOrder, setSolvesSortOrder] = useState<'newest' | 'oldest'>('oldest')
   const contentScrollRef = React.useRef<HTMLDivElement | null>(null)
-  const windowScrollRef = React.useRef({ x: 0, y: 0 })
-
-  const restoreWindowScroll = React.useCallback(() => {
-    const { x, y } = windowScrollRef.current
-    const restore = () => window.scrollTo({ left: x, top: y, behavior: 'auto' })
-
-    restore()
-    requestAnimationFrame(() => {
-      restore()
-      requestAnimationFrame(restore)
-    })
-  }, [])
-
-  const preserveDialogScroll = React.useCallback(() => {
-    const windowScrollPosition = windowScrollRef.current
-    const contentScrollPosition = {
-      left: contentScrollRef.current?.scrollLeft ?? 0,
-      top: contentScrollRef.current?.scrollTop ?? 0,
-    }
-
-    const restore = () => {
-      window.scrollTo({
-        left: windowScrollPosition.x,
-        top: windowScrollPosition.y,
-        behavior: 'auto',
-      })
-      contentScrollRef.current?.scrollTo({
-        left: contentScrollPosition.left,
-        top: contentScrollPosition.top,
-        behavior: 'auto',
-      })
-    }
-
-    const restoreAfterRender = () => {
-      restore()
-      requestAnimationFrame(() => {
-        restore()
-        requestAnimationFrame(restore)
-      })
-      window.setTimeout(restore, 50)
-      window.setTimeout(restore, 150)
-    }
-
-    restoreAfterRender()
-    return restoreAfterRender
-  }, [])
-
-  React.useEffect(() => {
-    if (!open) return
-    windowScrollRef.current = { x: window.scrollX, y: window.scrollY }
-  }, [open])
 
   const handleTabChange = React.useCallback((tab: ChallengeDialogTab, challengeId?: string) => {
-    const scrollPosition = windowScrollRef.current
-    const result = setChallengeTab(tab, challengeId)
-
-    const restore = () => window.scrollTo({
-      left: scrollPosition.x,
-      top: scrollPosition.y,
-      behavior: 'auto',
-    })
-
-    const restoreAfterRender = () => requestAnimationFrame(() => {
-      restore()
-      requestAnimationFrame(restore)
-    })
-
-    restore()
-    restoreAfterRender()
-
-    if (result && typeof result === 'object' && 'finally' in result) {
-      result.finally(restoreAfterRender)
-    }
+    setChallengeTab(tab, challengeId)
   }, [setChallengeTab])
-
-  React.useEffect(() => {
-    if (!open || challengeTab === 'challenge') return
-    restoreWindowScroll()
-  }, [challengeTab, open, restoreWindowScroll])
 
   const solverCount = solvers.length > 0 ? solvers.length : (challenge?.total_solves ?? 0)
 
@@ -244,7 +172,6 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       if (isOpen) return
-      restoreWindowScroll()
       onClose()
     }}>
       <DialogContent
@@ -254,7 +181,10 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
         onOpenAutoFocus={(event) => event.preventDefault()}
         onCloseAutoFocus={(event) => {
           event.preventDefault()
-          restoreWindowScroll()
+          const { x, y } = scrollPositionRef.current
+          requestAnimationFrame(() => {
+            window.scrollTo({ left: x, top: y, behavior: 'auto' })
+          })
         }}
       >
         {/* Fixed Header Section */}
@@ -404,7 +334,6 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
                 onAnswerChange={onSubChallengeAnswerChange}
                 onSubmit={onSubChallengeSubmit}
                 onReset={onSubChallengeReset}
-                preserveDialogScroll={preserveDialogScroll}
               />
             </div>
           )}
@@ -422,7 +351,6 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
             handleFlagSubmit={handleFlagSubmit}
             submissionsRemaining={submissionsRemaining}
             cooldownSeconds={cooldownSeconds}
-            preserveDialogScroll={preserveDialogScroll}
           />
         )}
 
@@ -431,7 +359,6 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
             subChallengeCompleted={subChallengeCompleted}
             subChallengeFlag={subChallengeFlag}
             onReset={onSubChallengeReset}
-            preserveDialogScroll={preserveDialogScroll}
           />
         )}
 
@@ -447,7 +374,6 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
         hintIdx={showHintModal.hintIdx}
         open={!!showHintModal.challenge}
         onClose={() => setShowHintModal({ challenge: null })}
-        onRestoreWindowScroll={restoreWindowScroll}
       />
     </Dialog>
   )

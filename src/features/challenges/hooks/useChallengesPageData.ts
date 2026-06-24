@@ -56,6 +56,7 @@ export function useChallengesPageData() {
     closeChallenge,
     downloadFile,
     fetchSolversForChallenge,
+    scrollPositionRef,
   } = useChallengeDialogState({
     challenges,
     initialLoading,
@@ -222,5 +223,6 @@ export function useChallengesPageData() {
     getCachedEventMembership,
     formatRemaining,
     loadChallenges,
+    scrollPositionRef,
   }
 }
