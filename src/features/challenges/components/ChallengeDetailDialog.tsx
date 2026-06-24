@@ -82,6 +82,8 @@ interface ChallengeDetailDialogProps {
   onSubChallengeSubmit: (orderNumber?: number) => void | Promise<unknown>
   onSubChallengeReset: () => void | Promise<unknown>
   placeholders: KeyedStringMap
+  submissionsRemaining?: number
+  cooldownSeconds?: number
   services?: string[]
 }
 
@@ -118,6 +120,8 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   onSubChallengeAnswerChange,
   onSubChallengeSubmit,
   placeholders,
+  submissionsRemaining = 10,
+  cooldownSeconds = 0,
   services = [],
 }) => {
   const [solvesSortOrder, setSolvesSortOrder] = useState<'newest' | 'oldest'>('oldest')
@@ -416,6 +420,8 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
             flagFeedback={flagFeedback}
             handleFlagInputChange={handleFlagInputChange}
             handleFlagSubmit={handleFlagSubmit}
+            submissionsRemaining={submissionsRemaining}
+            cooldownSeconds={cooldownSeconds}
             preserveDialogScroll={preserveDialogScroll}
           />
         )}

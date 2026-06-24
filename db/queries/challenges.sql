@@ -266,6 +266,32 @@ BEGIN
 
   v_is_admin_override := public.is_admin() OR public.can_manage_challenge(p_challenge_id);
 
+  -- Rate limiting check (skip for admins)
+  IF NOT v_is_admin_override THEN
+    DECLARE
+      v_window_attempts INT := 0;
+      v_window_start TIMESTAMPTZ;
+      v_seconds_elapsed INT;
+      v_cooldown_remaining INT;
+    BEGIN
+      SELECT window_attempts, window_start_at
+      INTO v_window_attempts, v_window_start
+      FROM public.flag_submissions
+      WHERE user_id = v_user_id AND challenge_id = p_challenge_id;
+
+      IF FOUND THEN
+        v_seconds_elapsed := EXTRACT(EPOCH FROM (now() - v_window_start))::INT;
+        IF v_seconds_elapsed < 60 AND v_window_attempts >= 10 THEN
+          v_cooldown_remaining := 60 - v_seconds_elapsed;
+          RETURN json_build_object(
+            'success', false,
+            'message', 'Rate limited. Try again in ' || v_cooldown_remaining || 's.'
+          );
+        END IF;
+      END IF;
+    END;
+  END IF;
+
   SELECT cf.flag, c.points, c.max_points, c.is_dynamic, c.min_points, c.decay_per_solve, c.event_id
   INTO v_flag, v_points, v_max_points, v_is_dynamic, v_min_points, v_decay_per_solve, v_event_id
   FROM public.challenge_flags cf
@@ -273,6 +299,42 @@ BEGIN
   WHERE cf.challenge_id = p_challenge_id;
 
   v_is_correct := p_flag = v_flag;
+
+  -- Log/upsert submission stats (skip for admins)
+  IF NOT v_is_admin_override THEN
+    SELECT count(*) INTO v_existing
+    FROM public.solves
+    WHERE user_id = v_user_id AND challenge_id = p_challenge_id;
+
+    INSERT INTO public.flag_submissions (
+      user_id, challenge_id,
+      incorrect_attempts, last_attempt_at,
+      window_attempts, window_start_at
+    )
+    VALUES (
+      v_user_id,
+      p_challenge_id,
+      CASE WHEN v_is_correct OR v_existing > 0 THEN 0 ELSE 1 END,
+      now(),
+      1,
+      now()
+    )
+    ON CONFLICT (user_id, challenge_id)
+    DO UPDATE SET
+      incorrect_attempts = CASE 
+        WHEN v_is_correct OR v_existing > 0 THEN public.flag_submissions.incorrect_attempts 
+        ELSE public.flag_submissions.incorrect_attempts + 1 
+      END,
+      last_attempt_at = now(),
+      window_start_at = CASE
+        WHEN EXTRACT(EPOCH FROM (now() - public.flag_submissions.window_start_at)) >= 60 THEN now()
+        ELSE public.flag_submissions.window_start_at
+      END,
+      window_attempts = CASE
+        WHEN EXTRACT(EPOCH FROM (now() - public.flag_submissions.window_start_at)) >= 60 THEN 1
+        ELSE public.flag_submissions.window_attempts + 1
+      END;
+  END IF;
 
   IF NOT v_is_correct THEN
     RETURN json_build_object('success', false, 'message', 'Incorrect flag');

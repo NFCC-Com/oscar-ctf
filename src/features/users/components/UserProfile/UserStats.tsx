@@ -3,7 +3,7 @@
 // React Imports
 import React from "react"
 import dynamic from "next/dynamic"
-import { LayoutGrid, Zap, TrendingUp, BarChart3 } from "lucide-react"
+import { LayoutGrid, Zap, TrendingUp, BarChart3, Target } from "lucide-react"
 
 // Shared Imports
 import { Skeleton } from "@/shared/ui"
@@ -20,6 +20,7 @@ type Props = {
   solvedChallenges: ChallengeWithSolve[]
   firstBloodIds: string[]
   isDark?: boolean
+  flagStats?: { correct_submissions: number; incorrect_submissions: number } | null
 }
 
 /* ===================== THEME ===================== */
@@ -60,6 +61,7 @@ export default function UserStatsPlotly({
   solvedChallenges,
   firstBloodIds,
   isDark,
+  flagStats,
 }: Props) {
   const { theme: currentTheme } = useTheme()
   const isDarkMode = typeof isDark === "boolean" ? isDark : currentTheme === "dark"
@@ -76,6 +78,11 @@ export default function UserStatsPlotly({
       />
     )
   }
+
+  /* ===== ACCURACY STATS ===== */
+  const correct = flagStats?.correct_submissions ?? solvedChallenges.length
+  const incorrect = flagStats?.incorrect_submissions ?? 0
+  const total = correct + incorrect
 
   /* ===== CATEGORY ===== */
   const byCategory: Record<string, number> = {}
@@ -104,11 +111,11 @@ export default function UserStatsPlotly({
   const baseLayout = {
     dragmode: false as const,
     autosize: true,
+    showlegend: false,
     paper_bgcolor: t.bg,
     plot_bgcolor: t.bg,
     font: { color: t.text, size: 12 },
     margin: { t: 10, b: 30, l: 40, r: 10 },
-    legend: { font: { color: t.text } },
     hoverlabel: {
       bgcolor: isDarkMode ? "#111827" : "#ffffff",
       font: { color: t.text },
@@ -117,109 +124,146 @@ export default function UserStatsPlotly({
 
   return (
     <div className="space-y-6">
-      {/* ================= PIE ================= */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* CATEGORY */}
-        <UserSection
-          title="Solves by Category"
-          description={`${categoriesCount} categories represented in your solves.`}
-          icon={LayoutGrid}
-        >
-          <Plot
-            key={`cat-${isDarkMode}`}
-            data={[
-              {
-                type: "pie",
-                labels: Object.keys(byCategory),
-                values: Object.values(byCategory),
-                hole: 0.5,
-                marker: {
-                  colors: pieColors,
-                  line: { color: t.bg, width: 1 },
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* CATEGORY (2/3 width) */}
+        <div className="lg:col-span-2">
+          <UserSection
+            title="Solves by Category"
+            description={`${categoriesCount} categories represented in your solves.`}
+            icon={LayoutGrid}
+          >
+            <Plot
+              key={`cat-${isDarkMode}`}
+              data={[
+                {
+                  type: "pie",
+                  labels: Object.keys(byCategory),
+                  values: Object.values(byCategory),
+                  hole: 0.5,
+                  marker: {
+                    colors: pieColors,
+                    line: { color: t.bg, width: 1 },
+                  },
+                  textinfo: "percent",
+                  hovertemplate:
+                    "%{label}<br>%{value} solves<extra></extra>",
                 },
-                textinfo: "label+percent",
-                hovertemplate:
-                  "%{label}<br>%{value} solves<extra></extra>",
-              },
-            ]}
-            layout={{ ...baseLayout, height: 260 }}
-            style={{ width: "100%" }}
-            useResizeHandler
-            config={{ displayModeBar: false }}
-          />
-        </UserSection>
+              ]}
+              layout={{ ...baseLayout, height: 260, showlegend: true }}
+              style={{ width: "100%" }}
+              useResizeHandler
+              config={{ displayModeBar: false }}
+            />
+          </UserSection>
+        </div>
 
-        {/* DIFFICULTY */}
-        <UserSection
-          title="Solves by Difficulty"
-          description={`${difficultiesCount} difficulty level${difficultiesCount !== 1 ? 's' : ''} mastered.`}
-          icon={Zap}
-        >
-          <Plot
-            key={`diff-${isDarkMode}`}
-            data={[
-              {
-                type: "pie",
-                labels: Object.keys(byDifficulty),
-                values: Object.values(byDifficulty),
-                hole: 0.5,
-                marker: {
-                  colors: diffColors,
-                  line: { color: t.bg, width: 1 },
+        {/* DIFFICULTY (1/3 width) */}
+        <div className="lg:col-span-1">
+          <UserSection
+            title="Solves by Difficulty"
+            description={`${difficultiesCount} difficulty level${difficultiesCount !== 1 ? 's' : ''} mastered.`}
+            icon={Zap}
+          >
+            <Plot
+              key={`diff-${isDarkMode}`}
+              data={[
+                {
+                  type: "pie",
+                  labels: Object.keys(byDifficulty),
+                  values: Object.values(byDifficulty),
+                  hole: 0.5,
+                  marker: {
+                    colors: diffColors,
+                    line: { color: t.bg, width: 1 },
+                  },
+                  textinfo: "label+percent",
+                  hovertemplate:
+                    "%{label}<br>%{value} solves<extra></extra>",
                 },
-                textinfo: "label+percent",
-                hovertemplate:
-                  "%{label}<br>%{value} solves<extra></extra>",
-              },
-            ]}
-            layout={{ ...baseLayout, height: 260 }}
-            style={{ width: "100%" }}
-            useResizeHandler
-            config={{ displayModeBar: false }}
-          />
-        </UserSection>
-      </div>
+              ]}
+              layout={{ ...baseLayout, height: 260, showlegend: false }}
+              style={{ width: "100%" }}
+              useResizeHandler
+              config={{ displayModeBar: false }}
+            />
+          </UserSection>
+        </div>
 
-      {/* ================= LINE ================= */}
-      <div>
-        <UserSection
-          title="Solves Over Time"
-          description={`${firstBloodCount} first blood${firstBloodCount !== 1 ? 's' : ''} recorded in this event scope.`}
-          icon={TrendingUp}
-        >
-          <Plot
-            key={`line-${isDarkMode}`}
-            data={[
-              {
-                type: "scatter",
-                mode: "lines+markers",
-                x: timeSeries.map(d => d.date),
-                y: timeSeries.map(d => d.count),
-                line: { width: 3, color: "#60a5fa" },
-                marker: {
-                  size: 6,
-                  color: "#93c5fd",
-                  line: { color: t.bg, width: 1 },
+        {/* SOLVES OVER TIME (2/3 width) */}
+        <div className="lg:col-span-2">
+          <UserSection
+            title="Solves Over Time"
+            description={`${firstBloodCount} first blood${firstBloodCount !== 1 ? 's' : ''} recorded in this event scope.`}
+            icon={TrendingUp}
+          >
+            <Plot
+              key={`line-${isDarkMode}`}
+              data={[
+                {
+                  type: "scatter",
+                  mode: "lines+markers",
+                  x: timeSeries.map(d => d.date),
+                  y: timeSeries.map(d => d.count),
+                  line: { width: 3, color: "#60a5fa" },
+                  marker: {
+                    size: 6,
+                    color: "#93c5fd",
+                    line: { color: t.bg, width: 1 },
+                  },
+                  hovertemplate:
+                    "%{x}<br>%{y} solves<extra></extra>",
                 },
-                hovertemplate:
-                  "%{x}<br>%{y} solves<extra></extra>",
-              },
-            ]}
-            layout={{
-              ...baseLayout,
-              height: 300,
-              xaxis: { gridcolor: t.grid },
-              yaxis: {
-                title: { text: "Solves" },
-                gridcolor: t.grid,
-              },
-              showlegend: false,
-            }}
-            style={{ width: "100%" }}
-            useResizeHandler
-            config={{ scrollZoom: false, displayModeBar: false }}
-          />
-        </UserSection>
+              ]}
+              layout={{
+                ...baseLayout,
+                height: 260,
+                xaxis: { gridcolor: t.grid },
+                yaxis: {
+                  title: { text: "Solves" },
+                  gridcolor: t.grid,
+                },
+                showlegend: false,
+              }}
+              style={{ width: "100%" }}
+              useResizeHandler
+              config={{ scrollZoom: false, displayModeBar: false }}
+            />
+          </UserSection>
+        </div>
+
+        {/* SUBMISSION ACCURACY (1/3 width) */}
+        <div className="lg:col-span-1">
+          <UserSection
+            title="Submission Accuracy"
+            description={`${total} flag submission${total !== 1 ? 's' : ''} recorded.`}
+            icon={Target}
+          >
+            <Plot
+              key={`accuracy-${isDarkMode}`}
+              data={[
+                {
+                  type: "pie",
+                  labels: ["Correct", "Incorrect"],
+                  values: [correct, incorrect],
+                  hole: 0.5,
+                  marker: {
+                    colors: ["#22c55e", "#ef4444"],
+                    line: { color: t.bg, width: 1 },
+                  },
+                  textinfo: "label+percent",
+                  hovertemplate:
+                    "%{label}<br>%{value} submissions<extra></extra>",
+                },
+              ]}
+              layout={{ ...baseLayout, height: 260, showlegend: false }}
+              style={{ width: "100%" }}
+              useResizeHandler
+              config={{ displayModeBar: false }}
+            />
+          </UserSection>
+        </div>
+
       </div>
     </div>
   )

@@ -273,6 +273,28 @@ export async function submitFlag(challengeId: string, flag: string): Promise<Sub
     success: Boolean(result?.success),
     message: String(result?.message || ''),
   };
+};
+
+/**
+ * Get flag submission stats for a challenge (for the current user)
+ */
+export async function getMyFlagSubmissionStats(challengeId: string): Promise<{
+  incorrect_attempts: number
+  window_attempts: number
+  window_start_at: string
+  remaining_attempts: number
+  cooldown_seconds: number
+} | null> {
+  const { data, error } = await supabase.rpc('get_my_submission_status', {
+    p_challenge_id: challengeId
+  })
+
+  if (error) {
+    console.error('Error fetching my flag submission stats:', error)
+    return null
+  }
+
+  return data?.[0] || null
 }
 
 /**

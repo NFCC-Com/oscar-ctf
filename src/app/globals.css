@@ -495,3 +495,9 @@ textarea::-webkit-resizer {
 .animate-toast-progress-15s {
   animation: toast-progress 15s linear forwards;
 }
+
+/* Hide Plotly legend scrollbar while keeping it scrollable */
+.js-plotly-plot .legend .scrollbar,
+.js-plotly-plot .legend .scrollhandle {
+  display: none !important;
+}

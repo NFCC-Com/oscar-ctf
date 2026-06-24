@@ -19,6 +19,7 @@ export type UserDetail = {
   created_at?: string | null
   last_login_at?: string | null
   solved_challenges: ChallengeWithSolve[]
+  flag_stats: { correct_submissions: number; incorrect_submissions: number }
 }
 
 export type UserProfileLite = {
@@ -79,6 +80,10 @@ export async function getUserDetail(userId: string, eventId?: string | null, eve
         is_solved: true,
         solved_at: c.solved_at,
       })),
+      flag_stats: {
+        correct_submissions: data.flag_stats?.correct_submissions ?? 0,
+        incorrect_submissions: data.flag_stats?.incorrect_submissions ?? 0,
+      },
     }
   } catch (error) {
     console.error('Error fetching user detail:', error)
@@ -276,3 +281,5 @@ export async function updateProfilePicture(userId: string, profilePictureUrl: st
     return { error: 'Failed to update profile picture' }
   }
 }
+
+

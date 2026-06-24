@@ -4,7 +4,15 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, KeyRound } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { Button } from '@/shared/ui'
+import {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/shared/ui'
 import { cn } from '@/shared/lib/utils'
 import { Loader } from '@/shared/components'
 import { formatRelativeDate } from '@/shared/lib'
@@ -16,8 +24,8 @@ import {
   AdminFilterInput,
   AdminFilterSelect,
   AdminFilterToolbar,
-  AdminListSurface,
   AdminStickyToolbar,
+  AdminTableSurface,
 } from '../../ui'
 
 const AUTH_ACTION_OPTIONS = [
@@ -162,68 +170,78 @@ export default function AuthAuditLogList({ tabs }: { tabs?: React.ReactNode }) {
         />
       ) : null}
     >
-      <AdminListSurface>
-        {visibleLogs.map((log, idx) => {
-          const actionName = getPayloadText(log.payload, 'action') || 'unknown'
-          const actor = getActorLabel(log)
+      <AdminTableSurface>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-gray-200/80 hover:bg-transparent dark:border-gray-800">
+              <TableHead className="pl-6 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Action</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Actor</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Email</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">User ID</TableHead>
+              <TableHead className="pr-6 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Time</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visibleLogs.map((log, idx) => {
+              const actionName = getPayloadText(log.payload, 'action') || 'unknown'
+              const actor = getActorLabel(log)
+              const actorId = getActorId(log)
 
-          return (
-            <motion.div
-              key={log.id || idx}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className={`${ADMIN_ROW_CLASS} px-5 py-3`}
-            >
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
-                <div className="flex min-w-0 sm:min-w-[170px] items-center gap-2">
-                  <KeyRound className={cn('h-4 w-4', getActionStyle(actionName))} />
-                  <span className={cn('text-[10px] font-black uppercase tracking-widest', getActionStyle(actionName))}>
-                    {actionName}
-                  </span>
-                </div>
-
-                <div className="min-w-0 sm:min-w-[220px] truncate">
-                  {log.username ? (
-                    <Link
-                      href={`/user/${encodeURIComponent(log.username)}`}
-                      className="text-sm font-semibold text-blue-600 transition hover:text-blue-500 hover:underline dark:text-blue-400"
-                    >
-                      {log.username}
-                    </Link>
-                  ) : (
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      {actor}
-                    </span>
-                  )}
-                  {log.email && log.email !== actor && (
-                    <div className="truncate text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {log.username ? (
+              return (
+                <TableRow
+                  key={log.id || idx}
+                  className={cn(ADMIN_ROW_CLASS, "border-b border-gray-100 dark:border-gray-800")}
+                >
+                  <TableCell className="pl-6 py-3 font-semibold">
+                    <div className="flex items-center gap-2">
+                      <KeyRound className={cn('h-3.5 w-3.5', getActionStyle(actionName))} />
+                      <span className={cn('text-[10px] font-black uppercase tracking-widest', getActionStyle(actionName))}>
+                        {actionName}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3 font-semibold text-gray-900 dark:text-gray-100">
+                    {log.username ? (
+                      <Link
+                        href={`/user/${encodeURIComponent(log.username)}`}
+                        className="text-blue-600 transition hover:text-blue-500 hover:underline dark:text-blue-400"
+                      >
+                        {log.username}
+                      </Link>
+                    ) : (
+                      <span className="text-gray-700 dark:text-gray-200">
+                        {actor}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-3 text-gray-600 dark:text-gray-300">
+                    {log.email ? (
+                      log.username ? (
                         <Link
                           href={`/user/${encodeURIComponent(log.username)}`}
-                          className="transition hover:text-blue-500 hover:underline"
+                          className="transition hover:text-blue-500 hover:underline text-blue-600 dark:text-blue-400"
                         >
                           {log.email}
                         </Link>
                       ) : (
                         log.email
-                      )}
-                    </div>
-                  )}
-                  <div className="truncate font-mono text-[10px] text-gray-500">
-                    {getActorId(log)}
-                  </div>
-                </div>
-
-                <div className="min-w-0 flex-1 text-left lg:text-right">
-                  <span className="font-mono text-[10px] text-gray-500">
+                      )
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-600">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-3 font-mono text-xs text-gray-500">
+                    {actorId}
+                  </TableCell>
+                  <TableCell className="pr-6 py-3 text-right text-xs text-gray-500 font-mono">
                     {formatRelativeDate(log.created_at)}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          )
-        })}
-      </AdminListSurface>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </AdminTableSurface>
 
       <div className="mx-5 my-4 flex flex-col gap-3 border-t border-gray-200/80 pt-4 text-sm text-muted-foreground dark:border-gray-800/80 sm:flex-row sm:items-center sm:justify-between">
         <span>Page {page}</span>

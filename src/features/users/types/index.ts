@@ -18,6 +18,7 @@ export type UserDetail = {
   created_at?: string | null
   last_login_at?: string | null
   solved_challenges: ChallengeWithSolve[]
+  flag_stats?: { correct_submissions: number; incorrect_submissions: number } | null
 }
 
 export type UserProfileProps = {

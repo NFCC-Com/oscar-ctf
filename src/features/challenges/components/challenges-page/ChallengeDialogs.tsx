@@ -74,6 +74,8 @@ export default function ChallengeDialogs({ data }: ChallengeDialogsProps) {
         subChallengeFlag={data.selectedSubChallengeState?.flag || null}
         subChallengeMessage={data.selectedSubChallengeState?.message || null}
         placeholders={data.placeholders}
+        submissionsRemaining={data.submissionsRemaining}
+        cooldownSeconds={data.cooldownSeconds}
         services={data.selectedChallenge?.services || []}
         onSubChallengeAnswerChange={(orderNumber, value) => {
           if (!data.selectedChallenge) return

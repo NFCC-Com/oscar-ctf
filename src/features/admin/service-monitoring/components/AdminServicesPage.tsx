@@ -164,24 +164,6 @@ export default function AdminServicesPage() {
     <>
       <AdminPageShell>
         <div className="flex flex-col min-h-0 flex-1">
-          {activeTab === 'platform' && platformError && (
-            <div className="mb-4">
-              <SafeStatusNotice
-                title="Platform config unavailable"
-                message={platformError}
-              />
-            </div>
-          )}
-
-          {activeTab === 'live' && runtimeStatus.error && (
-            <div className="mb-4">
-              <SafeStatusNotice
-                title={runtimeStatus.isComplete ? 'Runtime status warning' : 'Full live inventory unavailable'}
-                message={runtimeStatus.isComplete ? runtimeStatus.error : `${runtimeStatus.error}. Showing any fallback runtime data that could be loaded.`}
-              />
-            </div>
-          )}
-
           <AdminStickyToolbar
             tabs={
                   <AdminTabs
@@ -216,6 +198,24 @@ export default function AdminServicesPage() {
               />
             }
           />
+
+          {activeTab === 'platform' && platformError && (
+            <div className="mb-4 mt-2">
+              <SafeStatusNotice
+                title="Platform config unavailable"
+                message={platformError}
+              />
+            </div>
+          )}
+
+          {activeTab === 'live' && runtimeStatus.error && (
+            <div className="mb-4 mt-2">
+              <SafeStatusNotice
+                title={runtimeStatus.isComplete ? 'Runtime status warning' : 'Full live inventory unavailable'}
+                message={runtimeStatus.isComplete ? runtimeStatus.error : `${runtimeStatus.error}. Showing any fallback runtime data that could be loaded.`}
+              />
+            </div>
+          )}
 
           <div className="flex flex-1 min-h-0">
             {activeTab === 'platform' ? (

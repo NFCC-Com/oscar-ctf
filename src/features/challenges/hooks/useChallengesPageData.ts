@@ -40,7 +40,7 @@ export function useChallengesPageData() {
   } = useSubChallenges()
 
   const eventId: EventSelectorValue = selectedEvent === 'main' ? null : selectedEvent
-  const { challenges, isChallengesLoading, initialLoading, loadChallenges } = useChallengeList(user?.id, eventId)
+  const { challenges, isChallengesLoading, initialLoading, loadChallenges, updateChallengeSolvesCount } = useChallengeList(user?.id, eventId)
   const { filterSettings, setFilterSettings } = useChallengeFilterSettings()
   const {
     challengeTab,
@@ -55,20 +55,33 @@ export function useChallengesPageData() {
     openChallenge,
     closeChallenge,
     downloadFile,
+    fetchSolversForChallenge,
   } = useChallengeDialogState({
     challenges,
     initialLoading,
     refreshSubChallenges,
+    onUpdateChallengeSolves: updateChallengeSolvesCount,
   })
+  const handleReloadChallenges = async () => {
+    await loadChallenges()
+    if (selectedChallenge?.id) {
+      await fetchSolversForChallenge(selectedChallenge.id, true)
+    }
+  }
+
   const {
     flagInputs,
     flagFeedback,
     submitting,
+    submissionsRemaining,
+    cooldownSeconds,
+    fetchStats,
     handleFlagSubmit,
     handleFlagInputChange,
   } = useChallengeFlagSubmission({
     user,
-    reloadChallenges: loadChallenges,
+    reloadChallenges: handleReloadChallenges,
+    selectedChallengeId: selectedChallenge?.id,
   })
   const {
     eventMembership,
@@ -130,7 +143,10 @@ export function useChallengesPageData() {
 
   const handleSubChallengeSubmit = async (challengeId: string, orderNumber?: number) => {
     const result = await submitSubChallengeAnswers(challengeId, orderNumber)
-    if (result.completed) await loadChallenges()
+    if (result.completed) {
+      await loadChallenges()
+      await fetchSolversForChallenge(challengeId, true)
+    }
   }
 
   const selectedSubChallengeState = selectedChallenge ? getSubChallengeState(selectedChallenge.id) : null
@@ -184,6 +200,9 @@ export function useChallengesPageData() {
     closeChallenge,
     handleFlagSubmit,
     handleFlagInputChange,
+    submissionsRemaining,
+    cooldownSeconds,
+    fetchStats,
     handleSubChallengeAnswerChange,
     handleSubChallengeSubmit,
     attemptEventSelect,

@@ -135,7 +135,7 @@ export default function AdminSettingsPage() {
 
   return (
     <AdminPageShell>
-      <div className="py-5 pt-7.5 space-y-6">
+      <div className="space-y-6">
         {isLoadingSettings ? (
           <AdminContentLoading />
         ) : (
@@ -143,18 +143,21 @@ export default function AdminSettingsPage() {
             title="System Settings"
             icon={Settings}
             description="Configure system-wide feature flags, restriction levels, and participant actions."
+            className="!border-none !bg-transparent !shadow-none !backdrop-blur-none !p-0"
+            headerClassName="!border-none !px-0 !pb-4"
+            contentClassName="!p-0"
           >
-            <div className="divide-y divide-gray-200/50 dark:divide-gray-800/50">
+            <div className="divide-y divide-gray-200/50 dark:divide-gray-800/60">
               {CONFIG_KEYS.map((config) => (
                 <div
                   key={config.key}
-                  className="flex items-center justify-between gap-4 py-5 first:pt-0 last:pb-0"
+                  className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-2"
                 >
-                  <div className="space-y-1.5 min-w-0 pr-4">
+                  <div className="min-w-0 pr-4">
                     <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {config.label}
                     </span>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-normal">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-normal mt-0.5">
                       {config.description}
                     </p>
                   </div>
@@ -169,10 +172,10 @@ export default function AdminSettingsPage() {
               ))}
             </div>
 
-            <div className="mt-8 pt-5 border-t border-gray-200/50 dark:border-gray-800/60 flex items-center justify-between gap-4">
+            <div className="mt-6 flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 text-xs text-yellow-600 dark:text-yellow-500/90 font-medium">
                 <ShieldAlert className="h-4 w-4 shrink-0" />
-                <span>Modifying these settings alters active tournament features.</span>
+                <span>Changes take effect immediately.</span>
               </div>
               <Button
                 onClick={handleSave}

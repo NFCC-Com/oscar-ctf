@@ -105,6 +105,23 @@ export function useChallengeList(userId?: string, eventId?: EventSelectorValue) 
     }
   }, [eventId, userId])
 
+  const updateChallengeSolvesCount = useCallback((challengeId: string, totalSolves: number) => {
+    setChallenges((prevChallenges) =>
+      prevChallenges.map((c: ChallengeWithSolve) =>
+        c.id === challengeId ? { ...c, total_solves: totalSolves } : c
+      )
+    )
+
+    cacheRef.current.forEach((cachedList, key) => {
+      cacheRef.current.set(
+        key,
+        cachedList.map((c: ChallengeWithSolve) =>
+          c.id === challengeId ? { ...c, total_solves: totalSolves } : c
+        )
+      )
+    })
+  }, [])
+
   useEffect(() => {
     void loadChallenges()
   }, [loadChallenges])
@@ -114,5 +131,6 @@ export function useChallengeList(userId?: string, eventId?: EventSelectorValue) 
     isChallengesLoading,
     initialLoading,
     loadChallenges,
+    updateChallengeSolvesCount,
   }
 }

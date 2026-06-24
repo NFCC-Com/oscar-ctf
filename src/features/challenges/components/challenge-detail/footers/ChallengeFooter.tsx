@@ -12,6 +12,8 @@ interface ChallengeFooterProps {
   flagFeedback: KeyedFlagFeedbackMap
   handleFlagInputChange: (challengeId: string, value: string) => void
   handleFlagSubmit: (challengeId: string) => void | Promise<unknown>
+  submissionsRemaining?: number
+  cooldownSeconds?: number
   preserveDialogScroll?: () => () => void
 }
 
@@ -23,6 +25,8 @@ export const ChallengeFooter: React.FC<ChallengeFooterProps> = ({
   flagFeedback,
   handleFlagInputChange,
   handleFlagSubmit,
+  submissionsRemaining = 10,
+  cooldownSeconds = 0,
   preserveDialogScroll,
 }) => {
   return (
@@ -35,6 +39,8 @@ export const ChallengeFooter: React.FC<ChallengeFooterProps> = ({
         flagFeedback={flagFeedback}
         handleFlagInputChange={handleFlagInputChange}
         handleFlagSubmit={handleFlagSubmit}
+        submissionsRemaining={submissionsRemaining}
+        cooldownSeconds={cooldownSeconds}
         preserveDialogScroll={preserveDialogScroll}
       />
     </DialogFooterLayout>

@@ -349,6 +349,48 @@ export type Database = {
         }
         Relationships: []
       }
+      flag_submissions: {
+        Row: {
+          challenge_id: string
+          incorrect_attempts: number | null
+          last_attempt_at: string | null
+          user_id: string
+          window_attempts: number | null
+          window_start_at: string | null
+        }
+        Insert: {
+          challenge_id: string
+          incorrect_attempts?: number | null
+          last_attempt_at?: string | null
+          user_id: string
+          window_attempts?: number | null
+          window_start_at?: string | null
+        }
+        Update: {
+          challenge_id?: string
+          incorrect_attempts?: number | null
+          last_attempt_at?: string | null
+          user_id?: string
+          window_attempts?: number | null
+          window_start_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flag_submissions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flag_submissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       "keep-alive": {
         Row: {
           created_at: string | null
@@ -891,6 +933,26 @@ export type Database = {
       get_event_join_settings: { Args: { p_event_id: string }; Returns: Json }
       get_flag: { Args: { p_challenge_id: string }; Returns: string }
       get_flag_placeholder: { Args: { p_flag: string }; Returns: string }
+      get_flag_submission_stats: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_status?: string
+        }
+        Returns: {
+          challenge_category: string
+          challenge_id: string
+          challenge_title: string
+          incorrect_attempts: number
+          is_solved: boolean
+          last_attempt_at: string
+          solved_at: string
+          total_count: number
+          user_id: string
+          username: string
+        }[]
+      }
       get_info: { Args: never; Returns: Json }
       get_leaderboard: {
         Args: {
@@ -926,6 +988,16 @@ export type Database = {
         }[]
       }
       get_my_event_membership: { Args: { p_event_id: string }; Returns: Json }
+      get_my_submission_status: {
+        Args: { p_challenge_id: string }
+        Returns: {
+          cooldown_seconds: number
+          incorrect_attempts: number
+          remaining_attempts: number
+          window_attempts: number
+          window_start_at: string
+        }[]
+      }
       get_my_team: {
         Args: { p_event_id?: string; p_event_mode?: string }
         Returns: Json

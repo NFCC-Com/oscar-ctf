@@ -114,7 +114,7 @@ BEGIN
         AND c.event_id IS NULL
     ) AS has_main_solved,
     u.banned_until,
-    u.ban_reason
+    u.ban_reason::TEXT
   FROM public.users u
   LEFT JOIN auth.users au ON au.id = u.id
   WHERE u.id = p_id;
@@ -134,6 +134,8 @@ DECLARE
   v_solves JSON;
   v_picture TEXT;
   v_last_login TIMESTAMPTZ;
+  v_correct_flags INT := 0;
+  v_incorrect_flags INT := 0;
 BEGIN
   SELECT id, username, bio, sosmed, profile_picture_url, created_at
   INTO v_user
@@ -179,6 +181,20 @@ BEGIN
   JOIN public.challenges c ON s.challenge_id = c.id
   WHERE s.user_id = p_id;
 
+  -- Count correct submissions (solves)
+  SELECT COUNT(*)::INT INTO v_correct_flags
+  FROM public.solves s
+  JOIN public.challenges c ON c.id = s.challenge_id
+  WHERE s.user_id = p_id
+    AND public.match_event_mode(p_event_mode, p_event_id, c.event_id);
+
+  -- Sum incorrect attempts from flag_submissions
+  SELECT COALESCE(SUM(fs.incorrect_attempts), 0)::INT INTO v_incorrect_flags
+  FROM public.flag_submissions fs
+  JOIN public.challenges c ON c.id = fs.challenge_id
+  WHERE fs.user_id = p_id
+    AND public.match_event_mode(p_event_mode, p_event_id, c.event_id);
+
   SELECT COALESCE(
     json_agg(
       json_build_object(
@@ -213,7 +229,11 @@ BEGIN
       'created_at', v_user.created_at,
       'last_login_at', v_last_login
     ),
-    'solved_challenges', v_solves
+    'solved_challenges', v_solves,
+    'flag_stats', json_build_object(
+      'correct_submissions', v_correct_flags,
+      'incorrect_submissions', v_incorrect_flags
+    )
   );
 END;
 $$ LANGUAGE plpgsql
@@ -626,7 +646,7 @@ BEGIN
       u.created_at,
       u.updated_at,
       u.banned_until,
-      u.ban_reason
+      u.ban_reason::text
     FROM public.users u
     LEFT JOIN auth.users au ON au.id = u.id
     WHERE (
@@ -779,5 +799,3 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = auth, public, extensions;
 
 GRANT EXECUTE ON FUNCTION public.admin_change_password(UUID, TEXT) TO authenticated;
-
-

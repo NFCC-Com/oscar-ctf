@@ -23,12 +23,14 @@ type UseChallengeDialogStateOptions = {
   challenges: ChallengeWithSolve[]
   initialLoading: boolean
   refreshSubChallenges: (challengeId: string) => Promise<unknown> | unknown
+  onUpdateChallengeSolves?: (challengeId: string, totalSolves: number) => void
 }
 
 export function useChallengeDialogState({
   challenges,
   initialLoading,
   refreshSubChallenges,
+  onUpdateChallengeSolves,
 }: UseChallengeDialogStateOptions) {
   const [challengeTab, setChallengeTab] = useState<ChallengeDialogTab>('challenge')
   const [solvers, setSolvers] = useState<Solver[]>([])
@@ -65,10 +67,15 @@ export function useChallengeDialogState({
       const data = await getSolversByChallenge(challengeId)
       solversCache.set(challengeId, data)
       setSolvers(data)
+
+      const currentChallenge = challenges.find((c) => c.id === challengeId)
+      if (currentChallenge && currentChallenge.total_solves !== data.length) {
+        onUpdateChallengeSolves?.(challengeId, data.length)
+      }
     } catch {
       setSolvers([])
     }
-  }, [solversCache])
+  }, [solversCache, challenges, onUpdateChallengeSolves])
 
   const handleTabChange = useCallback(async (tab: ChallengeDialogTab, challengeId: string) => {
     setChallengeTab(tab)
@@ -207,5 +214,6 @@ export function useChallengeDialogState({
     openChallenge,
     closeChallenge,
     downloadFile,
+    fetchSolversForChallenge,
   }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { CheckCircle2, Crown, Droplet, Trophy, Users } from 'lucide-react'
+import { CheckCircle2, Crown, Droplet, Trophy, Users, XCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import APP from '@/config'
 import { UserDetail, TeamInfo } from '../../types'

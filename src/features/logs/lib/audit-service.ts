@@ -186,3 +186,71 @@ export async function getAuditEntitySnapshot(
 
   return isRecord(data) ? data : null
 }
+
+// Flag Submission Stats
+
+export interface FlagSubmissionStatsEntry {
+  user_id: string
+  username: string
+  challenge_id: string
+  challenge_title: string
+  challenge_category: string
+  incorrect_attempts: number
+  is_solved: boolean
+  last_attempt_at: string
+  solved_at: string | null
+  total_count: number
+}
+
+export type FlagSubmissionStatsFilters = {
+  status?: string | null
+  search?: string | null
+}
+
+function callFlagSubmissionStatsRpc(args: {
+  p_limit: number
+  p_offset: number
+  p_status: string | null
+  p_search: string | null
+}) {
+  return (supabase.rpc as any)('get_flag_submission_stats', args) as ReturnType<typeof supabase.rpc>
+}
+
+function normalizeFlagSubmissionStats(row: any): FlagSubmissionStatsEntry {
+  return {
+    user_id: String(row.user_id || ''),
+    username: String(row.username || ''),
+    challenge_id: String(row.challenge_id || ''),
+    challenge_title: String(row.challenge_title || ''),
+    challenge_category: String(row.challenge_category || ''),
+    incorrect_attempts: Number(row.incorrect_attempts || 0),
+    is_solved: Boolean(row.is_solved),
+    last_attempt_at: String(row.last_attempt_at || ''),
+    solved_at: row.solved_at ? String(row.solved_at) : null,
+    total_count: Number(row.total_count || 0),
+  }
+}
+
+export async function getFlagSubmissionStats(
+  limit = 50,
+  offset = 0,
+  filters: FlagSubmissionStatsFilters = {}
+): Promise<{ entries: FlagSubmissionStatsEntry[]; totalCount: number }> {
+  const { data, error } = await callFlagSubmissionStatsRpc({
+    p_limit: limit,
+    p_offset: offset,
+    p_status: filters.status || null,
+    p_search: filters.search || null,
+  })
+
+  if (error) {
+    console.error('Error fetching flag submission stats RPC:', error)
+    return { entries: [], totalCount: 0 }
+  }
+
+  const entries = (data ?? []).map(normalizeFlagSubmissionStats)
+  return {
+    entries,
+    totalCount: entries[0]?.total_count ?? 0,
+  }
+}

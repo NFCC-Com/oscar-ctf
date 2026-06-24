@@ -31,6 +31,7 @@ export default function UserProfile({
   const {
     userDetail,
     setUserDetail,
+    flagStats,
     loadingDetail,
     initialLoading,
     activeTab,
@@ -201,6 +202,7 @@ export default function UserProfile({
             <UserStatsPlotly
               solvedChallenges={solvedChallenges}
               firstBloodIds={firstBloodIds}
+              flagStats={flagStats}
             />
           </div>
         )}

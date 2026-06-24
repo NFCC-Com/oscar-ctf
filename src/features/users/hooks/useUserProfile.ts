@@ -33,6 +33,7 @@ export function useUserProfile(userId: string | null, isCurrentUser: boolean) {
   const [firstBloodIds, setFirstBloodIds] = useState<string[]>([])
   const [categoryTotals, setCategoryTotals] = useState<{ category: string; total_challenges: number }[]>([])
   const [difficultyTotals, setDifficultyTotals] = useState<{ difficulty: string; total_challenges: number }[]>([])
+  const flagStats = userDetail?.flag_stats ?? null
   const [loadingDetail, setLoadingDetail] = useState<boolean>(true)
   const [initialLoading, setInitialLoading] = useState(true)
   const isInitialDetailLoadRef = useRef(true)
@@ -128,6 +129,7 @@ export function useUserProfile(userId: string | null, isCurrentUser: boolean) {
         setUserDetail(detail)
 
         if (detail) {
+
           const firstBlood = await getFirstBloodChallengeIds(detail.id)
           const solvedIds = new Set((detail.solved_challenges || []).map(c => c.id))
           setFirstBloodIds(firstBlood.filter(id => solvedIds.has(id)))
@@ -168,6 +170,7 @@ export function useUserProfile(userId: string | null, isCurrentUser: boolean) {
         effectiveSelectedEventMode
       )
       setUserDetail(detail)
+
       if (isCurrentUser) {
         const freshUser = await AuthService.getCurrentUser()
         if (freshUser) setUser(freshUser)
@@ -223,6 +226,7 @@ export function useUserProfile(userId: string | null, isCurrentUser: boolean) {
   return {
     userDetail,
     setUserDetail,
+    flagStats,
     loadingDetail,
     initialLoading,
     activeTab,

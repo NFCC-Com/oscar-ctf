@@ -10,7 +10,6 @@ const orderedFiles = [
   "schema/_reset_function.sql",
 
   // 1.5) New tables / indexes required by updated functions
-  "schema/admin_audit_logs.sql",
 
   // 2) Query/functions (core first)
   "queries/users.sql",
@@ -23,6 +22,7 @@ const orderedFiles = [
   "queries/challenges.sql",
   "queries/sub_challenges.sql",
   "queries/solves.sql",
+  "queries/flag_submissions.sql",
   "queries/teams.sql",
   "queries/team_members.sql",
   "queries/notifications.sql",

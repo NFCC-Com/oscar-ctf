@@ -184,12 +184,12 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
           <Table>
             <TableHeader>
               <TableRow className="border-b border-gray-200/80 hover:bg-transparent dark:border-gray-800">
-                <TableHead className="px-5">Action</TableHead>
-                <TableHead>Admin</TableHead>
-                <TableHead>Entity</TableHead>
-                <TableHead>Changes</TableHead>
-                <TableHead className="text-right">Time</TableHead>
-                <TableHead className="w-[86px] px-5 text-right">View</TableHead>
+                <TableHead className="pl-5 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Action</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Admin</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Entity</TableHead>
+                <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Changes</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Time</TableHead>
+                <TableHead className="w-[86px] pr-5 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">View</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -197,44 +197,47 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
                 const style = getActionStyle(log.action)
 
                 return (
-                  <motion.tr
+                  <TableRow
                     key={log.id || idx}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className={ADMIN_ROW_CLASS}
+                    className={cn(ADMIN_ROW_CLASS, "border-b border-gray-100 dark:border-gray-800")}
                   >
-                    <TableCell className="px-5 py-3">
+                    <TableCell className="pl-5 py-3">
                       <div className="flex items-center gap-2">
                         <span className={cn(style.color, 'font-black')}>{style.icon}</span>
                         <AdminStatusBadge tone={style.tone}>{log.action}</AdminStatusBadge>
                       </div>
                     </TableCell>
                     <TableCell className="py-3">
-                      <div className="max-w-[220px] truncate text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        {log.actor_snapshot}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate max-w-[140px]">
+                          {log.actor_snapshot}
+                        </span>
+                        <AdminStatusBadge tone={log.actor_role === 'global_admin' ? 'info' : 'neutral'} className="text-[9px] px-1.5 py-0 h-4 flex items-center">
+                          {log.actor_role}
+                        </AdminStatusBadge>
                       </div>
-                      <AdminStatusBadge tone={log.actor_role === 'global_admin' ? 'info' : 'neutral'} className="mt-1">
-                        {log.actor_role}
-                      </AdminStatusBadge>
                     </TableCell>
                     <TableCell className="py-3">
-                      <div className="text-xs font-bold text-gray-900 dark:text-gray-100">{log.entity_type}</div>
-                      <div className="max-w-[220px] truncate font-mono text-[10px] text-gray-500">{log.entity_id || '-'}</div>
-                    </TableCell>
-                    <TableCell className="max-w-[320px] py-3">
-                      {log.changed_fields.length > 0 && (
-                        <div className="truncate text-xs font-semibold text-gray-600 dark:text-gray-300">
-                          {log.changed_fields.join(', ')}
-                        </div>
-                      )}
-                      <div className="truncate font-mono text-[10px] text-gray-500">
-                        {log.ip_address || 'unknown ip'}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-gray-900 dark:text-gray-100">{log.entity_type}</span>
+                        {log.entity_id ? (
+                          <span className="font-mono text-[9px] text-gray-400 dark:text-gray-500">
+                            ({log.entity_id.slice(0, 8)})
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-600">-</span>
+                        )}
                       </div>
+                    </TableCell>
+                    <TableCell className="py-3 max-w-[250px] truncate">
+                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        {log.changed_fields.length > 0 ? log.changed_fields.join(', ') : '-'}
+                      </span>
                     </TableCell>
                     <TableCell className="py-3 text-right font-mono text-[10px] text-gray-500">
                       {formatRelativeDate(log.created_at)}
                     </TableCell>
-                    <TableCell className="px-5 py-3 text-right">
+                    <TableCell className="pr-5 py-3 text-right">
                       <Button
                         type="button"
                         variant="outline"
@@ -246,7 +249,7 @@ const AuditLogList: React.FC<AuditLogListProps> = ({ logs: propLogs, isLoading: 
                         <Eye className="h-4 w-4" />
                       </Button>
                     </TableCell>
-                  </motion.tr>
+                  </TableRow>
                 )
               })}
             </TableBody>

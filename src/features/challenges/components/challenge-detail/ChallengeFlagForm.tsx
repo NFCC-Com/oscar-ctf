@@ -1,5 +1,7 @@
 'use client'
 
+'use client'
+
 import React from 'react'
 import type { ChallengeWithSolve } from '@/shared/types'
 import { SURFACE_GLASS_CARD_COMPACT_CLASS } from '@/shared/styles'
@@ -14,6 +16,8 @@ type ChallengeFlagFormProps = {
   flagFeedback: KeyedFlagFeedbackMap
   handleFlagInputChange: (challengeId: string, value: string) => void
   handleFlagSubmit: (challengeId: string) => void | Promise<unknown>
+  submissionsRemaining?: number
+  cooldownSeconds?: number
   preserveDialogScroll?: () => () => void
 }
 
@@ -25,6 +29,8 @@ export default function ChallengeFlagForm({
   flagFeedback,
   handleFlagInputChange,
   handleFlagSubmit,
+  submissionsRemaining = 10,
+  cooldownSeconds = 0,
   preserveDialogScroll,
 }: ChallengeFlagFormProps) {
   const overlayRef = React.useRef<HTMLDivElement>(null)
@@ -90,6 +96,7 @@ export default function ChallengeFlagForm({
         className="flex gap-2"
         onSubmit={(event) => {
           event.preventDefault()
+          if (cooldownSeconds > 0) return
           submitFlagWithoutScrollJump()
         }}
       >
@@ -97,7 +104,7 @@ export default function ChallengeFlagForm({
           {challenge.flag_placeholder && placeholders[challenge.id] && (
             <div
               ref={overlayRef}
-              className="pointer-events-none absolute inset-0 flex select-none items-center overflow-hidden whitespace-pre pl-4 pr-6 font-mono text-sm text-gray-400 opacity-50 dark:text-gray-600"
+              className="pointer-events-none absolute inset-0 flex select-none items-center overflow-hidden whitespace-pre pl-4 pr-16 font-mono text-sm text-gray-400 opacity-50 dark:text-gray-600"
             >
               <span className="invisible">{flagInputs[challenge.id] || ''}</span>
               <span>{placeholders[challenge.id].slice((flagInputs[challenge.id] || '').length)}</span>
@@ -112,6 +119,10 @@ export default function ChallengeFlagForm({
             value={flagInputs[challenge.id] || ''}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
+                if (cooldownSeconds > 0) {
+                  event.preventDefault()
+                  return
+                }
                 prepareSubmitScrollRestore()
               }
 
@@ -135,15 +146,19 @@ export default function ChallengeFlagForm({
               restoreWindowScroll(scrollPosition)
             }}
             placeholder={challenge.flag_placeholder && placeholders[challenge.id] ? '' : 'Enter flag here...'}
-            className="w-full h-[38px] pl-4 pr-6 bg-transparent text-gray-900 dark:text-white focus:outline-none relative z-10 font-mono text-sm"
+            className="w-full h-[38px] pl-4 pr-16 bg-transparent text-gray-900 dark:text-white focus:outline-none relative z-10 font-mono text-sm disabled:opacity-50"
             spellCheck={false}
             autoComplete="off"
           />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-gray-400 dark:text-gray-500 select-none z-20 pointer-events-none">
+            {submissionsRemaining}/10
+          </span>
         </div>
         <button
           type="submit"
           disabled={
             submitting[challenge.id] ||
+            cooldownSeconds > 0 ||
             !flagInputs[challenge.id]?.trim() ||
             (challenge.flag_placeholder && placeholders[challenge.id] ? (flagInputs[challenge.id] || '').length !== placeholders[challenge.id].length : false)
           }
@@ -152,9 +167,23 @@ export default function ChallengeFlagForm({
             prepareSubmitScrollRestore()
           }}
           onTouchStart={prepareSubmitScrollRestore}
-          className="flex h-[38px] shrink-0 select-none items-center justify-center rounded-xl bg-blue-600 px-6 text-[13px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95 disabled:opacity-30"
+          className={`flex h-[38px] w-24 shrink-0 select-none items-center justify-center rounded-xl text-[13px] font-black uppercase tracking-widest text-white shadow-lg transition-all active:scale-95 disabled:opacity-30
+            ${cooldownSeconds > 0
+              ? 'bg-red-600 hover:bg-red-600 cursor-not-allowed shadow-red-500/10'
+              : 'bg-blue-600 shadow-blue-500/20 hover:bg-blue-500 hover:shadow-blue-500/30'}
+          `}
         >
-          {submitting[challenge.id] ? '...' : 'Submit'}
+          {submitting[challenge.id] ? (
+            <span className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white [animation-delay:-0.3s]"></span>
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white [animation-delay:-0.15s]"></span>
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white"></span>
+            </span>
+          ) : cooldownSeconds > 0 ? (
+            `${cooldownSeconds}s`
+          ) : (
+            'Submit'
+          )}
         </button>
       </form>
     </div>

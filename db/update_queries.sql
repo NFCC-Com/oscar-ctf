@@ -65,48 +65,6 @@ END $$;
 
 -- <<< END: schema/_reset_function.sql
 
--- >>> BEGIN: schema/admin_audit_logs.sql
--- ==============================================
--- Table: admin_audit_logs
--- ==============================================
-CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  actor_user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
-  actor_snapshot TEXT NOT NULL,
-  actor_role TEXT NOT NULL,
-  action TEXT NOT NULL,
-  entity_type TEXT NOT NULL,
-  entity_id UUID DEFAULT NULL,
-  changed_fields TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
-  before_data JSONB DEFAULT NULL,
-  after_data JSONB DEFAULT NULL,
-  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-  ip_address TEXT DEFAULT NULL,
-  user_agent TEXT DEFAULT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT admin_audit_logs_action_not_empty CHECK (btrim(action) <> ''),
-  CONSTRAINT admin_audit_logs_entity_type_not_empty CHECK (btrim(entity_type) <> ''),
-  CONSTRAINT admin_audit_logs_actor_role_check CHECK (actor_role IN ('global_admin', 'admin'))
-);
-ALTER TABLE public.admin_audit_logs
-  DROP CONSTRAINT IF EXISTS admin_audit_logs_actor_role_check;
-UPDATE public.admin_audit_logs
-SET actor_role = 'admin'
-WHERE actor_role NOT IN ('global_admin', 'admin');
-ALTER TABLE public.admin_audit_logs
-  ADD CONSTRAINT admin_audit_logs_actor_role_check
-  CHECK (actor_role IN ('global_admin', 'admin'));
-CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_actor_created
-  ON public.admin_audit_logs(actor_user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_entity_created
-  ON public.admin_audit_logs(entity_type, entity_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_action_created
-  ON public.admin_audit_logs(action, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created_at
-  ON public.admin_audit_logs(created_at DESC);
-
--- <<< END: schema/admin_audit_logs.sql
-
 -- >>> BEGIN: queries/users.sql
 -- ==============================================
 -- Queries: users
@@ -211,7 +169,7 @@ BEGIN
         AND c.event_id IS NULL
     ) AS has_main_solved,
     u.banned_until,
-    u.ban_reason
+    u.ban_reason::TEXT
   FROM public.users u
   LEFT JOIN auth.users au ON au.id = u.id
   WHERE u.id = p_id;
@@ -229,6 +187,8 @@ DECLARE
   v_solves JSON;
   v_picture TEXT;
   v_last_login TIMESTAMPTZ;
+  v_correct_flags INT := 0;
+  v_incorrect_flags INT := 0;
 BEGIN
   SELECT id, username, bio, sosmed, profile_picture_url, created_at
   INTO v_user
@@ -269,6 +229,18 @@ BEGIN
   FROM public.solves s
   JOIN public.challenges c ON s.challenge_id = c.id
   WHERE s.user_id = p_id;
+  -- Count correct submissions (solves)
+  SELECT COUNT(*)::INT INTO v_correct_flags
+  FROM public.solves s
+  JOIN public.challenges c ON c.id = s.challenge_id
+  WHERE s.user_id = p_id
+    AND public.match_event_mode(p_event_mode, p_event_id, c.event_id);
+  -- Sum incorrect attempts from flag_submissions
+  SELECT COALESCE(SUM(fs.incorrect_attempts), 0)::INT INTO v_incorrect_flags
+  FROM public.flag_submissions fs
+  JOIN public.challenges c ON c.id = fs.challenge_id
+  WHERE fs.user_id = p_id
+    AND public.match_event_mode(p_event_mode, p_event_id, c.event_id);
   SELECT COALESCE(
     json_agg(
       json_build_object(
@@ -302,7 +274,11 @@ BEGIN
       'created_at', v_user.created_at,
       'last_login_at', v_last_login
     ),
-    'solved_challenges', v_solves
+    'solved_challenges', v_solves,
+    'flag_stats', json_build_object(
+      'correct_submissions', v_correct_flags,
+      'incorrect_submissions', v_incorrect_flags
+    )
   );
 END;
 $$ LANGUAGE plpgsql
@@ -666,7 +642,7 @@ BEGIN
       u.created_at,
       u.updated_at,
       u.banned_until,
-      u.ban_reason
+      u.ban_reason::text
     FROM public.users u
     LEFT JOIN auth.users au ON au.id = u.id
     WHERE (
@@ -2515,12 +2491,70 @@ BEGIN
     RETURN v_access;
   END IF;
   v_is_admin_override := public.is_admin() OR public.can_manage_challenge(p_challenge_id);
+  -- Rate limiting check (skip for admins)
+  IF NOT v_is_admin_override THEN
+    DECLARE
+      v_window_attempts INT := 0;
+      v_window_start TIMESTAMPTZ;
+      v_seconds_elapsed INT;
+      v_cooldown_remaining INT;
+    BEGIN
+      SELECT window_attempts, window_start_at
+      INTO v_window_attempts, v_window_start
+      FROM public.flag_submissions
+      WHERE user_id = v_user_id AND challenge_id = p_challenge_id;
+      IF FOUND THEN
+        v_seconds_elapsed := EXTRACT(EPOCH FROM (now() - v_window_start))::INT;
+        IF v_seconds_elapsed < 60 AND v_window_attempts >= 10 THEN
+          v_cooldown_remaining := 60 - v_seconds_elapsed;
+          RETURN json_build_object(
+            'success', false,
+            'message', 'Rate limited. Try again in ' || v_cooldown_remaining || 's.'
+          );
+        END IF;
+      END IF;
+    END;
+  END IF;
   SELECT cf.flag, c.points, c.max_points, c.is_dynamic, c.min_points, c.decay_per_solve, c.event_id
   INTO v_flag, v_points, v_max_points, v_is_dynamic, v_min_points, v_decay_per_solve, v_event_id
   FROM public.challenge_flags cf
   JOIN public.challenges c ON c.id = cf.challenge_id
   WHERE cf.challenge_id = p_challenge_id;
   v_is_correct := p_flag = v_flag;
+  -- Log/upsert submission stats (skip for admins)
+  IF NOT v_is_admin_override THEN
+    SELECT count(*) INTO v_existing
+    FROM public.solves
+    WHERE user_id = v_user_id AND challenge_id = p_challenge_id;
+    INSERT INTO public.flag_submissions (
+      user_id, challenge_id,
+      incorrect_attempts, last_attempt_at,
+      window_attempts, window_start_at
+    )
+    VALUES (
+      v_user_id,
+      p_challenge_id,
+      CASE WHEN v_is_correct OR v_existing > 0 THEN 0 ELSE 1 END,
+      now(),
+      1,
+      now()
+    )
+    ON CONFLICT (user_id, challenge_id)
+    DO UPDATE SET
+      incorrect_attempts = CASE
+        WHEN v_is_correct OR v_existing > 0 THEN public.flag_submissions.incorrect_attempts
+        ELSE public.flag_submissions.incorrect_attempts + 1
+      END,
+      last_attempt_at = now(),
+      window_start_at = CASE
+        WHEN EXTRACT(EPOCH FROM (now() - public.flag_submissions.window_start_at)) >= 60 THEN now()
+        ELSE public.flag_submissions.window_start_at
+      END,
+      window_attempts = CASE
+        WHEN EXTRACT(EPOCH FROM (now() - public.flag_submissions.window_start_at)) >= 60 THEN 1
+        ELSE public.flag_submissions.window_attempts + 1
+      END;
+  END IF;
   IF NOT v_is_correct THEN
     RETURN json_build_object('success', false, 'message', 'Incorrect flag');
   END IF;
@@ -3834,6 +3868,170 @@ SECURITY DEFINER SET search_path = public, auth, extensions;
 GRANT EXECUTE ON FUNCTION get_user_first_bloods(UUID) TO authenticated;
 
 -- <<< END: queries/solves.sql
+
+-- >>> BEGIN: queries/flag_submissions.sql
+-- ==============================================
+-- Queries: flag_submissions
+-- Source: sql/chema.sql
+-- ==============================================
+-- RLS/POLICY
+ALTER TABLE public.flag_submissions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Flag submissions select global admin" ON public.flag_submissions;
+CREATE POLICY "Flag submissions select global admin"
+  ON public.flag_submissions
+  FOR SELECT
+  USING (public.is_admin());
+DROP POLICY IF EXISTS "Flag submissions select self" ON public.flag_submissions;
+CREATE POLICY "Flag submissions select self"
+  ON public.flag_submissions
+  FOR SELECT
+  USING (auth.uid()::uuid = user_id);
+-- ==============================================
+-- Function: get_flag_submission_stats
+-- ==============================================
+CREATE OR REPLACE FUNCTION public.get_flag_submission_stats(
+  p_limit INT DEFAULT 50,
+  p_offset INT DEFAULT 0,
+  p_status TEXT DEFAULT NULL,
+  p_search TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+  user_id UUID,
+  username TEXT,
+  challenge_id UUID,
+  challenge_title TEXT,
+  challenge_category TEXT,
+  incorrect_attempts INT,
+  is_solved BOOLEAN,
+  last_attempt_at TIMESTAMPTZ,
+  solved_at TIMESTAMPTZ,
+  total_count BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+BEGIN
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Only global admin can view flag submission stats';
+  END IF;
+  RETURN QUERY
+  WITH enriched AS (
+    SELECT
+      fs.user_id,
+      u.username::TEXT AS username,
+      fs.challenge_id,
+      c.title::TEXT AS challenge_title,
+      c.category::TEXT AS challenge_category,
+      fs.incorrect_attempts,
+      (sv.id IS NOT NULL) AS is_solved,
+      fs.last_attempt_at,
+      sv.created_at AS solved_at
+    FROM public.flag_submissions fs
+    JOIN public.users u ON u.id = fs.user_id
+    JOIN public.challenges c ON c.id = fs.challenge_id
+    LEFT JOIN public.solves sv ON sv.user_id = fs.user_id AND sv.challenge_id = fs.challenge_id
+    WHERE
+      (p_status IS NULL OR p_status = 'all'
+        OR (p_status = 'solved' AND sv.id IS NOT NULL)
+        OR (p_status = 'incorrect' AND sv.id IS NULL)
+      )
+      AND (
+        p_search IS NULL OR btrim(p_search) = ''
+        OR u.username ILIKE '%' || btrim(p_search) || '%'
+        OR c.title ILIKE '%' || btrim(p_search) || '%'
+      )
+  ),
+  counted AS (
+    SELECT COUNT(*)::BIGINT AS total_count FROM enriched
+  )
+  SELECT
+    e.user_id,
+    e.username,
+    e.challenge_id,
+    e.challenge_title,
+    e.challenge_category,
+    e.incorrect_attempts,
+    e.is_solved,
+    e.last_attempt_at,
+    e.solved_at,
+    ct.total_count
+  FROM enriched e
+  CROSS JOIN counted ct
+  ORDER BY e.last_attempt_at DESC
+  LIMIT LEAST(GREATEST(COALESCE(p_limit, 50), 1), 500)
+  OFFSET GREATEST(COALESCE(p_offset, 0), 0);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_flag_submission_stats(INT, INT, TEXT, TEXT) TO authenticated;
+-- ==============================================
+-- Function: get_my_submission_status
+-- ==============================================
+CREATE OR REPLACE FUNCTION public.get_my_submission_status(
+  p_challenge_id uuid
+)
+RETURNS TABLE (
+  incorrect_attempts INT,
+  window_attempts INT,
+  window_start_at TIMESTAMPTZ,
+  remaining_attempts INT,
+  cooldown_seconds INT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_user_id uuid := auth.uid()::uuid;
+  v_incorrect_attempts INT := 0;
+  v_window_attempts INT := 0;
+  v_window_start TIMESTAMPTZ := now();
+  v_remaining_attempts INT := 10;
+  v_cooldown_seconds INT := 0;
+  v_seconds_elapsed INT;
+BEGIN
+  SELECT
+    fs.incorrect_attempts,
+    fs.window_attempts,
+    fs.window_start_at
+  INTO
+    v_incorrect_attempts,
+    v_window_attempts,
+    v_window_start
+  FROM public.flag_submissions fs
+  WHERE fs.user_id = v_user_id AND fs.challenge_id = p_challenge_id;
+  IF FOUND THEN
+    v_seconds_elapsed := EXTRACT(EPOCH FROM (now() - v_window_start))::INT;
+    IF v_seconds_elapsed >= 60 THEN
+      v_remaining_attempts := 10;
+      v_cooldown_seconds := 0;
+    ELSE
+      v_remaining_attempts := GREATEST(0, 10 - v_window_attempts);
+      IF v_window_attempts >= 10 THEN
+        v_cooldown_seconds := GREATEST(0, 60 - v_seconds_elapsed);
+      ELSE
+        v_cooldown_seconds := 0;
+      END IF;
+    END IF;
+  ELSE
+    v_incorrect_attempts := 0;
+    v_window_attempts := 0;
+    v_window_start := now();
+    v_remaining_attempts := 10;
+    v_cooldown_seconds := 0;
+  END IF;
+  RETURN QUERY
+  SELECT
+    v_incorrect_attempts,
+    v_window_attempts,
+    v_window_start,
+    v_remaining_attempts,
+    v_cooldown_seconds;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_my_submission_status(uuid) TO authenticated;
+
+-- <<< END: queries/flag_submissions.sql
 
 -- >>> BEGIN: queries/teams.sql
 -- ==============================================
