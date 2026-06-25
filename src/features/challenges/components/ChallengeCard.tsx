@@ -1,6 +1,6 @@
 // React Imports
 import React, { memo } from "react";
-import { Flame, Sparkles, AlertTriangle, Flag, CheckCircle2 } from 'lucide-react';
+import { Flame, Sparkles, AlertTriangle, Flag, CheckCircle2, ListChecks, Server, Key } from 'lucide-react';
 
 // Shared Imports
 import APP from '@/config';
@@ -144,12 +144,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
                 );
               })()}
 
-              {/* Feature Badge (T / S / TS) */}
-              {featureBadge && (
-                <span className="shrink-0 text-[10px] font-bold bg-gray-700/60 text-gray-400 px-1.5 rounded uppercase tracking-tight">
-                  {featureBadge}
-                </span>
-              )}
+
             </div>
 
             {/* RIGHT: Points */}
@@ -186,10 +181,41 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
                 Maintenance
               </span>
             ) : (
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <span className={`text-[11px] font-bold tracking-wide ${diffTextColor}`}>
                   {normalizedDiff}
                 </span>
+                {featureType !== 'N' && (
+                  <>
+                    <span className="text-gray-600 dark:text-gray-500 select-none">•</span>
+                    <div className="flex items-center gap-1.5">
+                      {featureType.includes('T') && (
+                        <span title="Tasks (Sub-challenges)">
+                          <ListChecks
+                            size={13}
+                            className="text-blue-500 dark:text-blue-400"
+                          />
+                        </span>
+                      )}
+                      {featureType.includes('S') && (
+                        <span title="Active Service Container">
+                          <Server
+                            size={13}
+                            className="text-emerald-500 dark:text-emerald-400"
+                          />
+                        </span>
+                      )}
+                      {featureType.includes('F') && (
+                        <span title="Dynamic / Custom Flag">
+                          <Key
+                            size={13}
+                            className="text-amber-500 dark:text-amber-400"
+                          />
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

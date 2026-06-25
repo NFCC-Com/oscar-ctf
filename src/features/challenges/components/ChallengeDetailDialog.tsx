@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Flag, CheckCircle2 } from 'lucide-react'
+import { Flag, CheckCircle2, ListChecks, Server, Key } from 'lucide-react'
 import APP from '@/config'
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui'
 import { MarkdownRenderer } from '@/shared/markdown/MarkdownRenderer'
@@ -168,6 +168,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   const { borderColor: categoryBorderColor, badgeColor: categoryBadgeColor } = getCategoryDetails(challenge.category);
   const eventName = events.find(e => e.id === challenge.event_id)?.name || '';
   const dialogTitle = getChallengeDialogTitle(challenge.title);
+  const featureType = getChallengeFeatureType(challenge);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
@@ -227,21 +228,40 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
                     );
                   })()}
 
-                  {(() => {
-                    const featureType = getChallengeFeatureType(challenge);
-                    return featureType !== 'N' ? (
-                      <span className="select-none text-[11px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-tight">
-                        {featureType}
-                      </span>
-                    ) : null;
-                  })()}
+
                 </div>
 
-                {/* Difficulty */}
-                <div className="select-none flex items-center">
+                {/* Difficulty & Features */}
+                <div className="select-none flex items-center gap-2">
                   <span className={`text-[12px] font-bold tracking-wide ${diffTextColor}`}>
                     {normalizedDiff}
                   </span>
+                  
+                  {featureType !== 'N' && (
+                    <>
+                      <span className="text-gray-300 dark:text-gray-700 select-none">|</span>
+                      <div className="flex items-center gap-2">
+                        {featureType.includes('T') && (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded border border-blue-500/20">
+                            <ListChecks size={12} className="shrink-0" />
+                            Tasks
+                          </span>
+                        )}
+                        {featureType.includes('S') && (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/20">
+                            <Server size={12} className="shrink-0" />
+                            Services
+                          </span>
+                        )}
+                        {featureType.includes('F') && (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-500/20">
+                            <Key size={12} className="shrink-0" />
+                            Placeholder
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
