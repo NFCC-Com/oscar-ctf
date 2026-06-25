@@ -442,14 +442,14 @@ ${links || '- (No links)'}
           {challengeTab === 'challenge' && (
             <div className="min-h-full flex flex-col pb-5">
               {/* Description at the Top */}
-              <div className="flex-1">
+              <div>
                 <div className="max-w-full overflow-x-auto break-words mt-2">
                   <ChallengeDescription description={challenge.description} />
                 </div>
               </div>
 
               {/* Links, Tasks, and Hints at the Bottom (before flag form) */}
-              <div className="mt-8 space-y-6">
+              <div className="mt-5 space-y-6">
                 <ChallengeServicesPanel open={open} services={services} />
 
                 <ChallengeAttachments

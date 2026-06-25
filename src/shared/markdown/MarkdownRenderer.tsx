@@ -59,7 +59,7 @@ function CodeBlockWrapper({ children, isDark = true }: { children: React.ReactNo
   }
 
   return (
-    <div className="relative mb-3">
+    <div className="relative mt-2 mb-3">
       {hasOverflow && (
         <div className="absolute top-2 right-2 flex gap-1 z-10">
           <button
@@ -306,7 +306,7 @@ export function MarkdownRenderer({ content, className = '', onCommentsExtracted,
               </code>
             ) : (
               <CodeBlockWrapper isDark>
-                <pre className="bg-gray-900 p-2 rounded-lg text-xs font-mono max-w-full border border-gray-800 shadow-sm mb-2">
+                <pre className="bg-gray-900 px-3 py-1.5 rounded-lg text-xs font-mono max-w-full border border-gray-800 shadow-sm mb-2">
                   <code className="max-w-full text-gray-200 leading-relaxed" {...props}>{children}</code>
                 </pre>
               </CodeBlockWrapper>

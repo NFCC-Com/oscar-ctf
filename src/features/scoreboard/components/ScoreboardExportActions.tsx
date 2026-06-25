@@ -163,14 +163,14 @@ export default function ScoreboardExportActions({
       const freshSnapshot = fetchSnapshot
         ? await fetchSnapshot({ fromRank: from, toRank: to, sourceUrl })
         : await fetchScoreboardExportSnapshot({
-            selectedEvent,
-            eventLabel,
-            sourceUrl,
-            scope: 'individu',
-            mode,
-            fromRank: from,
-            toRank: to,
-          })
+          selectedEvent,
+          eventLabel,
+          sourceUrl,
+          scope: 'individu',
+          mode,
+          fromRank: from,
+          toRank: to,
+        })
 
       flushSync(() => setSnapshot(freshSnapshot))
       await new Promise((resolve) => window.requestAnimationFrame(() => requestAnimationFrame(resolve)))
@@ -275,7 +275,7 @@ export default function ScoreboardExportActions({
         </div>
       )}
 
-      <div className="pointer-events-none fixed -left-[9999px] top-0" aria-hidden="true">
+      <div className="pointer-events-none fixed -left-[9999px] top-0 overflow-hidden" aria-hidden="true">
         <div ref={exportRef}>
           {snapshot && (
             <ScoreboardExportSnapshotView
