@@ -148,7 +148,7 @@ export default function EventFilterPills({
       block: 'nearest',
       inline: 'center',
     })
-  }, [eventOptions, selectedEventId])
+  }, [eventOptions.length, selectedEventId])
 
   const scrollEvents = (direction: 'left' | 'right') => {
     const node = scrollRef.current

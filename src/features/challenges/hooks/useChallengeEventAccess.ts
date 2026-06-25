@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { AuthService } from '@/features/auth'
 import {
@@ -230,17 +230,19 @@ export function useChallengeEventAccess({
     !eventMembership?.is_member &&
     !canBypassEventJoin
 
-  const enrichedEvents = events.map((event) => {
-    const isGlobalAdmin = isGlobalAdminUser
-    const isEventAdmin = eventAdminIds.includes(event.id)
-    const canBypass = isGlobalAdmin || isEventAdmin
-    const membership = eventMembershipCache.get(event.id)
-    const isLocked = !allMembershipsLoaded
-      ? false
-      : (!canBypass && event.join_mode !== 'open' && !membership?.is_member)
+  const enrichedEvents = useMemo(() => {
+    return events.map((event) => {
+      const isGlobalAdmin = isGlobalAdminUser
+      const isEventAdmin = eventAdminIds.includes(event.id)
+      const canBypass = isGlobalAdmin || isEventAdmin
+      const membership = eventMembershipCache.get(event.id)
+      const isLocked = !allMembershipsLoaded
+        ? false
+        : (!canBypass && event.join_mode !== 'open' && !membership?.is_member)
 
-    return { ...event, isLocked }
-  })
+      return { ...event, isLocked }
+    })
+  }, [events, isGlobalAdminUser, eventAdminIds, eventMembershipCache, allMembershipsLoaded, eventMembership])
 
   return {
     eventMembership,
