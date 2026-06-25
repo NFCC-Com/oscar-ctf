@@ -5,7 +5,7 @@ import { Flame, Sparkles, AlertTriangle, Flag, CheckCircle2, ListChecks, Server,
 // Shared Imports
 import APP from '@/config';
 import { ChallengeWithSolve } from '@/shared/types'
-import { getCategoryDetails, getCategoryIcon, getDifficultyStyle, getChallengeFeatureType } from '../lib'
+import { getCategoryDetails, getCategoryIcon, getDifficultyStyle, getChallengeFeatureType, getCategoryCardHoverStyles } from '../lib'
 
 interface ChallengeCardProps {
   challenge: ChallengeWithSolve & {
@@ -35,11 +35,12 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
   const rawDiff = (challenge.difficulty || '').toString().trim();
   const normalizedDiff = rawDiff === 'imposible' ? 'Impossible' : rawDiff.charAt(0).toUpperCase() + rawDiff.slice(1).toLowerCase();
   const colorName = (APP as any).difficultyStyles?.[normalizedDiff];
-  const { textClass: diffTextColor } = getDifficultyStyle(colorName);
+  const { dotClass, textClass: diffTextColor } = getDifficultyStyle(colorName);
 
   // Icon lookup for background decoration (UI-layer only)
   const { color: categoryIconColor, borderColor: categoryBorderColor, badgeColor: categoryBadgeColor } = getCategoryDetails(challenge.category);
   const CategoryIcon = getCategoryIcon(challenge.category);
+  const cardHover = getCategoryCardHoverStyles(categoryIconColor);
 
   const handleOpen = () => {
     if (!isMaintenance) onOpenChallenge(challenge);
@@ -68,11 +69,11 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
       <div className={`absolute inset-0 rounded-2xl transition-all duration-500 pointer-events-none
         ${isSolved ? 'group-hover:bg-green-500/[0.08]' :
           isTeamSolved ? 'group-hover:bg-purple-500/[0.08]' :
-            'group-hover:bg-blue-500/[0.04]'}`} />
+            cardHover.glowHover}`} />
 
       {/* Top Accent Line — only for unsolved */}
       {!isAnySolved && !isMaintenance && (
-        <div className="absolute top-0 left-4 right-4 h-[2px] rounded-full bg-gradient-to-r from-transparent via-blue-500/80 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className={`absolute top-0 left-4 right-4 h-[2px] rounded-full bg-gradient-to-r from-transparent ${cardHover.accentLine} to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
       )}
 
       <div className={`relative h-full flex flex-col p-4 md:p-5 rounded-2xl border backdrop-blur-sm transition-all duration-400 z-0
@@ -87,7 +88,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
 
         {/* Subtle Background Category Icon */}
         <div className={`absolute right-0 bottom-0 pointer-events-none z-0 overflow-hidden rounded-br-2xl transition-transform duration-500 ${categoryIconColor}
-          ${isAnySolved ? 'opacity-[0.04]' : 'opacity-[0.10] group-hover:opacity-[0.16] group-hover:scale-105 transition-all'}`}>
+          ${isAnySolved ? 'opacity-[0.04]' : 'opacity-[0.15] group-hover:opacity-[0.22] group-hover:scale-105 transition-all'}`}>
           <CategoryIcon size={110} strokeWidth={1.2} />
         </div>
 
@@ -128,17 +129,24 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
                   <div className="flex items-center gap-1 min-w-0">
                     <div
                       title={parent}
-                      className={`min-w-0 truncate whitespace-nowrap text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md transition-opacity duration-400
-                      ${isAnySolved
-                        ? `${categoryBadgeColor} opacity-60`
-                        : categoryBadgeColor}`}
+                      className={`min-w-0 truncate whitespace-nowrap text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded transition-all duration-300 ${categoryBadgeColor}
+                      opacity-25 group-hover:opacity-100`}
                     >
                       {parent}
                     </div>
                     {sub && (
-                      <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 truncate uppercase tracking-wide min-w-0">
-                        / {sub}
-                      </span>
+                      <>
+                        <span className="text-[9px] font-bold text-gray-500 dark:text-gray-600 select-none">
+                          /
+                        </span>
+                        <div
+                          title={sub}
+                          className={`min-w-0 truncate whitespace-nowrap text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border border-dashed transition-all duration-300 ${categoryBorderColor} ${categoryIconColor}
+                          opacity-20 group-hover:opacity-85`}
+                        >
+                          {sub}
+                        </div>
+                      </>
                     )}
                   </div>
                 );
@@ -166,7 +174,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
                 ? 'text-gray-400 group-hover:text-green-300'
                 : isTeamSolved
                   ? 'text-gray-400 group-hover:text-purple-300'
-                  : 'text-white group-hover:text-blue-300'}`}>
+                  : `text-white ${cardHover.titleHover}`}`}>
               {challenge.title}
             </h3>
           </div>
@@ -176,13 +184,15 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
         <div className={`flex items-center justify-between pt-3 border-t z-10 relative transition-colors duration-400 ${categoryBorderColor}`}>
           <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider">
             {isMaintenance ? (
-              <span className="text-amber-500 flex items-center gap-1.5 font-black">
+              <span className="text-amber-500 flex items-center gap-1.5 font-black opacity-60 dark:opacity-50">
                 <AlertTriangle size={12} />
                 Maintenance
               </span>
             ) : (
-              <div className="flex items-center gap-2">
-                <span className={`text-[11px] font-bold tracking-wide ${diffTextColor}`}>
+              <div className="flex items-center gap-2 select-none">
+                <span className={`text-[11px] font-bold tracking-wide transition-all duration-300 ${diffTextColor}
+                  opacity-30 group-hover:opacity-100`}
+                >
                   {normalizedDiff}
                 </span>
                 {featureType !== 'N' && (
@@ -193,7 +203,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
                         <span title="Tasks (Sub-challenges)">
                           <ListChecks
                             size={13}
-                            className="text-blue-500 dark:text-blue-400"
+                            className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-blue-500 dark:group-hover:text-blue-400"
                           />
                         </span>
                       )}
@@ -201,7 +211,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
                         <span title="Active Service Container">
                           <Server
                             size={13}
-                            className="text-emerald-500 dark:text-emerald-400"
+                            className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-emerald-500 dark:group-hover:text-emerald-400"
                           />
                         </span>
                       )}
@@ -209,7 +219,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
                         <span title="Dynamic / Custom Flag">
                           <Key
                             size={13}
-                            className="text-amber-500 dark:text-amber-400"
+                            className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-amber-500 dark:group-hover:text-amber-400"
                           />
                         </span>
                       )}
@@ -223,7 +233,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
           {!isMaintenance && (
             <div className="flex items-center gap-3">
               {noFirstBlood ? (
-                <span className="text-orange-400 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider">
+                <span className="text-orange-400 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                   <Flame size={11} className="fill-current" />
                   First Blood
                 </span>

@@ -89,7 +89,7 @@ export default function ChallengeListContent({
 
   if (layoutMode === CHALLENGE_LAYOUT_MODES.COMPACT) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-max">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 auto-rows-max">
         {sortedFilteredChallenges.map((challenge) => (
           <div
             key={challenge.id}
@@ -110,7 +110,7 @@ export default function ChallengeListContent({
     const categoryOrderedChallenges = orderedKeys.flatMap((category) => grouped[category] ?? [])
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-max">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 auto-rows-max">
         {categoryOrderedChallenges.map((challenge) => (
           <div
             key={challenge.id}
@@ -137,9 +137,9 @@ export default function ChallengeListContent({
         return (
           <div
             key={category}
-            className="mb-12 relative z-0"
+            className="mb-8 relative z-0"
           >
-            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-800 pb-3">
+            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-gray-800 pb-2">
               <div className="w-1.5 h-6 bg-blue-600 dark:bg-blue-500 rounded-full" />
               <h2 className="text-lg md:text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white">
                 {eventId === 'all' && String(category).toLowerCase() === 'intro'
@@ -147,7 +147,7 @@ export default function ChallengeListContent({
                   : category}
               </h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-max">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 auto-rows-max">
               {categoryChallenges.map((challenge) => (
                 <div
                   key={challenge.id}

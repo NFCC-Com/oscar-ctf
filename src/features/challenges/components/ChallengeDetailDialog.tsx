@@ -164,8 +164,8 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   const rawDiff = (challenge.difficulty || '').toString().trim();
   const normalizedDiff = rawDiff === 'imposible' ? 'Impossible' : rawDiff.charAt(0).toUpperCase() + rawDiff.slice(1).toLowerCase();
   const colorName = (APP as any).difficultyStyles?.[normalizedDiff];
-  const { textClass: diffTextColor } = getDifficultyStyle(colorName);
-  const { borderColor: categoryBorderColor, badgeColor: categoryBadgeColor } = getCategoryDetails(challenge.category);
+  const { badgeClass: diffBadgeColor, textClass: diffTextColor } = getDifficultyStyle(colorName);
+  const { color: categoryIconColor, borderColor: categoryBorderColor, badgeColor: categoryBadgeColor } = getCategoryDetails(challenge.category);
   const eventName = events.find(e => e.id === challenge.event_id)?.name || '';
   const dialogTitle = getChallengeDialogTitle(challenge.title);
   const featureType = getChallengeFeatureType(challenge);
@@ -216,13 +216,18 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
                     const sub = parts.slice(1).join('/');
                     return (
                       <div className="flex items-center gap-2">
-                        <div className={`select-none text-[12px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${categoryBadgeColor}`}>
+                        <div className={`select-none text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${categoryBadgeColor} ${categoryBorderColor}`}>
                           {parent}
                         </div>
                         {sub && (
-                          <span className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            / {sub}
-                          </span>
+                          <>
+                            <span className="text-[11px] font-bold text-gray-400 dark:text-gray-600 select-none">
+                              /
+                            </span>
+                            <div className={`select-none text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-dashed ${categoryBorderColor} ${categoryIconColor} bg-opacity-5`}>
+                              {sub}
+                            </div>
+                          </>
                         )}
                       </div>
                     );
@@ -233,13 +238,13 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
 
                 {/* Difficulty & Features */}
                 <div className="select-none flex items-center gap-2">
-                  <span className={`text-[12px] font-bold tracking-wide ${diffTextColor}`}>
+                  <span className={`text-[11px] font-bold tracking-wide px-2 py-0.5 rounded border ${diffBadgeColor}`}>
                     {normalizedDiff}
                   </span>
                   
                   {featureType !== 'N' && (
                     <>
-                      <span className="text-gray-300 dark:text-gray-700 select-none">|</span>
+                      <div className="w-[1px] h-3.5 bg-gray-300 dark:bg-gray-700 select-none" />
                       <div className="flex items-center gap-2">
                         {featureType.includes('T') && (
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded border border-blue-500/20">
