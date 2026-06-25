@@ -175,6 +175,7 @@ const ChallengeFormDialog: React.FC<ChallengeFormDialogProps> = (props) => {
                   flagLoading={flagLoading}
                   handleViewFlag={handleViewFlag}
                   editing={!!editing}
+                  challengeId={editing?.id}
                 />
               </div>
             )}

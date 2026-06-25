@@ -13,6 +13,7 @@ import { useChallengeFilterSettings } from './useChallengeFilterSettings'
 import { useChallengeFlagSubmission } from './useChallengeFlagSubmission'
 import { useChallengeList } from './useChallengeList'
 import { useFilteredChallenges } from './useFilteredChallenges'
+import { useGeoSubmission } from './useGeoSubmission'
 
 export function useChallengesPageData() {
   const router = useRouter()
@@ -80,6 +81,19 @@ export function useChallengesPageData() {
     handleFlagSubmit,
     handleFlagInputChange,
   } = useChallengeFlagSubmission({
+    user,
+    reloadChallenges: handleReloadChallenges,
+    selectedChallengeId: selectedChallenge?.id,
+  })
+  const {
+    geoGuesses,
+    geoFeedback,
+    submitting: geoSubmitting,
+    submissionsRemaining: geoSubmissionsRemaining,
+    cooldownSeconds: geoCooldownSeconds,
+    handleGeoSubmit,
+    handleGeoGuessChange,
+  } = useGeoSubmission({
     user,
     reloadChallenges: handleReloadChallenges,
     selectedChallengeId: selectedChallenge?.id,
@@ -204,6 +218,13 @@ export function useChallengesPageData() {
     submissionsRemaining,
     cooldownSeconds,
     fetchStats,
+    geoGuesses,
+    geoFeedback,
+    geoSubmitting,
+    geoSubmissionsRemaining,
+    geoCooldownSeconds,
+    handleGeoSubmit,
+    handleGeoGuessChange,
     handleSubChallengeAnswerChange,
     handleSubChallengeSubmit,
     attemptEventSelect,

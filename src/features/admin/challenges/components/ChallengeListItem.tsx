@@ -1,7 +1,7 @@
 import React from 'react'
 import DifficultyBadge from '@/features/challenges/components/DifficultyBadge'
 import { Badge, Button } from '@/shared/ui'
-import { Pencil, Trash2, Flag, CheckCircle2, CircleOff, Wrench } from 'lucide-react'
+import { Pencil, Trash2, Flag, CheckCircle2, CircleOff, Wrench, ServerCog, ListChecks, MapPin } from 'lucide-react'
 import { Challenge } from '../types'
 
 interface ChallengeListItemProps {
@@ -56,6 +56,30 @@ const ChallengeListItem: React.FC<ChallengeListItemProps> = ({
                     {`${challenge.max_points ?? '-'}-${challenge.min_points ?? '-'}-${challenge.decay_per_solve ?? '-'}`}
                   </span>
                 </>
+              )}
+              {challenge.services && challenge.services.length > 0 && (
+                <span className="inline-flex items-center gap-1 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-sky-200/50 dark:border-sky-800/30 shrink-0 select-none cursor-help" title={`Services: ${challenge.services.join(', ')}`}>
+                  <ServerCog size={11} />
+                  <span>Service</span>
+                </span>
+              )}
+              {challenge.flag_placeholder && (
+                <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-emerald-200/50 dark:border-emerald-800/30 shrink-0 select-none cursor-help" title="Flag placeholder is enabled">
+                  <Flag size={11} />
+                  <span>Placeholder</span>
+                </span>
+              )}
+              {challenge.has_questions && (
+                <span className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-amber-200/50 dark:border-amber-800/30 shrink-0 select-none cursor-help" title="Has sub-challenge questions (tasks)">
+                  <ListChecks size={11} />
+                  <span>Task</span>
+                </span>
+              )}
+              {challenge.has_geo_flag && (
+                <span className="inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-rose-200/50 dark:border-rose-800/30 shrink-0 select-none cursor-help" title="Location-based geo-guessing challenge">
+                  <MapPin size={11} />
+                  <span>Geo</span>
+                </span>
               )}
             </div>
           </div>

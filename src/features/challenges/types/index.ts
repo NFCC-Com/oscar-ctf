@@ -1,10 +1,10 @@
 import type { ChallengeWithSolve, Event } from '@/shared/types'
 
 export type ChallengesMainTab = 'challenges' | 'events'
-export type ChallengeDialogTab = 'challenge' | 'question' | 'solvers'
+export type ChallengeDialogTab = 'challenge' | 'question' | 'solvers' | 'geo_answer'
 export type EventSelectorValue = string | null | 'all'
 export type ChallengeSortMode = 'default' | 'newest'
-export type ChallengeFeatureFilter = 'T' | 'S' | 'F' | 'N'
+export type ChallengeFeatureFilter = 'T' | 'S' | 'F' | 'G' | 'N'
 export type SubChallengeMode = 'none' | 'non_sequential' | 'sequential'
 
 export type SubChallengeQuestion = {
@@ -54,3 +54,11 @@ export type HintModalState = {
 export type KeyedStringMap = Record<string, string>
 export type KeyedBooleanMap = Record<string, boolean>
 export type KeyedFlagFeedbackMap = Record<string, FlagFeedback | null>
+
+export type { GeoCoordinates } from '@/shared/types'
+
+export type GeoSubmitResult = {
+  success: boolean
+  message: string
+  distance_km?: number
+}

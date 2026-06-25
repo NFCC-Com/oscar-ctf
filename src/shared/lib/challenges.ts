@@ -1,9 +1,10 @@
 import { supabase } from '@/lib/supabase/client'
-import { Challenge, ChallengeWithSolve, Attachment } from '@/shared/types'
+import { Challenge, ChallengeWithSolve, Attachment, GeoCoordinates } from '@/shared/types'
 import { getLogs } from '@/features/logs/lib/log-service'
 
-type ChallengeListResult = (ChallengeWithSolve & { has_first_blood: boolean; is_new: boolean; has_questions: boolean })[]
+type ChallengeListResult = (ChallengeWithSolve & { has_first_blood: boolean; is_new: boolean; has_questions: boolean; has_geo_flag: boolean; geo_prefix?: string })[]
 type SubmitFlagResult = { success: boolean; message: string }
+type GeoSubmitResult = { success: boolean; message: string; distance_km?: number }
 
 function callChallengeRpc<T = any>(name: string, args?: Record<string, unknown>) {
   return (supabase as any).rpc(name, args) as Promise<{ data: T | null; error: { message: string } | null }>
@@ -112,7 +113,7 @@ export async function getChallengesList(
   userId?: string,
   showAll: boolean = false,
   eventId?: string | null | 'all'
-): Promise<(ChallengeWithSolve & { has_first_blood: boolean; is_new: boolean; has_questions: boolean })[]> {
+): Promise<(ChallengeWithSolve & { has_first_blood: boolean; is_new: boolean; has_questions: boolean; has_geo_flag: boolean; geo_prefix?: string })[]> {
   const cacheKey = buildChallengesListKey(userId, showAll, eventId)
   const inflight = challengesListInflight.get(cacheKey)
   if (inflight) return inflight
@@ -150,17 +151,27 @@ export async function getChallengesList(
       const solvedIds = new Set((solvesResult?.data || []).map((s: any) => s.challenge_id) || [])
       const challengeIds = (challenges as any[]).map((ch) => String(ch.id)).filter(Boolean)
       const hasQuestionIds = new Set<string>()
+      const geoFlagMap = new Map<string, string>()
 
       if (challengeIds.length > 0) {
-        const { data: subChallenges, error: subError } = await callChallengeRpc('get_challenges_with_sub_challenges', {
-          p_challenge_ids: challengeIds,
-        })
+        const [subChallengesResult, geoFlagsResult] = await Promise.all([
+          callChallengeRpc('get_challenges_with_sub_challenges', { p_challenge_ids: challengeIds }),
+          callChallengeRpc('get_challenges_with_geo_flag', { p_challenge_ids: challengeIds }),
+        ])
 
-        if (subError) {
-          console.error('Error fetching sub-challenges for challenge list:', subError)
+        if (subChallengesResult.error) {
+          console.error('Error fetching sub-challenges for challenge list:', subChallengesResult.error)
         } else {
-          for (const row of (subChallenges || []) as any[]) {
+          for (const row of (subChallengesResult.data || []) as any[]) {
             if (row?.challenge_id) hasQuestionIds.add(String(row.challenge_id))
+          }
+        }
+
+        if (geoFlagsResult.error) {
+          console.error('Error fetching geo flags for challenge list:', geoFlagsResult.error)
+        } else {
+          for (const row of (geoFlagsResult.data || []) as any[]) {
+            if (row?.challenge_id) geoFlagMap.set(String(row.challenge_id), String(row.geo_prefix || ''))
           }
         }
       }
@@ -169,6 +180,8 @@ export async function getChallengesList(
         // lightweight fields from DB
         ...addComputedFields(ch, solvedIds),
         has_questions: hasQuestionIds.has(String(ch.id)),
+        has_geo_flag: geoFlagMap.has(String(ch.id)),
+        geo_prefix: geoFlagMap.get(String(ch.id)),
 
         // fill heavy / unused fields so existing UI types don't break
         description: '',
@@ -274,6 +287,64 @@ export async function submitFlag(challengeId: string, flag: string): Promise<Sub
     message: String(result?.message || ''),
   };
 };
+
+/**
+ * Submit geo location for a GeoGuessr-style challenge.
+ * Formats coordinates as prefix{geo:lat,lng} and submits through the
+ * standard submit_flag RPC so rate-limiting is handled consistently.
+ */
+export async function submitGeoLocation(
+  challengeId: string,
+  lat: number,
+  lng: number,
+  prefix: string
+): Promise<GeoSubmitResult> {
+  const geoFlag = `${prefix}{geo:${lat.toFixed(6)},${lng.toFixed(6)}}`;
+
+  const { data, error } = await callChallengeRpc('submit_flag', {
+    p_challenge_id: challengeId,
+    p_flag: geoFlag,
+  });
+
+  if (error) {
+    console.error('Geo submit RPC error:', error);
+    return { success: false, message: 'Failed to submit location' };
+  }
+
+  const result = data as Partial<GeoSubmitResult> | null;
+  return {
+    success: Boolean(result?.success),
+    message: String(result?.message || ''),
+    distance_km: typeof result?.distance_km === 'number' ? result.distance_km : undefined,
+  };
+}
+
+/**
+ * Get geo challenge target coordinates and radius (if solved or admin)
+ */
+export async function getGeoChallengeTarget(
+  challengeId: string
+): Promise<GeoCoordinates & { radius_km: number; flag?: string } | null> {
+  const { data, error } = await callChallengeRpc('get_geo_challenge_target', {
+    p_challenge_id: challengeId,
+  });
+
+  if (error) {
+    console.error('getGeoChallengeTarget RPC error:', error);
+    return null;
+  }
+
+  const list = data as any[];
+  if (!list || list.length === 0) return null;
+  const row = list[0];
+  return {
+    lat: Number(row.target_lat),
+    lng: Number(row.target_lng),
+    radius_km: Number(row.radius_km),
+    flag: row.flag ? String(row.flag) : undefined,
+  };
+}
+
 
 /**
  * Get flag submission stats for a challenge (for the current user)
@@ -1099,7 +1170,7 @@ export function subscribeToSolves(onSolve: (payload: { username: string, challen
             .order('created_at', { ascending: true })
             .limit(1)
             .maybeSingle();
-          
+
           if (firstSolve && firstSolve.id === solve.id) {
             isFirstBlood = true;
           }

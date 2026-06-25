@@ -906,6 +906,13 @@ export type Database = {
           username: string
         }[]
       }
+      get_challenges_with_geo_flag: {
+        Args: { p_challenge_ids: string[] }
+        Returns: {
+          challenge_id: string
+          geo_prefix: string
+        }[]
+      }
       get_challenges_with_sub_challenges: {
         Args: { p_challenge_ids: string[] }
         Returns: {
@@ -951,6 +958,15 @@ export type Database = {
           total_count: number
           user_id: string
           username: string
+        }[]
+      }
+      get_geo_challenge_target: {
+        Args: { p_challenge_id: string }
+        Returns: {
+          flag: string
+          radius_km: number
+          target_lat: number
+          target_lng: number
         }[]
       }
       get_info: { Args: never; Returns: Json }
@@ -1250,10 +1266,15 @@ export type Database = {
         Returns: Json
       }
       has_admin_access: { Args: never; Returns: boolean }
+      haversine_distance: {
+        Args: { p_lat1: number; p_lat2: number; p_lng1: number; p_lng2: number }
+        Returns: number
+      }
       is_admin: { Args: never; Returns: boolean }
       is_banned: { Args: { p_user_id: string }; Returns: boolean }
       is_current_session_active: { Args: never; Returns: boolean }
       is_current_user_banned: { Args: never; Returns: boolean }
+      is_geo_flag: { Args: { p_flag: string }; Returns: boolean }
       is_sub_answer_correct: {
         Args: { p_expected: string; p_submitted: string }
         Returns: boolean
@@ -1301,6 +1322,23 @@ export type Database = {
       normalize_sub_challenge_order: {
         Args: { p_challenge_id: string }
         Returns: undefined
+      }
+      parse_geo_flag: {
+        Args: { p_flag: string }
+        Returns: {
+          prefix: string
+          radius_km: number
+          target_lat: number
+          target_lng: number
+        }[]
+      }
+      parse_submitted_geo_flag: {
+        Args: { p_flag: string }
+        Returns: {
+          lat: number
+          lng: number
+          prefix: string
+        }[]
       }
       regenerate_event_join_key: {
         Args: { p_event_id: string }

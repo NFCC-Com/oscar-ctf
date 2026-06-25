@@ -88,6 +88,8 @@ export interface Challenge {
   decay_per_solve: number
   flag_placeholder?: boolean
   services?: string[]
+  has_geo_flag?: boolean
+  geo_prefix?: string
   created_at: string
   updated_at: string
 }
@@ -103,6 +105,13 @@ export interface ChallengeWithSolve extends Challenge {
   is_solved?: boolean
   solved_at?: string // Add this line to support solved_at in UserProfile
   total_solves?: number
+  has_geo_flag?: boolean
+  geo_prefix?: string
+}
+
+export type GeoCoordinates = {
+  lat: number
+  lng: number
 }
 
 // export interface LeaderboardEntry {

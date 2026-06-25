@@ -76,6 +76,13 @@ export default function ChallengeDialogs({ data }: ChallengeDialogsProps) {
         placeholders={data.placeholders}
         submissionsRemaining={data.submissionsRemaining}
         cooldownSeconds={data.cooldownSeconds}
+        geoGuesses={data.geoGuesses}
+        geoFeedback={data.geoFeedback}
+        geoSubmitting={data.geoSubmitting}
+        geoSubmissionsRemaining={data.geoSubmissionsRemaining}
+        geoCooldownSeconds={data.geoCooldownSeconds}
+        handleGeoSubmit={data.handleGeoSubmit}
+        handleGeoGuessChange={data.handleGeoGuessChange}
         services={data.selectedChallenge?.services || []}
         scrollPositionRef={data.scrollPositionRef}
         onSubChallengeAnswerChange={(orderNumber, value) => {

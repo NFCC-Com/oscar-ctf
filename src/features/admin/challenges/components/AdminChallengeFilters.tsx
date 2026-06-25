@@ -77,6 +77,7 @@ export default function AdminChallengeFilters({
               { value: 'services', label: 'Services' },
               { value: 'placeholder', label: 'Placeholder' },
               { value: 'tasks', label: 'Tasks' },
+              { value: 'geo', label: 'Location' },
             ]}
           />
 

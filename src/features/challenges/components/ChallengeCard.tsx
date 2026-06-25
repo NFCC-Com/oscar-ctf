@@ -1,6 +1,6 @@
 // React Imports
 import React, { memo } from "react";
-import { Flame, Sparkles, AlertTriangle, Flag, CheckCircle2, ListChecks, Server, Key } from 'lucide-react';
+import { Flame, Sparkles, AlertTriangle, Flag, CheckCircle2, ListChecks, Server, Key, MapPin } from 'lucide-react';
 
 // Shared Imports
 import APP from '@/config';
@@ -220,6 +220,14 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
                           <Key
                             size={13}
                             className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-amber-500 dark:group-hover:text-amber-400"
+                          />
+                        </span>
+                      )}
+                      {featureType.includes('G') && (
+                        <span title="Location-based (Geo Guess)">
+                          <MapPin
+                            size={13}
+                            className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-rose-500 dark:group-hover:text-rose-400"
                           />
                         </span>
                       )}

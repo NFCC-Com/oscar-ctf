@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Flag, CheckCircle2, ListChecks, Server, Key } from 'lucide-react'
+import { Flag, CheckCircle2, ListChecks, Server, Key, MapPin } from 'lucide-react'
 import APP from '@/config'
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui'
 import { MarkdownRenderer } from '@/shared/markdown/MarkdownRenderer'
@@ -21,9 +21,13 @@ import {
   ChallengeFooter,
   QuestionFooter,
   SolversFooter,
+  GeoFooter,
+  ChallengeGeoTeaserFooter,
 } from './challenge-detail/footers'
+import GeoMapPanel from './challenge-detail/GeoMapPanel'
 import type {
   ChallengeDialogTab,
+  GeoCoordinates,
   HintModalState,
   KeyedBooleanMap,
   KeyedFlagFeedbackMap,
@@ -87,6 +91,13 @@ interface ChallengeDetailDialogProps {
   cooldownSeconds?: number
   services?: string[]
   scrollPositionRef: MutableRefObject<{ x: number; y: number }>
+  geoGuesses?: Record<string, GeoCoordinates | null>
+  geoFeedback?: Record<string, { success: boolean; message: string; distance_km?: number } | null>
+  geoSubmitting?: KeyedBooleanMap
+  geoSubmissionsRemaining?: number
+  geoCooldownSeconds?: number
+  handleGeoSubmit?: (challengeId: string, coords: GeoCoordinates, prefix: string) => void
+  handleGeoGuessChange?: (challengeId: string, coords: GeoCoordinates | null) => void
 }
 
 const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
@@ -126,9 +137,30 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   cooldownSeconds = 0,
   services = [],
   scrollPositionRef,
+  geoGuesses = {},
+  geoFeedback = {},
+  geoSubmitting = {},
+  geoSubmissionsRemaining = 10,
+  geoCooldownSeconds = 0,
+  handleGeoSubmit = () => { },
+  handleGeoGuessChange = () => { },
 }) => {
   const [solvesSortOrder, setSolvesSortOrder] = useState<'newest' | 'oldest'>('oldest')
   const contentScrollRef = React.useRef<HTMLDivElement | null>(null)
+
+  const [geoRevealed, setGeoRevealed] = useState<Record<string, boolean>>({})
+  const [geoTargets, setGeoTargets] = useState<Record<string, { lat: number; lng: number; radius_km: number; flag?: string }>>({})
+  const [geoRevealCardOpen, setGeoRevealCardOpen] = useState<Record<string, boolean>>({})
+
+  const handleGeoTargetLoaded = React.useCallback((target: { lat: number; lng: number; radius_km: number; flag?: string }) => {
+    if (!challenge) return
+    setGeoTargets(prev => ({ ...prev, [challenge.id]: target }))
+  }, [challenge])
+
+  const handleRevealGeo = React.useCallback(() => {
+    if (!challenge) return
+    setGeoRevealed(prev => ({ ...prev, [challenge.id]: true }))
+  }, [challenge])
 
   const handleTabChange = React.useCallback((tab: ChallengeDialogTab, challengeId?: string) => {
     setChallengeTab(tab, challengeId)
@@ -138,9 +170,10 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
 
   const tabs = React.useMemo(() => [
     { key: 'challenge' as ChallengeDialogTab, label: 'Challenge' },
+    ...(challenge?.has_geo_flag ? [{ key: 'geo_answer' as ChallengeDialogTab, label: 'Geo Guess' }] : []),
     ...(showQuestionTab ? [{ key: 'question' as ChallengeDialogTab, label: 'Questions' }] : []),
     { key: 'solvers' as ChallengeDialogTab, label: `${solverCount} ${solverCount === 1 ? 'solve' : 'solves'}` },
-  ], [solverCount, showQuestionTab])
+  ], [solverCount, showQuestionTab, challenge?.has_geo_flag])
 
   // Sort solvers based on selected order
   const sortedSolvers = React.useMemo(() => {
@@ -241,7 +274,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
                   <span className={`text-[11px] font-bold tracking-wide px-2 py-0.5 rounded border ${diffBadgeColor}`}>
                     {normalizedDiff}
                   </span>
-                  
+
                   {featureType !== 'N' && (
                     <>
                       <div className="w-[1px] h-3.5 bg-gray-300 dark:bg-gray-700 select-none" />
@@ -262,6 +295,12 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-500/20">
                             <Key size={12} className="shrink-0" />
                             Placeholder
+                          </span>
+                        )}
+                        {featureType.includes('G') && (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded border border-rose-500/20">
+                            <MapPin size={12} className="shrink-0" />
+                            Location
                           </span>
                         )}
                       </div>
@@ -300,7 +339,11 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
         </div>
 
         {/* Scrollable Content Area */}
-        <div ref={contentScrollRef} className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2 md:px-6 scroll-hidden [overflow-anchor:none]">
+        <div
+          ref={contentScrollRef}
+          className={`flex-1 overscroll-contain px-4 md:px-6 scroll-hidden [overflow-anchor:none] flex flex-col ${challengeTab === 'geo_answer' ? 'overflow-hidden pb-0' : 'overflow-y-auto pb-2'
+            }`}
+        >
           {challengeTab === 'challenge' && (
             <div className="min-h-full flex flex-col pb-5">
               {/* Description at the Top */}
@@ -335,6 +378,26 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
             </div>
           )}
 
+          {challengeTab === 'geo_answer' && (
+            <div className="flex-1 w-full h-full flex flex-col">
+              <GeoMapPanel
+                challenge={challenge}
+                geoGuesses={geoGuesses}
+                geoFeedback={geoFeedback}
+                geoSubmitting={geoSubmitting}
+                geoSubmissionsRemaining={geoSubmissionsRemaining}
+                geoCooldownSeconds={geoCooldownSeconds}
+                isRevealed={!!geoRevealed[challenge.id]}
+                revealCardOpen={!!geoRevealCardOpen[challenge.id]}
+                setRevealCardOpen={(open) => setGeoRevealCardOpen(prev => ({ ...prev, [challenge.id]: open }))}
+                onTargetLoaded={handleGeoTargetLoaded}
+                onReveal={handleRevealGeo}
+                handleGeoSubmit={handleGeoSubmit}
+                handleGeoGuessChange={handleGeoGuessChange}
+              />
+            </div>
+          )}
+
           {challengeTab === 'solvers' && (
             <div className="min-h-full">
               <SolversList solvers={sortedSolvers} />
@@ -365,7 +428,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
         </div>
 
         {/* Fixed Footer for Flag Submission / Questions Progress */}
-        {challengeTab === 'challenge' && (
+        {challengeTab === 'challenge' && !challenge.has_geo_flag && (
           <ChallengeFooter
             challenge={challenge}
             flagInputs={flagInputs}
@@ -376,6 +439,32 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
             handleFlagSubmit={handleFlagSubmit}
             submissionsRemaining={submissionsRemaining}
             cooldownSeconds={cooldownSeconds}
+          />
+        )}
+
+        {challengeTab === 'challenge' && challenge.has_geo_flag && (
+          <ChallengeGeoTeaserFooter
+            onGoToMap={() => handleTabChange('geo_answer', challenge.id)}
+          />
+        )}
+
+        {challengeTab === 'geo_answer' && (
+          <GeoFooter
+            currentGuess={geoGuesses[challenge.id] || null}
+            submitting={geoSubmitting[challenge.id] || false}
+            geoCooldownSeconds={geoCooldownSeconds}
+            geoSubmissionsRemaining={geoSubmissionsRemaining}
+            isSolved={!!challenge.is_solved}
+            isTeamSolved={!!challenge.is_team_solved}
+            isRevealed={!!geoRevealed[challenge.id]}
+            isRevealCardOpen={!!geoRevealCardOpen[challenge.id]}
+            target={geoTargets[challenge.id] || null}
+            onSubmit={() => {
+              const currentGuess = geoGuesses[challenge.id]
+              if (currentGuess) {
+                handleGeoSubmit(challenge.id, currentGuess, challenge.geo_prefix || '')
+              }
+            }}
           />
         )}
 

@@ -67,14 +67,16 @@ export function getFilteredAdminChallenges({
       if (filters.visibility === 'maintenance' && !challenge.is_maintenance) return false
     }
 
-    // 7. Service filter ('all' | 'services' | 'placeholder' | 'tasks')
+    // 7. Service filter ('all' | 'services' | 'placeholder' | 'tasks' | 'geo')
     if (filters.service !== 'all') {
       const hasServices = Array.isArray(challenge.services) && challenge.services.length > 0
       const isPlaceholder = !!challenge.flag_placeholder
       const hasQuestions = !!challenge.has_questions
+      const hasGeoFlag = !!(challenge as any).has_geo_flag
       if (filters.service === 'services' && !hasServices) return false
       if (filters.service === 'placeholder' && !isPlaceholder) return false
       if (filters.service === 'tasks' && !hasQuestions) return false
+      if (filters.service === 'geo' && !hasGeoFlag) return false
     }
 
     return true

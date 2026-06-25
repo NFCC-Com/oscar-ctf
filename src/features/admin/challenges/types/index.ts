@@ -61,7 +61,7 @@ export type AdminChallengeFilterState = {
   search: string
   scope: 'all' | 'main' | 'private' | 'service'
   visibility: 'all' | 'active' | 'inactive' | 'maintenance'
-  service: 'all' | 'services' | 'placeholder' | 'tasks'
+  service: 'all' | 'services' | 'placeholder' | 'tasks' | 'geo'
   sortBy: string
 }
 

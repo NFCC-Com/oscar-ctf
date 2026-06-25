@@ -30,11 +30,13 @@ export function getChallengeFeatureType(challenge: ChallengeWithSolve): string {
   const hasQuestions = !!(challenge as any).has_questions
   const hasServices = Array.isArray((challenge as any).services) && (challenge as any).services.length > 0
   const hasFlagPlaceholder = !!challenge.flag_placeholder
+  const hasGeoFlag = !!(challenge as any).has_geo_flag
 
   let type = ''
   if (hasQuestions) type += 'T'
   if (hasServices) type += 'S'
   if (hasFlagPlaceholder) type += 'F'
+  if (hasGeoFlag) type += 'G'
 
   return type || 'N'
 }
@@ -92,6 +94,7 @@ export function filterChallengesByState({
     if (filters.feature === 'T' && !featureType.includes('T')) return false
     if (filters.feature === 'S' && !featureType.includes('S')) return false
     if (filters.feature === 'F' && !featureType.includes('F')) return false
+    if (filters.feature === 'G' && !featureType.includes('G')) return false
     if (filters.status === 'solved' && !challenge.is_solved) return false
     if (filters.status === 'unsolved' && challenge.is_solved) return false
     if (!isCategoryMatch(challenge.category, filters.category)) return false
@@ -170,6 +173,7 @@ export function getNextFeatureFilterMode(featureMode: ChallengeFeatureFilter): C
   if (featureMode === 'N') return 'T'
   if (featureMode === 'T') return 'S'
   if (featureMode === 'S') return 'F'
+  if (featureMode === 'F') return 'G'
   return 'N'
 }
 
@@ -177,12 +181,14 @@ export function getFeatureFilterTitle(featureMode: ChallengeFeatureFilter): stri
   if (featureMode === 'N') return 'Showing all features. Click to show tasks.'
   if (featureMode === 'T') return 'Showing tasks. Click to show services.'
   if (featureMode === 'S') return 'Showing services. Click to show flag placeholders.'
-  return 'Showing flag placeholders. Click to show all features.'
+  if (featureMode === 'F') return 'Showing flag placeholders. Click to show location-based challenges.'
+  return 'Showing location-based challenges. Click to show all features.'
 }
 
 export function getFeatureFilterLabel(featureMode: ChallengeFeatureFilter): string {
   if (featureMode === 'T') return 'Tasks'
   if (featureMode === 'S') return 'Services'
   if (featureMode === 'F') return 'Placeholder'
+  if (featureMode === 'G') return 'Location'
   return 'All Features'
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CheckCircle2, EyeOff, Flag, Gauge, Layers, LayoutGrid, ListChecks, ListFilter, Search, ServerCog, X } from 'lucide-react'
+import { CheckCircle2, EyeOff, Flag, Gauge, Layers, LayoutGrid, ListChecks, ListFilter, MapPin, Search, ServerCog, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import type { ElementType } from 'react'
 import APP from '@/config'
@@ -55,7 +55,7 @@ export default function DesktopChallengeFilterSidebar({
 
   const selectedFeature = filters.feature || 'N'
   const featureActive = selectedFeature !== 'N'
-  const FeatureIcon = selectedFeature === 'T' ? ListChecks : selectedFeature === 'S' ? ServerCog : selectedFeature === 'F' ? Flag : Layers
+  const FeatureIcon = selectedFeature === 'T' ? ListChecks : selectedFeature === 'S' ? ServerCog : selectedFeature === 'F' ? Flag : selectedFeature === 'G' ? MapPin : Layers
 
   const { sortedCategories, sortedDifficulties } = getSortedFilterValues({
     categories,
@@ -193,6 +193,7 @@ export default function DesktopChallengeFilterSidebar({
                 { value: 'T', label: 'Tasks' },
                 { value: 'S', label: 'Services' },
                 { value: 'F', label: 'Placeholder' },
+                { value: 'G', label: 'Location' },
               ]}
             />
           </div>

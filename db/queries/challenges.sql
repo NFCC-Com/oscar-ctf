@@ -298,7 +298,30 @@ BEGIN
   JOIN public.challenges c ON c.id = cf.challenge_id
   WHERE cf.challenge_id = p_challenge_id;
 
-  v_is_correct := p_flag = v_flag;
+  -- Intercept GeoGuessr flag check
+  IF public.is_geo_flag(v_flag) THEN
+    DECLARE
+      v_target RECORD;
+      v_submitted RECORD;
+      v_distance DOUBLE PRECISION;
+    BEGIN
+      SELECT * INTO v_target FROM public.parse_geo_flag(v_flag) LIMIT 1;
+      SELECT * INTO v_submitted FROM public.parse_submitted_geo_flag(p_flag) LIMIT 1;
+
+      IF v_target IS NULL OR v_submitted IS NULL THEN
+        v_is_correct := FALSE;
+      ELSE
+        v_distance := public.haversine_distance(v_target.target_lat, v_target.target_lng, v_submitted.lat, v_submitted.lng);
+        IF lower(v_target.prefix) = lower(v_submitted.prefix) AND v_distance <= v_target.radius_km THEN
+          v_is_correct := TRUE;
+        ELSE
+          v_is_correct := FALSE;
+        END IF;
+      END IF;
+    END;
+  ELSE
+    v_is_correct := p_flag = v_flag;
+  END IF;
 
   -- Log/upsert submission stats (skip for admins)
   IF NOT v_is_admin_override THEN
@@ -321,9 +344,9 @@ BEGIN
     )
     ON CONFLICT (user_id, challenge_id)
     DO UPDATE SET
-      incorrect_attempts = CASE 
-        WHEN v_is_correct OR v_existing > 0 THEN public.flag_submissions.incorrect_attempts 
-        ELSE public.flag_submissions.incorrect_attempts + 1 
+      incorrect_attempts = CASE
+        WHEN v_is_correct OR v_existing > 0 THEN public.flag_submissions.incorrect_attempts
+        ELSE public.flag_submissions.incorrect_attempts + 1
       END,
       last_attempt_at = now(),
       window_start_at = CASE
@@ -337,6 +360,9 @@ BEGIN
   END IF;
 
   IF NOT v_is_correct THEN
+    IF public.is_geo_flag(v_flag) THEN
+      RETURN json_build_object('success', false, 'message', 'Too far! Incorrect location guess.');
+    END IF;
     RETURN json_build_object('success', false, 'message', 'Incorrect flag');
   END IF;
 

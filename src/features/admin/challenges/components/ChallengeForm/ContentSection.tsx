@@ -1,9 +1,13 @@
 import React from 'react'
 import { Label, Input, Textarea, Button } from '@/shared/ui'
 import { MarkdownRenderer } from '@/shared/markdown/MarkdownRenderer'
-import { Flag as FlagIcon, Loader2, Zap, Type } from 'lucide-react'
+import { Flag as FlagIcon, Loader2, Zap, Type, MapPin } from 'lucide-react'
 import { ChallengeFormData } from '../../types'
 import { cn } from '@/shared/lib/utils'
+import { parseGeoFlagClient } from '@/features/challenges/lib'
+import { GeoMapSelectorDialog } from '../GeoMapSelectorDialog'
+import { getFlag } from '@/shared/lib'
+import toast from 'react-hot-toast'
 import {
   ADMIN_FORM_FIELD_CLASS,
   ADMIN_INPUT_CLASS,
@@ -18,6 +22,7 @@ interface ContentSectionProps {
   flagLoading: boolean
   handleViewFlag: () => void
   editing: boolean
+  challengeId?: string
 }
 
 export const ContentSection: React.FC<ContentSectionProps> = ({
@@ -28,7 +33,31 @@ export const ContentSection: React.FC<ContentSectionProps> = ({
   flagLoading,
   handleViewFlag,
   editing,
+  challengeId,
 }) => {
+  const geoDetails = parseGeoFlagClient(formData.flag || '')
+  const [isGeoMapOpen, setIsGeoMapOpen] = React.useState(false)
+  const [isFetchingGeoFlag, setIsFetchingGeoFlag] = React.useState(false)
+
+  const handleGeoMapClick = async () => {
+    let currentFlag = formData.flag || ''
+    if (!currentFlag && editing && challengeId) {
+      try {
+        setIsFetchingGeoFlag(true)
+        const flag = await getFlag(challengeId)
+        if (flag) {
+          onChange({ ...formData, flag })
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch flag for geo selector:', err)
+        toast.error('Failed to fetch challenge flag')
+      } finally {
+        setIsFetchingGeoFlag(false)
+      }
+    }
+    setIsGeoMapOpen(true)
+  }
+
   return (
     <div className="space-y-4">
       <div className={ADMIN_FORM_FIELD_CLASS}>
@@ -74,6 +103,18 @@ export const ContentSection: React.FC<ContentSectionProps> = ({
               </span>
             </Button>
             <Button
+              aria-label="Select Geo Location"
+              title="Select Geo Location"
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={handleGeoMapClick}
+              disabled={isFetchingGeoFlag}
+              className="flex-none pointer-events-auto text-gray-800 dark:text-gray-200 h-8 w-8"
+            >
+              {isFetchingGeoFlag ? <Loader2 size={18} className="animate-spin" /> : <MapPin size={18} />}
+            </Button>
+            <Button
               aria-label="Show flag"
               title="Show flag"
               type="button"
@@ -87,7 +128,27 @@ export const ContentSection: React.FC<ContentSectionProps> = ({
             </Button>
           </div>
         </div>
+        {geoDetails && (
+          <div className="mt-2 text-xs p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400 space-y-1">
+            <div className="font-bold flex items-center gap-1.5 font-sans">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+              GeoGuessr Challenge Detected
+            </div>
+            <div className="font-mono text-[11px] grid grid-cols-2 gap-x-4 max-w-sm mt-1">
+              <div>Prefix: <span className="font-bold text-gray-900 dark:text-gray-100">{geoDetails.prefix}</span></div>
+              <div>Radius: <span className="font-bold text-gray-900 dark:text-gray-100">{geoDetails.radius_km} km</span></div>
+              <div>Latitude: <span className="font-bold text-gray-900 dark:text-gray-100">{geoDetails.lat.toFixed(6)}</span></div>
+              <div>Longitude: <span className="font-bold text-gray-900 dark:text-gray-100">{geoDetails.lng.toFixed(6)}</span></div>
+            </div>
+          </div>
+        )}
       </div>
+      <GeoMapSelectorDialog
+        open={isGeoMapOpen}
+        onOpenChange={setIsGeoMapOpen}
+        initialFlag={formData.flag}
+        onConfirm={(newFlag) => onChange({ ...formData, flag: newFlag })}
+      />
     </div>
   )
 }
