@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Flag, CheckCircle2, ListChecks, Server, Key, MapPin, ClipboardCopy } from 'lucide-react'
+import { Flag, Check, CheckCircle2, ListChecks, Server, Key, MapPin, ClipboardCopy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import APP from '@/config'
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui'
@@ -325,7 +325,7 @@ ${links || '- (No links)'}
                   className="flex items-center justify-center h-7 min-w-[28px] px-1.5 rounded-lg bg-transparent hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-all duration-200 dark:hover:bg-gray-800/60 dark:text-gray-400 dark:hover:text-gray-200 shrink-0"
                 >
                   {copiedMarkdown ? (
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase select-none animate-pulse leading-none">Copied!</span>
+                    <Check size={14} className="shrink-0 text-emerald-500 dark:text-emerald-400" />
                   ) : (
                     <ClipboardCopy size={14} className="shrink-0" />
                   )}

@@ -169,11 +169,9 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
           {/* Title */}
           <div className="mb-4 flex-1">
             <h3 className={`text-sm font-bold leading-5 line-clamp-1 md:text-base md:leading-6 transition-colors duration-400
-              ${isSolved
-                ? 'text-gray-400 group-hover:text-green-300'
-                : isTeamSolved
-                  ? 'text-gray-400 group-hover:text-purple-300'
-                  : `text-white ${cardHover.titleHover}`}`}>
+              ${isAnySolved
+                ? `text-gray-400 ${cardHover.titleHover}`
+                : `text-white ${cardHover.titleHover}`}`}>
               {challenge.title}
             </h3>
           </div>
