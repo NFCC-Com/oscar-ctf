@@ -2,11 +2,10 @@
 
 import { Lightbulb } from 'lucide-react'
 import type { ChallengeWithSolve } from '@/shared/types'
-import { SURFACE_GLASS_CONTROL_COMPACT_CLASS } from '@/shared/styles'
 import type { HintModalState } from '../../types'
 
-const RESOURCE_ACTION_CLASS =
-  `flex select-none items-center gap-2 px-4 py-2 text-sm font-bold ${SURFACE_GLASS_CONTROL_COMPACT_CLASS}`
+const HINT_BUTTON_CLASS =
+  "flex select-none items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 dark:hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:ring-offset-0"
 
 type ChallengeHintsProps = {
   challenge: ChallengeWithSolve
@@ -21,22 +20,22 @@ export default function ChallengeHints({
 
   return (
     <div>
-      <p className="mb-2 flex select-none items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-gray-400 opacity-80">
-        <Lightbulb className="h-4 w-4" />
+      <p className="select-none text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-1.5 opacity-90">
+        <Lightbulb className="h-3.5 w-3.5 text-amber-500/70" />
         <span>Hints</span>
       </p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {(challenge.hint ?? []).map((hint: string, idx: number) => (
           <button
             key={idx}
             type="button"
-            className={RESOURCE_ACTION_CLASS}
+            className={HINT_BUTTON_CLASS}
             onClick={(event) => {
               event.stopPropagation()
               setShowHintModal({ challenge, hintIdx: idx })
             }}
           >
-            <Lightbulb className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+            <Lightbulb className="h-3.5 w-3.5" />
             <span>Hint {(challenge.hint?.length ?? 0) > 1 ? idx + 1 : ''}</span>
           </button>
         ))}

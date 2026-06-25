@@ -1143,12 +1143,22 @@ export function subscribeToSolves(onSolve: (payload: { username: string, challen
         }
         let solve = payload.new;
         console.log('[subscribeToSolves] Payload.new:', solve)
+
+        // Ignore historical solves (e.g. restored solves when challenge is activated)
+        if (solve.created_at) {
+          const ageInMs = Date.now() - new Date(solve.created_at).getTime();
+          if (ageInMs > 300000) { // 5 minutes
+            console.log(`[subscribeToSolves] Ignoring historical solve (age: ${(ageInMs / 1000).toFixed(0)}s): challenge_id ${solve.challenge_id}`);
+            return;
+          }
+        }
+
         // Fallback: fetch latest solve if missing user_id or challenge_id
         if (!solve.user_id || !solve.challenge_id) {
           console.warn('[subscribeToSolves] Missing user_id or challenge_id:', solve)
           const { data: latestSolve, error: latestError } = await supabase
             .from('solves')
-            .select('id, user_id, challenge_id')
+            .select('id, user_id, challenge_id, created_at')
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -1158,6 +1168,15 @@ export function subscribeToSolves(onSolve: (payload: { username: string, challen
             return;
           }
           solve = latestSolve;
+
+          // Re-check age on fallback data
+          if (solve.created_at) {
+            const ageInMs = Date.now() - new Date(solve.created_at).getTime();
+            if (ageInMs > 300000) { // 5 minutes
+              console.log(`[subscribeToSolves] Ignoring historical fallback solve (age: ${(ageInMs / 1000).toFixed(0)}s): challenge_id ${solve.challenge_id}`);
+              return;
+            }
+          }
         }
 
         // Check if this solve is the first solve (First Blood) for this challenge

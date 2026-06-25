@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Copy } from 'lucide-react'
+import { Copy, Loader2, RotateCcw, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { DialogFooterLayout } from './DialogFooterLayout'
 import ConfirmDialog from '@/shared/components/ConfirmDialog'
@@ -8,36 +8,42 @@ export interface QuestionFooterProps {
   subChallengeCompleted: boolean
   subChallengeFlag: string | null
   onReset: () => void | Promise<unknown>
+  onSubmitFlag?: () => void | Promise<unknown>
+  submittingFlag?: boolean
 }
 
 export const QuestionFooter: React.FC<QuestionFooterProps> = ({
   subChallengeCompleted,
   subChallengeFlag,
   onReset,
+  onSubmitFlag,
+  submittingFlag = false,
 }) => {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
 
   return (
     <>
       <DialogFooterLayout className="bg-gray-50/50 dark:bg-gray-900/50">
-        <div className="flex items-center justify-between gap-4 w-full">
+        <div className="flex items-center justify-between gap-3 w-full">
+          {/* Left Side: Flag Display & Copy Button */}
           <div className="flex-1 flex items-center min-w-0">
             {subChallengeCompleted ? (
               subChallengeFlag ? (
-                <div className="flex-1 flex items-center h-[38px] bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800/50 shadow-[0_2px_10px_rgba(34,197,94,0.1)] overflow-hidden">
+                <div className="flex items-center h-[38px] bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800/50 shadow-[0_2px_10px_rgba(34,197,94,0.1)] overflow-hidden max-w-[280px] sm:max-w-[360px] flex-1">
                   <div className="flex-1 px-4 font-mono text-xs sm:text-sm text-green-700 dark:text-green-300 truncate select-all font-bold tracking-wide">
                     {subChallengeFlag}
                   </div>
                   <button
+                    type="button"
                     onClick={async () => {
                       await navigator.clipboard.writeText(subChallengeFlag)
                       toast.success('Flag copied!', { icon: '📋' })
                     }}
-                    className="flex h-full shrink-0 select-none items-center justify-center bg-green-500 px-4 text-white shadow-md transition-all hover:bg-green-600 active:scale-95"
+                    className="flex h-full shrink-0 select-none items-center justify-center bg-green-500 hover:bg-green-600 px-4 text-white text-xs font-black uppercase tracking-widest active:scale-95 transition-all gap-1.5"
                     title="Copy Flag"
                   >
-                    <Copy size={16} className="sm:hidden" />
-                    <span className="hidden sm:inline text-xs font-black uppercase tracking-widest">Copy</span>
+                    <Copy size={12} />
+                    <span className="hidden sm:inline">Copy</span>
                   </button>
                 </div>
               ) : (
@@ -53,12 +59,35 @@ export const QuestionFooter: React.FC<QuestionFooterProps> = ({
             )}
           </div>
 
-          <button
-            onClick={() => setResetConfirmOpen(true)}
-            className="flex h-[38px] shrink-0 select-none items-center justify-center rounded-xl px-4 text-[11px] font-bold uppercase tracking-widest text-red-500/80 underline decoration-red-500/30 underline-offset-4 transition-all hover:bg-red-50 hover:text-red-500 hover:decoration-red-500 active:scale-95 dark:hover:bg-red-500/10"
-          >
-            Reset
-          </button>
+          {/* Right Side: Action Buttons (Submit Flag & Reset) */}
+          <div className="flex items-center gap-3 shrink-0">
+            {subChallengeCompleted && subChallengeFlag && onSubmitFlag && (
+              <button
+                type="button"
+                disabled={submittingFlag}
+                onClick={async () => {
+                  await onSubmitFlag()
+                }}
+                className="h-[38px] px-4 shrink-0 select-none rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/60 text-white text-xs font-black uppercase tracking-widest active:scale-95 transition-all gap-1.5 flex items-center justify-center shadow-md shadow-blue-500/10"
+                title="Submit Flag to Challenge"
+              >
+                {submittingFlag ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Send size={12} />
+                )}
+                <span>{submittingFlag ? 'Submitting...' : 'Submit Flag'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setResetConfirmOpen(true)}
+              className="h-[38px] px-4 shrink-0 select-none items-center justify-center rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 dark:text-red-400 dark:border-red-500/20 dark:hover:bg-red-500/10 text-xs font-black uppercase tracking-widest active:scale-95 transition-all flex gap-1.5"
+            >
+              <RotateCcw size={12} />
+              <span>Reset</span>
+            </button>
+          </div>
         </div>
       </DialogFooterLayout>
 

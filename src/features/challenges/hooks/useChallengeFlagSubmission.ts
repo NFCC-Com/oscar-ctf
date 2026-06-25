@@ -84,19 +84,20 @@ export function useChallengeFlagSubmission({
     return () => clearInterval(timer)
   }, [cooldownSeconds, selectedChallengeId, fetchStats])
 
-  const handleFlagSubmit = useCallback(async (challengeId: string) => {
-    if (!user || !flagInputs[challengeId]?.trim()) return
+  const handleFlagSubmit = useCallback(async (challengeId: string, customFlag?: string) => {
+    const flagVal = (customFlag || flagInputs[challengeId] || '').trim()
+    if (!user || !flagVal) return
 
     setSubmitting((prev) => ({ ...prev, [challengeId]: true }))
     setFlagFeedback((prev) => ({ ...prev, [challengeId]: null }))
 
     try {
-      const result = await submitFlag(challengeId, flagInputs[challengeId].trim())
+      const result = await submitFlag(challengeId, flagVal)
       if (result?.success) await reloadChallenges()
-      
+
       // Update our rate limiting stats immediately after submit
       await fetchStats(challengeId)
-      
+
       // Clear any existing auto-dismiss timer for this challenge
       if (feedbackTimeoutsRef.current[challengeId]) {
         clearTimeout(feedbackTimeoutsRef.current[challengeId])

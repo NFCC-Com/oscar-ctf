@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Flag, CheckCircle2, ListChecks, Server, Key, MapPin } from 'lucide-react'
+import { Flag, CheckCircle2, ListChecks, Server, Key, MapPin, ClipboardCopy } from 'lucide-react'
+import toast from 'react-hot-toast'
 import APP from '@/config'
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui'
 import { MarkdownRenderer } from '@/shared/markdown/MarkdownRenderer'
@@ -64,7 +65,7 @@ interface ChallengeDetailDialogProps {
   onClose: () => void
   flagInputs: KeyedStringMap
   handleFlagInputChange: (challengeId: string, value: string) => void
-  handleFlagSubmit: (challengeId: string) => void | Promise<unknown>
+  handleFlagSubmit: (challengeId: string, customFlag?: string) => void | Promise<unknown>
   submitting: KeyedBooleanMap
   flagFeedback: KeyedFlagFeedbackMap
   downloading: KeyedBooleanMap
@@ -146,7 +147,85 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   handleGeoGuessChange = () => { },
 }) => {
   const [solvesSortOrder, setSolvesSortOrder] = useState<'newest' | 'oldest'>('oldest')
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false)
   const contentScrollRef = React.useRef<HTMLDivElement | null>(null)
+
+  const handleCopyChallengeMarkdown = React.useCallback(() => {
+    if (!challenge) return
+
+    const getAbsoluteUrl = (url: string) => {
+      if (!url) return ''
+      if (url.startsWith('http://') || url.startsWith('https://')) return url
+      if (typeof window !== 'undefined') {
+        return `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`
+      }
+      return url
+    }
+
+    const fileAttachments = (challenge.attachments || []).filter((a) => a.type === 'file')
+
+    const fileList = fileAttachments
+      .map((a) => {
+        const absUrl = getAbsoluteUrl(a.url)
+        const filename = a.name || absUrl.split('/').pop() || 'file'
+        return `- [${filename}](${absUrl})`
+      })
+      .join('\n')
+
+    const wgetCommands = fileAttachments.length > 0
+      ? '\n\n```bash\n' +
+      fileAttachments.map((a, idx) => {
+        const absUrl = getAbsoluteUrl(a.url)
+        const filename = a.name || absUrl.split('/').pop() || `file-${idx}`
+        const escUrl = absUrl.replace(/'/g, "'\\'\'")
+        const escName = filename.replace(/'/g, "'\\'\'")
+        return `wget '${escUrl}' -O '${escName}'`
+      }).join(' && ') +
+      '\n```'
+      : ''
+
+    const filesContent = fileList ? `${fileList}${wgetCommands}` : '- (No files)'
+
+    const links = (challenge.attachments || [])
+      .filter((a) => a.type !== 'file')
+      .map((a) => `- [${a.name || a.url || 'link'}](${getAbsoluteUrl(a.url)})`)
+      .join('\n')
+
+    const flagPlaceholder = challenge.flag_placeholder && placeholders[challenge.id]
+      ? placeholders[challenge.id]
+      : 'FormatFLAGnya'
+
+    const markdownText = `# ${challenge.title}
+## Description
+${challenge.description || ''}
+
+## Attachment
+### Files
+${filesContent}
+
+### Url
+${links || '- (No links)'}
+
+## Solution
+-
+
+## Flag
+{${flagPlaceholder}}`
+
+    if (!navigator.clipboard) {
+      toast.error('Clipboard not available')
+      return
+    }
+
+    navigator.clipboard.writeText(markdownText).then(() => {
+      setCopiedMarkdown(true)
+      setTimeout(() => setCopiedMarkdown(false), 2000)
+      toast.success('Copied challenge markdown!')
+    }).catch((err) => {
+      console.error('Failed to copy challenge markdown:', err)
+      toast.error('Failed to copy to clipboard')
+    })
+  }, [challenge, placeholders])
 
   const [geoRevealed, setGeoRevealed] = useState<Record<string, boolean>>({})
   const [geoTargets, setGeoTargets] = useState<Record<string, { lat: number; lng: number; radius_km: number; flag?: string }>>({})
@@ -199,7 +278,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   const colorName = (APP as any).difficultyStyles?.[normalizedDiff];
   const { badgeClass: diffBadgeColor, textClass: diffTextColor } = getDifficultyStyle(colorName);
   const { color: categoryIconColor, borderColor: categoryBorderColor, badgeColor: categoryBadgeColor } = getCategoryDetails(challenge.category);
-  const eventName = events.find(e => e.id === challenge.event_id)?.name || '';
+  const eventName = events.find(e => e.id === challenge.event_id)?.name || String(APP.eventMainLabel || 'main');
   const dialogTitle = getChallengeDialogTitle(challenge.title);
   const featureType = getChallengeFeatureType(challenge);
 
@@ -224,18 +303,34 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
         {/* Fixed Header Section */}
         <div className="p-4 md:px-6 pb-0 shrink-0">
           <div className="flex flex-col gap-3 mb-5">
-            {/* ROW 1: Title & Event */}
-            <div className="flex items-start justify-between gap-2">
+            {/* ROW 1: Title, Event & Copy */}
+            <div className="flex items-start justify-between gap-4">
               <DialogTitle asChild>
-                <h2 className="select-text text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight leading-tight">
+                <h2 className="select-text text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight leading-tight flex-1 min-w-0">
                   {dialogTitle}
                 </h2>
               </DialogTitle>
-              {eventName && (
-                <span className="select-none text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mt-1.5 sm:mt-2 shrink-0 font-medium">
+              <div className="flex items-center gap-2 shrink-0 select-none mt-1 sm:mt-1.5">
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] font-bold">
                   {eventName}
                 </span>
-              )}
+                <span
+                  aria-hidden="true"
+                  className="h-3 w-px bg-gray-200 dark:bg-gray-700"
+                />
+                <button
+                  type="button"
+                  title="Copy Challenge Markdown"
+                  onClick={handleCopyChallengeMarkdown}
+                  className="flex items-center justify-center h-7 min-w-[28px] px-1.5 rounded-lg bg-transparent hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-all duration-200 dark:hover:bg-gray-800/60 dark:text-gray-400 dark:hover:text-gray-200 shrink-0"
+                >
+                  {copiedMarkdown ? (
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase select-none animate-pulse leading-none">Copied!</span>
+                  ) : (
+                    <ClipboardCopy size={14} className="shrink-0" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* ROW 2: Metadata & Points */}
@@ -473,11 +568,17 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
           />
         )}
 
-        {challengeTab === 'question' && (
+        {challengeTab === 'question' && challenge && (
           <QuestionFooter
             subChallengeCompleted={subChallengeCompleted}
             subChallengeFlag={subChallengeFlag}
             onReset={onSubChallengeReset}
+            onSubmitFlag={subChallengeFlag ? async () => {
+              setChallengeTab('challenge', challenge.id)
+              handleFlagInputChange(challenge.id, subChallengeFlag)
+              await handleFlagSubmit(challenge.id, subChallengeFlag)
+            } : undefined}
+            submittingFlag={submitting[challenge.id] || false}
           />
         )}
 

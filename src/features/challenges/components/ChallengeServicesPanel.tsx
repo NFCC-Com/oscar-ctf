@@ -1,9 +1,8 @@
 "use client"
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { Clock, Loader2, Play, Power, PowerOff, RefreshCcw } from 'lucide-react'
+import { AlertTriangle, Clock, Loader2, Play, Power, PowerOff, RefreshCcw, Server } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { SURFACE_GLASS_CARD_COMPACT_CLASS } from '@/shared/styles'
 import { parseNxctlService, type NxctlServiceEntry } from '../lib/nxctl-services'
 import {
   formatExtendWaitDuration,
@@ -43,8 +42,15 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
   open,
   services = [],
 }) => {
-  const serviceActionButtonClass =
-    'inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-gray-200/80 bg-white/50 px-2.5 text-[11px] font-medium text-gray-600 shadow-sm backdrop-blur-md transition-all hover:border-blue-500/40 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700/80 dark:bg-[#111622]/60 dark:text-gray-300 dark:hover:bg-[#151b2a]'
+  const startBtnClass =
+    'inline-flex h-7 w-[76px] items-center justify-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40 transition-all duration-200 shrink-0'
+
+  const restartBtnClass =
+    'inline-flex h-7 w-[104px] items-center justify-center gap-1 rounded-lg bg-amber-500/10 px-2.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40 transition-all duration-200 shrink-0'
+
+  const extendBtnClass =
+    'inline-flex h-7 w-[104px] items-center justify-center gap-1 rounded-lg bg-cyan-500/10 px-2.5 text-[11px] font-bold text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40 transition-all duration-200 shrink-0'
+
   const serviceActionButtonIconClass = 'shrink-0'
   const rawServicesKey = services.join('\u0000')
   const parsedServices = useMemo(
@@ -71,6 +77,7 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
   const [serviceDetailsError, setServiceDetailsError] = useState<Record<string, string | null>>({})
   const [hiddenServices, setHiddenServices] = useState<Record<string, boolean>>({})
   const [nowTick, setNowTick] = useState<number>(() => Date.now())
+  const [lastGlobalFetchTime, setLastGlobalFetchTime] = useState<number>(0)
   const inspectRunRef = React.useRef(0)
   const openPrevRef = React.useRef(false)
   const fetchCompletedRef = React.useRef(!open)
@@ -227,6 +234,7 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
         })
 
         const fetchedAt = Date.now()
+        setLastGlobalFetchTime(fetchedAt)
         setServiceDetails((prev) => {
           const next = { ...prev }
           parsedServices.forEach((service) => {
@@ -448,10 +456,22 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
 
   return (
     <div>
-      <p className="select-none text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-1.5 opacity-80">
-        <span className="h-4 w-4">🌐</span> <span>NXCTL Services</span>
+      <p className="select-none text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-1.5 opacity-90">
+        <Server className="h-3.5 w-3.5 text-indigo-500/70 shrink-0" />
+        <span>NXCTL Services</span>
+        {lastGlobalFetchTime > 0 && (() => {
+          const elapsedMs = nowTick - lastGlobalFetchTime
+          const remainingMs = Math.max(0, STATUS_REFRESH_INTERVAL_MS - elapsedMs)
+          const remainingSec = Math.ceil(remainingMs / 1000)
+          return (
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-medium tabular-nums text-gray-500 dark:text-gray-600 opacity-80" title="Next refresh in">
+              <RefreshCcw size={9} className={`shrink-0 ${remainingSec <= 1 ? 'animate-spin' : ''}`} />
+              {remainingSec}s
+            </span>
+          )
+        })()}
       </p>
-      <div className="grid grid-cols-1 gap-1.5">
+      <div className="grid grid-cols-1 gap-2">
         {visibleServices.map((service, idx) => {
           const serviceDisplayName = getServiceDisplayName(service.name)
           const details = serviceDetails[service.name]
@@ -502,17 +522,17 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
               : 'border-gray-600/40 bg-gray-800/30 text-gray-400'
 
           return (
-            <div key={`${service.name}-${idx}`} className={`group flex min-h-[74px] flex-col gap-1.5 px-3 py-2.5 transition-colors duration-200 ${SURFACE_GLASS_CARD_COMPACT_CLASS} hover:border-blue-500/40`}>
+            <div key={`${service.name}-${idx}`} className="group flex min-h-[74px] flex-col gap-2 px-3 py-2.5 rounded-xl border border-gray-200/50 bg-gray-50/30 hover:border-indigo-500/30 hover:shadow-[0_4px_20px_rgba(99,102,241,0.05)] dark:border-gray-800/60 dark:bg-[#0e1320]/30 transition-all duration-200">
               {/* Header: name + action buttons + timer */}
               <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 min-h-9">
                 <div className="min-w-0 color-primary font-medium truncate">
-                    {serviceDisplayName}
+                  {serviceDisplayName}
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    className={serviceActionButtonClass}
+                    className={startBtnClass}
                     onClick={() => handleServiceAction(service, 'up')}
                     title={(() => {
                       if (isLoading) return 'Checking status...'
@@ -533,7 +553,7 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
                   </button>
                   <button
                     type="button"
-                    className={serviceActionButtonClass}
+                    className={restartBtnClass}
                     onClick={() => handleServiceAction(service, 'restart')}
                     title={(() => {
                       if (isLoading) return 'Checking status...'
@@ -541,7 +561,7 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
                       if (isActionLoading) return 'Please wait...'
                       if (!restartEnabled) return 'Restart is disabled for this challenge'
                       if (!isRunning) return 'Cannot restart: service is not running'
-                       if (restartCooldownSec && restartCooldownSec > 0) return `Restart cooldown: ${formatServiceSeconds(restartCooldownSec)}`
+                      if (restartCooldownSec && restartCooldownSec > 0) return `Restart cooldown: ${formatServiceSeconds(restartCooldownSec)}`
                       return 'Restart Service'
                     })()}
                     disabled={
@@ -568,7 +588,7 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
                   </button>
                   <button
                     type="button"
-                    className={`${serviceActionButtonClass} ${extendButtonAlertClass}`}
+                    className={`${extendBtnClass} ${extendButtonAlertClass}`}
                     onClick={() => handleServiceAction(service, 'extend')}
                     title={(() => {
                       if (isLoading) return 'Checking status...'
@@ -577,9 +597,9 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
                       if (!isRunning) return 'Cannot extend: service is not running'
                       if (remainingSec === null) return 'No expiration available to extend'
                       if (!canExtend) {
-                         if (extendCooldownLabel) return `Extend cooldown: ${formatServiceSeconds(extendState.cooldownSeconds)}`
+                        if (extendCooldownLabel) return `Extend cooldown: ${formatServiceSeconds(extendState.cooldownSeconds)}`
                         if (extendDelayLabel) return `Can extend in about ${extendDelayLabel}`
-                         return `Can extend when remaining <= ${formatServiceSeconds(thresholdSec)}`
+                        return `Can extend when remaining <= ${formatServiceSeconds(thresholdSec)}`
                       }
                       return `Extend service time`
                     })()}
@@ -604,15 +624,15 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
 
                 {isRunning && remainingSec !== null ? (
                   <span
-                    className={`inline-flex h-7 min-w-[100px] select-none items-center justify-between gap-1 rounded-md border px-2 text-[10px] font-semibold tabular-nums ${timerClass}`}
+                    className={`inline-flex h-7 w-[115px] select-none items-center justify-between gap-1 rounded-md border px-2 text-[10px] font-semibold tabular-nums ${timerClass}`}
                     title="Time remaining"
                   >
                     <Clock size={11} className="shrink-0 opacity-80" />
-                     {formatServiceSeconds(Math.floor(remainingSec))}
+                    {formatServiceSeconds(Math.floor(remainingSec))}
                   </span>
                 ) : (
                   <span
-                    className={`inline-flex h-7 min-w-[100px] select-none items-center justify-between gap-1 rounded-md border px-2 text-[10px] font-semibold tabular-nums ${statusClass}`}
+                    className={`inline-flex h-7 w-[115px] select-none items-center justify-between gap-1 rounded-md border px-2 text-[10px] font-semibold tabular-nums ${statusClass}`}
                     title="Runtime status"
                   >
                     {isRunning ? <Power size={11} className="shrink-0 opacity-80" /> : <Clock size={11} className="shrink-0 opacity-80" />}
@@ -632,21 +652,23 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
               {/* Per-service error */}
               {errorMessage && (
                 <div className="flex items-center gap-1.5 text-[11px] select-none">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
+                  <AlertTriangle size={11} className="shrink-0 text-red-500/80" />
                   <span className="text-red-400 truncate flex-1">{errorMessage}</span>
-                  <button
-                    type="button"
-                    className="text-[11px] text-blue-500 hover:text-blue-400 hover:underline font-medium flex items-center gap-0.5 shrink-0 disabled:opacity-50"
-                    onClick={() => inspectService(service)}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 size={9} className="animate-spin" />
-                    ) : (
-                      <RefreshCcw size={9} />
-                    )}
-                    Retry
-                  </button>
+                  {!errorMessage.includes('not visible') && (
+                    <button
+                      type="button"
+                      className="text-[11px] text-blue-500 hover:text-blue-400 hover:underline font-medium flex items-center gap-0.5 shrink-0 disabled:opacity-50"
+                      onClick={() => inspectService(service)}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <Loader2 size={9} className="animate-spin" />
+                      ) : (
+                        <RefreshCcw size={9} />
+                      )}
+                      Retry
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -672,7 +694,7 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
                                 </code>
                               )}
                               <button
-                                className={`select-none shrink-0 rounded px-2 py-1 text-[10px] font-bold transition ${endpoint.isSsh ? 'border border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20' : 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'}`}
+                                className={`select-none shrink-0 rounded px-2 py-1 text-[10px] font-bold transition duration-200 ${endpoint.isSsh ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'}`}
                                 onClick={() => {
                                   navigator.clipboard.writeText(endpoint.copyText)
                                   toast.success(endpoint.copyMessage)

@@ -1,13 +1,10 @@
 'use client'
 
 import { memo, useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Check, Copy, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { Check, Copy, ChevronDown, ChevronUp, X, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { MarkdownRenderer } from '@/shared/markdown/MarkdownRenderer'
-import {
-  SURFACE_GLASS_CARD_COMPACT_CLASS,
-  SURFACE_GLASS_FIELD_COMPACT_CLASS,
-} from '@/shared/styles'
+// (no glassmorphism imports needed)
 import type { SubChallengeMode, SubChallengeQuestion } from '../../types'
 
 type SubChallengePanelProps = {
@@ -58,7 +55,7 @@ const QuestionMarkdown = memo(function QuestionMarkdown({ content }: { content: 
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-[10px] font-bold tracking-wide uppercase text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 py-0.5"
+          className="text-[10px] font-bold tracking-wide uppercase text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors flex items-center gap-1 py-0.5"
         >
           {isExpanded ? (
             <>
@@ -185,11 +182,14 @@ function QuestionCard({
   const submitScrollAnchorRef = useRef<ScrollAnchorSnapshot | null>(null)
   const questionContent = normalizeQuestionMarkdown(question.question)
   const cardAnchorSelector = `[data-sub-question-card-id="${cardAnchorId}"]`
-  const cardClassName = completed
-    ? `min-w-0 overflow-x-hidden space-y-2 p-2.5 opacity-90 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`
+
+  const cardClassName = `group flex min-h-[74px] flex-col gap-2 px-3 py-2.5 rounded-xl border transition-all duration-200 ${completed
+    ? 'border-emerald-500/20 bg-emerald-500/5 dark:border-emerald-500/10 dark:bg-emerald-500/5 opacity-90'
     : current
-      ? `min-w-0 overflow-x-hidden space-y-2 p-2.5 border-blue-500/40 shadow-lg shadow-blue-500/10 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`
-      : `min-w-0 overflow-x-hidden space-y-2 p-2.5 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`
+      ? 'border-blue-500/30 bg-blue-500/5 hover:border-blue-500/40 dark:border-blue-500/20 dark:bg-blue-500/5 hover:shadow-[0_4px_20px_rgba(59,130,246,0.05)]'
+      : 'border-gray-200/50 bg-gray-50/30 hover:border-indigo-500/30 dark:border-gray-800/60 dark:bg-[#0e1320]/30 hover:shadow-[0_4px_20px_rgba(99,102,241,0.05)]'
+    }`
+
   const prepareSubmitScrollRestore = useCallback(() => {
     submitScrollAnchorRef.current = captureScrollAnchor(cardRef.current, cardAnchorSelector)
     onSubmitScrollAnchorCapture?.(submitScrollAnchorRef.current)
@@ -223,24 +223,29 @@ function QuestionCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex select-none items-center justify-between gap-2 h-[20px]">
-            <p className={`text-[10px] uppercase tracking-[0.18em] ${completed ? 'text-gray-500' : 'text-blue-400/80'}`}>
+            <p className={`text-[10px] uppercase tracking-[0.18em] ${completed
+              ? 'text-gray-400 dark:text-gray-500'
+              : current
+                ? 'text-blue-500 dark:text-blue-400 font-bold'
+                : 'text-gray-500 dark:text-gray-400'
+              }`}>
               Question #{question.order_number}
             </p>
             {completed ? (
-              <span className="shrink-0 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-green-900/50 text-green-400 border-green-800/80 font-semibold">
+              <span className="shrink-0 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-650 border border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 font-bold select-none">
                 <Check className="h-3 w-3" />
                 Solved
               </span>
             ) : (
               !completed && typeof result === 'boolean' && result === false && answer?.trim() && !isChanged && (
-                <span className="shrink-0 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-red-950/50 text-red-400 border-red-900/60 font-semibold animate-pulse-once">
+                <span className="shrink-0 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-600 border border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 font-bold select-none animate-pulse-once">
                   <X className="h-3 w-3" />
                   Incorrect
                 </span>
               )
             )}
           </div>
-          <div className={`mt-1 max-w-full select-text overflow-x-auto break-words text-sm font-semibold ${completed ? 'text-gray-200' : 'text-white'}`}>
+          <div className={`mt-1 max-w-full select-text overflow-x-auto break-words text-sm font-semibold ${completed ? 'text-gray-500 dark:text-gray-450' : 'text-gray-900 dark:text-white'}`}>
             <QuestionMarkdown content={questionContent} />
           </div>
         </div>
@@ -260,14 +265,13 @@ function QuestionCard({
               }
           }
           placeholder={completed ? 'Answer saved' : 'Type your answer...'}
-          readOnly={completed}
           className={
             completed
-              ? `${SURFACE_GLASS_FIELD_COMPACT_CLASS} flex-1 cursor-not-allowed text-gray-400`
-              : current
-                ? `${SURFACE_GLASS_FIELD_COMPACT_CLASS} flex-1`
-                : `${SURFACE_GLASS_FIELD_COMPACT_CLASS} flex-1`
+              ? "h-8 flex-1 bg-gray-500/5 border border-gray-200/30 rounded-lg text-xs px-2.5 text-gray-400 dark:bg-[#0e1320]/20 dark:border-gray-800/40 dark:text-gray-500 cursor-not-allowed select-none outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 transition-all duration-200"
+              : "h-8 flex-1 bg-white/40 border border-gray-200/50 rounded-lg text-xs px-2.5 text-gray-900 placeholder:text-gray-400 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:border-blue-500/50 dark:bg-[#0e1320]/40 dark:border-gray-800/80 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-500/50 transition-all duration-200"
           }
+          readOnly={completed}
+
           onKeyDown={(event) => {
             if (!completed && event.key === 'Enter') {
               event.preventDefault()
@@ -286,7 +290,7 @@ function QuestionCard({
             onTouchStart={prepareSubmitScrollRestore}
             onClick={submitWithoutScrollJump}
             disabled={submitting || !answer?.trim()}
-            className="select-none rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-500 disabled:opacity-50 min-w-[60px] flex items-center justify-center"
+            className="h-8 select-none rounded-lg bg-blue-500/10 text-blue-600 border border-blue-500/20 hover:bg-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 dark:hover:bg-blue-500/20 px-3 text-xs font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed min-w-[64px] flex items-center justify-center shrink-0"
           >
             {submitting ? '...' : 'Check'}
           </button>
@@ -313,8 +317,41 @@ export default function SubChallengePanel({
   onSubmit,
   onReset,
 }: SubChallengePanelProps) {
-  const [copiedFlag, setCopiedFlag] = useState<Record<string, boolean>>({})
+  const [copiedQA, setCopiedQA] = useState(false)
   const pendingScrollAnchorRef = useRef<ScrollAnchorSnapshot | null>(null)
+
+  const handleCopyQuestionsAndAnswers = useCallback(() => {
+    let markdown = '## Question\n'
+    const sortedQuestions = [...questions].sort((a, b) => a.order_number - b.order_number)
+
+    sortedQuestions.forEach((q) => {
+      const qContent = normalizeQuestionMarkdown(q.question)
+      markdown += `### Question ${q.order_number}\n${qContent}\n\n`
+    })
+
+    markdown += '## Answer\n'
+    sortedQuestions.forEach((q) => {
+      const ansKey = String(q.order_number)
+      const ansVal = answers[ansKey] || ''
+      markdown += `### Answer ${q.order_number}\n${ansVal}\n\n`
+    })
+
+    markdown = markdown.trim()
+
+    if (!navigator.clipboard) {
+      toast.error('Clipboard not available')
+      return
+    }
+
+    navigator.clipboard.writeText(markdown).then(() => {
+      setCopiedQA(true)
+      setTimeout(() => setCopiedQA(false), 2000)
+      toast.success('Copied Q&A to clipboard')
+    }).catch((err) => {
+      console.error('Failed to copy Q&A', err)
+      toast.error('Failed to copy Q&A')
+    })
+  }, [questions, answers])
   const pendingScrollAnchorClearTimerRef = useRef<number | null>(null)
   const submitAllButtonRef = useRef<HTMLButtonElement>(null)
   const submitAllScrollPositionRef = useRef({ x: 0, y: 0 })
@@ -477,33 +514,68 @@ export default function SubChallengePanel({
           )}
         </div>
       )}
-
-      {hasQuestions && !completed && mode === 'non_sequential' && (
-        <button
-          ref={submitAllButtonRef}
-          type="button"
-          disabled={submitting || !Object.values(answers).some((value) => value?.trim())}
-          onMouseDown={(event) => {
-            event.preventDefault()
-            prepareSubmitAllScrollRestore()
-          }}
-          onTouchStart={prepareSubmitAllScrollRestore}
-          onClick={submitAllWithoutScrollJump}
-          className="select-none rounded-lg border border-blue-500/30 bg-blue-600/90 px-4 py-1.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-500 disabled:opacity-50 min-w-[135px] flex items-center justify-center"
-        >
-          {submitting ? '...' : 'Submit All Answers'}
-        </button>
-      )}
-
       {message && !isShowingEmptyQuestionMessage && (
-        <div className="select-none rounded-xl border border-blue-500/20 bg-blue-500/10 p-2 text-sm font-semibold text-gray-100">
+        <div className="select-none rounded-xl border border-blue-500/20 bg-blue-500/5 p-2.5 text-xs font-semibold text-gray-800 dark:text-gray-200">
           {message}
         </div>
       )}
 
-      {completed && !flag && (
-        <div className="select-none p-2 rounded text-sm font-semibold bg-green-600 text-white">
-          All questions correct.
+      {hasQuestions && (
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+            {mode === 'non_sequential' && (
+              <button
+                ref={submitAllButtonRef}
+                type="button"
+                disabled={completed || submitting || !Object.values(answers).some((value) => value?.trim())}
+                onMouseDown={(event) => {
+                  event.preventDefault()
+                  prepareSubmitAllScrollRestore()
+                }}
+                onTouchStart={prepareSubmitAllScrollRestore}
+                onClick={submitAllWithoutScrollJump}
+                className={`h-8 w-[160px] select-none rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center shrink-0 ${completed
+                  ? 'bg-gray-500/10 text-gray-500 border border-gray-200/20 dark:bg-gray-500/5 dark:text-gray-550 dark:border-gray-800/40 cursor-not-allowed'
+                  : 'bg-blue-600 text-white shadow-sm shadow-blue-500/20 hover:bg-blue-550 active:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed'
+                  }`}
+              >
+                {completed ? (
+                  'Answers Submitted'
+                ) : submitting ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Submitting...</span>
+                  </span>
+                ) : (
+                  'Submit All Answers'
+                )}
+              </button>
+            )}
+
+            {completed && !flag && (
+              <div className="select-none px-3 py-1.5 rounded-lg text-xs font-semibold border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-450 truncate">
+                All questions correct.
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCopyQuestionsAndAnswers}
+            className="h-8 select-none rounded-lg bg-blue-500/10 text-blue-600 border border-blue-500/20 hover:bg-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 dark:hover:bg-blue-500/20 px-3 text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 w-[110px] shrink-0 ml-auto"
+          >
+            {copiedQA ? (
+              <>
+                <Check className="h-3.5 w-3.5" />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                <span>Copy Q&A</span>
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>
