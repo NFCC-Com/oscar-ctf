@@ -27,13 +27,18 @@ const CONFIG_KEYS = [
   },
   {
     key: 'disable_edit_team',
-    label: 'Disable Editing Team Name/Profile',
+    label: 'Disable editing team name',
     description: 'Prevent participants from renaming or modifying team profiles. Global administrators are unaffected.',
   },
   {
     key: 'disable_edit_username',
     label: 'Disable Editing Username',
     description: 'Prevent participants from changing their own usernames. Global administrators are unaffected.',
+  },
+  {
+    key: 'disable_signup',
+    label: 'Disable User Registration',
+    description: 'Prevent new user registrations and signups on the platform. Global administrators are unaffected.',
   },
 ]
 

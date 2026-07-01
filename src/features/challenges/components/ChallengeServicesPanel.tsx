@@ -65,6 +65,8 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
   )
 
   const [serviceDetails, setServiceDetails] = useState<Record<string, any>>({})
+  const serviceDetailsRef = React.useRef(serviceDetails)
+  serviceDetailsRef.current = serviceDetails
   const [serviceDetailsFetchTime, setServiceDetailsFetchTime] = useState<Record<string, number>>({})
   const [serviceActionLoading, setServiceActionLoading] = useState<Record<string, ServiceActionLoadingState>>({})
   const [serviceDetailsLoading, setServiceDetailsLoading] = useState<Record<string, boolean>>(() => {
@@ -195,17 +197,29 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
       const serviceNames = new Set(parsedServices.map((service) => service.name))
       setServiceDetailsLoading((prev) => {
         const next = { ...prev }
+        let changed = false
         parsedServices.forEach((service) => {
-          next[service.name] = true
+          const hasData = serviceDetailsRef.current[service.name] !== undefined
+          if (!hasData && !prev[service.name]) {
+            next[service.name] = true
+            changed = true
+          } else if (hasData && prev[service.name]) {
+            next[service.name] = false
+            changed = true
+          }
         })
-        return next
+        return changed ? next : prev
       })
       setServiceDetailsError((prev) => {
         const next = { ...prev }
+        let changed = false
         parsedServices.forEach((service) => {
-          next[service.name] = null
+          if (!fetchCompletedRef.current && prev[service.name] !== null) {
+            next[service.name] = null
+            changed = true
+          }
         })
-        return next
+        return changed ? next : prev
       })
 
       try {
@@ -289,10 +303,14 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
           fetchCompletedRef.current = true
           setServiceDetailsLoading((prev) => {
             const next = { ...prev }
+            let changed = false
             parsedServices.forEach((service) => {
-              next[service.name] = false
+              if (prev[service.name]) {
+                next[service.name] = false
+                changed = true
+              }
             })
-            return next
+            return changed ? next : prev
           })
         }
       }
@@ -501,8 +519,8 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
             : null
           const extendButtonAlertClass = getExtendButtonAlertClass(canExtend, isRunning, remainingSec)
           const timerClass = getTimerClass(remainingSec, thresholdSec)
-          const isLoading = (serviceDetailsLoading[service.name] ?? (!details && open)) || (open && !fetchCompletedRef.current)
           const errorMessage = serviceDetailsError[service.name]
+          const isLoading = ((serviceDetailsLoading[service.name] ?? (!details && open)) || (open && !fetchCompletedRef.current)) && !errorMessage
           const actionLoading = serviceActionLoading[service.name] ?? null
           const isActionLoading = actionLoading !== null
           const isContainerOnly = isRunning && !hasPublishedPort && endpoints.length === 0

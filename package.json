@@ -1,6 +1,6 @@
 {
   "name": "nxctf",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "scripts": {
     "predev": "node src/lib/scripts/gen-version.js",
@@ -10,7 +10,6 @@
     "update": "node db/update_queries.js",
     "update-types": "node src/lib/scripts/update-types.js",
     "update-types:local": "supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts",
-    "setting": "npm run dev",
     "clean": "rimraf .next",
     "dev": "rimraf .next-dev && next dev",
     "build": "rimraf .next && next build",

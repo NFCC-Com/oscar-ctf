@@ -442,7 +442,7 @@ ${links || '- (No links)'}
           {challengeTab === 'challenge' && (
             <div className="min-h-full flex flex-col pb-5">
               {/* Description at the Top */}
-              <div>
+              <div className="flex-1">
                 <div className="max-w-full overflow-x-auto break-words mt-2">
                   <ChallengeDescription description={challenge.description} />
                 </div>

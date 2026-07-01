@@ -5500,6 +5500,21 @@ CREATE POLICY "Allow all for admin users only"
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 GRANT SELECT ON public.system_settings TO authenticated, anon;
+-- Trigger to check if user registrations (signup) are allowed
+CREATE OR REPLACE FUNCTION public.check_signup_allowed()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF public.get_system_setting('disable_signup') = 'true' THEN
+    RAISE EXCEPTION 'Registration is currently disabled by the administrator.';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, extensions;
+DROP TRIGGER IF EXISTS tr_check_signup_allowed ON auth.users;
+CREATE TRIGGER tr_check_signup_allowed
+BEFORE INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.check_signup_allowed();
 
 -- <<< END: queries/system.sql
 
@@ -5558,7 +5573,8 @@ VALUES
   ('disable_create_team', 'false', 'Disable team creation for participants'),
   ('disable_join_team', 'false', 'Disable joining/leaving teams for participants'),
   ('disable_edit_team', 'false', 'Disable editing team name'),
-  ('disable_edit_username', 'false', 'Disable editing username')
+  ('disable_edit_username', 'false', 'Disable editing username'),
+  ('disable_signup', 'false', 'Disable new user registrations')
 ON CONFLICT (key) DO NOTHING;
 SELECT cleanup_orphaned_users_and_solves();
 -- Sync challenges solve count

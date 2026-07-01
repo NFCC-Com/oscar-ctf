@@ -318,12 +318,8 @@ export default function Navbar() {
             {/* Right section */}
             <div className="flex items-center space-x-5">
               <div className="hidden sm:flex items-center space-x-3">
-                {!authReady ? (
-                  <div className="flex h-9 min-w-24 items-center justify-center rounded-lg border border-gray-200/70 bg-white/50 text-gray-500 shadow-sm backdrop-blur-md dark:border-gray-800/80 dark:bg-[#111622]/60 dark:text-gray-400">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-label="Loading navigation" />
-                  </div>
-                ) : user ? (
-                  <>
+                {!authReady ? null : user ? (
+                  <div className="flex items-center space-x-3 animate-in fade-in duration-300">
                     <Link
                       href="/profile"
                       className="group flex items-center gap-2 caret-transparent rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-0"
@@ -343,9 +339,9 @@ export default function Navbar() {
                     >
                       Logout
                     </button>
-                  </>
+                  </div>
                 ) : (
-                  <>
+                  <div className="flex items-center space-x-3 animate-in fade-in duration-300">
                     <Link
                       href="/login"
                       className={`px-4 py-2 rounded-lg text-[15px] font-medium shadow transition-all duration-150 ${theme === 'dark' ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
@@ -358,22 +354,24 @@ export default function Navbar() {
                     >
                       Register
                     </Link>
-                  </>
+                  </div>
                 )}
               </div>
 
+
+
               {/* Notifications */}
               {authReady && user && (
-                <NavbarNotifications theme={theme} globalAdminStatus={globalAdminStatus} />
+                <NavbarNotifications key="notifications" theme={theme} globalAdminStatus={globalAdminStatus} />
               )}
 
               {/* Logs Icon */}
               {authReady && user && (
-                <NavbarLogsButton theme={theme} pathname={pathname} />
+                <NavbarLogsButton key="logs" theme={theme} pathname={pathname} />
               )}
 
               {/* Dev Config Widget */}
-              <DevConfig />
+              <DevConfig key="dev-config" />
 
               {/* Theme Switcher - DISABLED TEMPORARILY */}
               {/* <button

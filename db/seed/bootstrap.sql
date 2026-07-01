@@ -11,11 +11,11 @@ VALUES
   ('disable_create_team', 'false', 'Disable team creation for participants'),
   ('disable_join_team', 'false', 'Disable joining/leaving teams for participants'),
   ('disable_edit_team', 'false', 'Disable editing team name'),
-  ('disable_edit_username', 'false', 'Disable editing username')
+  ('disable_edit_username', 'false', 'Disable editing username'),
+  ('disable_signup', 'false', 'Disable new user registrations')
 ON CONFLICT (key) DO NOTHING;
 
 SELECT cleanup_orphaned_users_and_solves();
 
 -- Sync challenges solve count
 SELECT public.sync_challenge_solves();
-

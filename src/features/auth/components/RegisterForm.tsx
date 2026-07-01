@@ -17,6 +17,7 @@ import {
   AuthStatusMessage,
   AuthTurnstile,
   PasswordMatchIndicator,
+  SignupDisabled,
 } from './ui'
 
 export default function RegisterForm() {
@@ -32,13 +33,30 @@ export default function RegisterForm() {
     setCaptchaToken,
     turnstileKey,
     captchaEnabled,
-    captchaSiteKey
+    captchaSiteKey,
+    signupDisabled,
+    checkingSettings
   } = useRegister()
 
   const usernameError = useMemo(() => {
     if (!formData.username) return ''
     return isValidUsername(formData.username) ?? ''
   }, [formData.username])
+
+  if (checkingSettings) {
+    return (
+      <AuthCard>
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          <p className="text-sm text-gray-400">Checking registration status...</p>
+        </div>
+      </AuthCard>
+    )
+  }
+
+  if (signupDisabled) {
+    return <SignupDisabled />
+  }
 
   return (
     <AuthCard>

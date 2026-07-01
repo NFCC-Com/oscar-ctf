@@ -61,7 +61,7 @@ export default function ChallengeFlagForm({
           handleFlagSubmit(challenge.id)
         }}
       >
-        <div className={`relative flex-1 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/40 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`}>
+        <div className={`relative flex-1 h-[38px] overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/40 ${SURFACE_GLASS_CARD_COMPACT_CLASS}`}>
           {challenge.flag_placeholder && placeholders[challenge.id] && (
             <div
               ref={overlayRef}
@@ -103,7 +103,7 @@ export default function ChallengeFlagForm({
               }
             }}
             placeholder={challenge.flag_placeholder && placeholders[challenge.id] ? '' : 'Enter flag here...'}
-            className="w-full h-[38px] pl-4 pr-16 bg-transparent text-gray-900 dark:text-white focus:outline-none relative z-10 font-mono text-sm disabled:opacity-50"
+            className="w-full h-full pl-4 pr-16 bg-transparent text-gray-900 dark:text-white focus:outline-none relative z-10 font-mono text-sm disabled:opacity-50"
             spellCheck={false}
             autoComplete="off"
           />

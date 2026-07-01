@@ -1,15 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthService } from '../services/auth.service'
 import { useAuth } from '@/shared/contexts/AuthContext'
 import { isValidUsername } from '../lib/auth-utils'
 import Config from '@/config'
+import { supabase } from '@/lib/supabase/client'
 
 export function useRegister() {
   const router = useRouter()
   const { setUser } = useAuth()
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [turnstileKey, setTurnstileKey] = useState(0)
+  const [signupDisabled, setSignupDisabled] = useState<boolean>(false)
+  const [checkingSettings, setCheckingSettings] = useState(true)
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -27,9 +30,30 @@ export function useRegister() {
     })
   }
 
+  useEffect(() => {
+    async function checkSignupSettings() {
+      try {
+        const { data, error } = await supabase.rpc('get_system_setting', { p_key: 'disable_signup' })
+        if (!error && data === 'true') {
+          setSignupDisabled(true)
+        }
+      } catch (err) {
+        console.error('Error checking signup settings:', err)
+      } finally {
+        setCheckingSettings(false)
+      }
+    }
+    checkSignupSettings()
+  }, [])
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
+    if (signupDisabled) {
+      setError('Registration is currently disabled')
+      return
+    }
+
     if (Config.captchaEnabled && !captchaToken) {
       setError('Please complete the CAPTCHA')
       return
@@ -109,6 +133,8 @@ export function useRegister() {
     setCaptchaToken,
     turnstileKey,
     captchaEnabled: Config.captchaEnabled,
-    captchaSiteKey: Config.captchaSiteKey
+    captchaSiteKey: Config.captchaSiteKey,
+    signupDisabled,
+    checkingSettings
   }
 }
