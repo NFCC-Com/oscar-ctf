@@ -157,7 +157,6 @@ export default function AdminServicesPage() {
   if (authLoading || !accessReady) return <AdminContentLoading variant="services" />
   if (!user || !isAllowed) return null
 
-  const showLiveLoading = isLoading || statusLoading
   const showPlatformLoading = platformEntries.length === 0 && (isLoading || statusLoading)
 
   return (
@@ -232,28 +231,27 @@ export default function AdminServicesPage() {
                 </div>
               )
             ) : (
-              showLiveLoading ? (
-                <div className="flex flex-1 items-center justify-center">
-                  <Loader size={40} />
-                </div>
-              ) : (
-                <div className="w-full">
-                  <AdminLiveServicesTable
-                    rows={filteredLiveRows}
-                    isGlobalAdmin={isGlobalAdmin}
-                    actionLoading={actionLoading}
-                    globalActionLoading={globalActionLoading}
-                    onNxctlAction={(target, action) => {
-                      if (action === 'down') {
-                        setPendingServiceAction({ target, action })
-                      } else {
-                        void runNxctlAction(target, action)
-                      }
-                    }}
-                    onGlobalAction={(action) => void runGlobalServiceAction(action)}
-                  />
-                </div>
-              )
+              <div className="w-full">
+                {(isRefreshing || statusLoading) && (
+                  <div className="h-0.5 overflow-hidden bg-gray-200 dark:bg-gray-800">
+                    <div className="h-full w-1/3 animate-pulse rounded-full bg-blue-500" />
+                  </div>
+                )}
+                <AdminLiveServicesTable
+                  rows={filteredLiveRows}
+                  isGlobalAdmin={isGlobalAdmin}
+                  actionLoading={actionLoading}
+                  globalActionLoading={globalActionLoading}
+                  onNxctlAction={(target, action) => {
+                    if (action === 'down') {
+                      setPendingServiceAction({ target, action })
+                    } else {
+                      void runNxctlAction(target, action)
+                    }
+                  }}
+                  onGlobalAction={(action) => void runGlobalServiceAction(action)}
+                />
+              </div>
             )}
           </div>
         </div>

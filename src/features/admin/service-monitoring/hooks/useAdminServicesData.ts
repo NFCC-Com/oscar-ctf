@@ -329,6 +329,18 @@ export function useAdminServicesData() {
     void initServicesData()
   }, [authLoading, initServicesData, router, user])
 
+  useEffect(() => {
+    if (!isAllowed || serviceRows.length === 0) return
+
+    const interval = window.setInterval(async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token || null
+      await loadStatus(serviceRows, accessToken)
+    }, 30000)
+
+    return () => window.clearInterval(interval)
+  }, [isAllowed, loadStatus, serviceRows])
+
   return {
     user,
     authLoading,

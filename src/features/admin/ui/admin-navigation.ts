@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Server,
   Users,
+  User,
   ShieldCheck,
   Settings,
 } from 'lucide-react'
@@ -53,6 +54,11 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   {
     href: '/admin/users',
     label: 'Users',
+    icon: User,
+  },
+  {
+    href: '/admin/teams',
+    label: 'Teams',
     icon: Users,
   },
   {

@@ -49,7 +49,7 @@ export default function TeamProfileHeader({
     <SurfaceCard variant="glass" padding="none" className="relative overflow-hidden rounded-xl p-4 sm:p-5">
       <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-lg border border-gray-200/50 dark:border-white/10">
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br shadow-lg border border-gray-200/50 dark:border-white/10">
             {team.picture_url ? (
               <ImageWithFallback
                 src={team.picture_url}

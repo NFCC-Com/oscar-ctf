@@ -10,3 +10,5 @@ CREATE TABLE IF NOT EXISTS public.team_members (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS team_members_user_unique ON public.team_members(user_id);
+
+GRANT SELECT ON public.team_members TO authenticated;

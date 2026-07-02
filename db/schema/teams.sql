@@ -11,3 +11,5 @@ CREATE TABLE IF NOT EXISTS public.teams (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+GRANT SELECT ON public.teams TO authenticated;

@@ -52,7 +52,7 @@ export default function TeamMembersSection({
                   <ImageWithFallback
                     src={m.picture}
                     size={32}
-                    className="h-8 w-8 rounded-lg shadow-sm border border-gray-200/20 dark:border-gray-800/35 shrink-0 overflow-hidden"
+                    className="h-8 w-8 shrink-0 overflow-hidden"
                   />
 
                   <div className="flex-1 min-w-0">

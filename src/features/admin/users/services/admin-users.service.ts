@@ -105,3 +105,30 @@ export async function adminUnbanUser(userId: string): Promise<{ success: boolean
     return { success: false, error: err.message || 'Network error' }
   }
 }
+
+export async function adminBatchCreateUsers(users: any[], eventId: string | null): Promise<{
+  success: boolean
+  successCount: number
+  failedCount: number
+  results: any[]
+  error?: string
+}> {
+  try {
+    const { data, error } = await (supabase as any).rpc('admin_batch_create_users', {
+      p_users: users,
+      p_event_id: eventId || null
+    })
+    if (error) {
+      return { success: false, successCount: 0, failedCount: 0, results: [], error: error.message }
+    }
+    const res = data as any
+    return {
+      success: true,
+      successCount: Number(res.success_count || 0),
+      failedCount: Number(res.failed_count || 0),
+      results: Array.isArray(res.results) ? res.results : []
+    }
+  } catch (err: any) {
+    return { success: false, successCount: 0, failedCount: 0, results: [], error: err.message || 'Network error' }
+  }
+}

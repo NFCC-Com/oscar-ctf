@@ -11,34 +11,53 @@ import {
 import { AdminContentLoading, AdminPageShell, AdminPanel } from '../../ui'
 import { Switch } from '@/shared/ui/switch'
 import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
 import toast from 'react-hot-toast'
 import { Settings, Save, ShieldAlert } from 'lucide-react'
 
-const CONFIG_KEYS = [
+interface ConfigKey {
+  key: string
+  label: string
+  description: string
+  type?: 'boolean' | 'number'
+}
+
+const CONFIG_KEYS: ConfigKey[] = [
   {
     key: 'disable_create_team',
     label: 'Disable Team Creation',
     description: 'Prevent participants from creating new teams. Global administrators are unaffected.',
+    type: 'boolean',
   },
   {
     key: 'disable_join_team',
     label: 'Disable Joining/Leaving Teams',
     description: 'Prevent participants from joining or leaving teams. Global administrators are unaffected.',
+    type: 'boolean',
   },
   {
     key: 'disable_edit_team',
     label: 'Disable editing team name',
     description: 'Prevent participants from renaming or modifying team profiles. Global administrators are unaffected.',
+    type: 'boolean',
   },
   {
     key: 'disable_edit_username',
     label: 'Disable Editing Username',
     description: 'Prevent participants from changing their own usernames. Global administrators are unaffected.',
+    type: 'boolean',
   },
   {
     key: 'disable_signup',
     label: 'Disable User Registration',
     description: 'Prevent new user registrations and signups on the platform. Global administrators are unaffected.',
+    type: 'boolean',
+  },
+  {
+    key: 'max_team_members',
+    label: 'Maximum Members Per Team',
+    description: 'The maximum number of members allowed in a single team. Changes do not affect existing teams.',
+    type: 'number',
   },
 ]
 
@@ -49,7 +68,7 @@ export default function AdminSettingsPage() {
   const [isAllowed, setIsAllowed] = useState(false)
   const [isLoadingSettings, setIsLoadingSettings] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [settings, setSettings] = useState<Record<string, boolean>>({})
+  const [settings, setSettings] = useState<Record<string, string>>({})
 
   useEffect(() => {
     let mounted = true
@@ -79,14 +98,14 @@ export default function AdminSettingsPage() {
         const data = await getSystemSettings()
         if (!mounted) return
 
-        const settingsMap: Record<string, boolean> = {}
-        // Initialize with default false for keys
+        const settingsMap: Record<string, string> = {}
+        // Initialize with default values
         CONFIG_KEYS.forEach((cfg) => {
-          settingsMap[cfg.key] = false
+          settingsMap[cfg.key] = cfg.type === 'number' ? '5' : 'false'
         })
         // Override with database values
         data.forEach((s) => {
-          settingsMap[s.key] = s.value === 'true'
+          settingsMap[s.key] = s.value
         })
 
         setSettings(settingsMap)
@@ -110,7 +129,14 @@ export default function AdminSettingsPage() {
   const handleToggle = (key: string, checked: boolean) => {
     setSettings((prev) => ({
       ...prev,
-      [key]: checked,
+      [key]: checked ? 'true' : 'false',
+    }))
+  }
+
+  const handleTextChange = (key: string, value: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      [key]: value,
     }))
   }
 
@@ -119,7 +145,7 @@ export default function AdminSettingsPage() {
     try {
       const payload: Record<string, string> = {}
       Object.entries(settings).forEach(([k, v]) => {
-        payload[k] = v ? 'true' : 'false'
+        payload[k] = v
       })
 
       const res = await updateSystemSettings(payload)
@@ -167,11 +193,22 @@ export default function AdminSettingsPage() {
                     </p>
                   </div>
                   <div className="flex items-center shrink-0">
-                    <Switch
-                      checked={settings[config.key] ?? false}
-                      onCheckedChange={(checked) => handleToggle(config.key, checked)}
-                      aria-label={config.label}
-                    />
+                    {config.type === 'number' ? (
+                      <Input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={settings[config.key] || '5'}
+                        onChange={(e) => handleTextChange(config.key, e.target.value)}
+                        className="w-20 text-center text-xs h-9 rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white"
+                      />
+                    ) : (
+                      <Switch
+                        checked={settings[config.key] === 'true'}
+                        onCheckedChange={(checked) => handleToggle(config.key, checked)}
+                        aria-label={config.label}
+                      />
+                    )}
                   </div>
                 </div>
               ))}

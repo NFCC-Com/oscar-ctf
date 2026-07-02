@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from 'react'
 import { ShieldCheck, Users } from 'lucide-react'
 import { Button } from '@/shared/ui'
 import {
@@ -15,6 +16,7 @@ import {
 import { useAdminUsersData } from '../hooks/useAdminUsersData'
 import UserRolesTab from './UserRolesTab'
 import UsersTableCard from './UsersTableCard'
+import BatchImportDialog from './BatchImportDialog'
 
 type AdminUsersTab = 'users' | 'roles'
 
@@ -24,6 +26,7 @@ const USER_TABS = [
 ]
 export default function AdminUsersPage() {
   const [activeTab, setActiveTab] = useTabState<AdminUsersTab>('tab', 'users')
+  const [importOpen, setImportOpen] = useState(false)
   const adminUsersData = useAdminUsersData()
   const { user, authLoading, accessReady, isAllowed, isLoading } = adminUsersData
   const hasActiveUserFilters =
@@ -122,6 +125,14 @@ export default function AdminUsersPage() {
                       label: `${option} rows`,
                     }))}
                   />
+
+                  <Button
+                    type="button"
+                    onClick={() => setImportOpen(true)}
+                    className="h-9 shrink-0 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs"
+                  >
+                    Import Users
+                  </Button>
                 </>
               }
             >
@@ -175,6 +186,12 @@ export default function AdminUsersPage() {
           <UserRolesTab />
         )}
       </div>
+
+      <BatchImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onSuccess={adminUsersData.onRefresh}
+      />
     </AdminPageShell>
   )
 }

@@ -12,7 +12,8 @@ VALUES
   ('disable_join_team', 'false', 'Disable joining/leaving teams for participants'),
   ('disable_edit_team', 'false', 'Disable editing team name'),
   ('disable_edit_username', 'false', 'Disable editing username'),
-  ('disable_signup', 'false', 'Disable new user registrations')
+  ('disable_signup', 'false', 'Disable new user registrations'),
+  ('max_team_members', '5', 'Maximum number of members allowed per team')
 ON CONFLICT (key) DO NOTHING;
 
 SELECT cleanup_orphaned_users_and_solves();

@@ -729,6 +729,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      admin_batch_create_users: {
+        Args: { p_event_id?: string; p_users: Json }
+        Returns: Json
+      }
       admin_change_password: {
         Args: { p_new_password: string; p_user_id: string }
         Returns: boolean
