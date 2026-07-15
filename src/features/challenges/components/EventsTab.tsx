@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import APP from '@/config'
 import { useSystemSettings } from '@/shared/contexts/SystemSettingsContext'
 import { getEventSections, normalizeEventImageUrl } from '../lib'
@@ -7,6 +8,7 @@ import type { EnrichedChallengeEvent } from '../types'
 import AllEventsButton from './events-tab/AllEventsButton'
 import EventsEmptyState from './events-tab/EventsEmptyState'
 import EventsList from './events-tab/EventsList'
+import EventPreviewDialog from './events-tab/EventPreviewDialog'
 
 type Props = {
   events: EnrichedChallengeEvent[]
@@ -35,6 +37,21 @@ export default function EventsTab({
   const hasUpcomingSection = upcomingList.length > 0
   const isEmpty = !hasAvailableSection && !hasUpcomingSection && endedEvents.length === 0
 
+  const [previewEvent, setPreviewEvent] = useState<EnrichedChallengeEvent | null>(null)
+
+  const handleEventClick = (id: string | null | 'all') => {
+    if (id === null || id === 'all') {
+      onEventSelect(id)
+      return
+    }
+    const found = events.find((e) => e.id === id)
+    if (found) {
+      setPreviewEvent(found)
+    } else {
+      onEventSelect(id)
+    }
+  }
+
   return (
     <div data-tour="challenge-events-tab" className="w-full">
       <div className="flex flex-col gap-6 md:gap-8">
@@ -52,7 +69,7 @@ export default function EventsTab({
             selectedEventId={selectedEventId}
             fallbackImageUrl={fallbackImageUrl}
             now={now}
-            onEventSelect={onEventSelect}
+            onEventSelect={handleEventClick}
             mainEvent={showMain ? {
               label: mainLabel,
               imageUrl: mainImageUrl,
@@ -70,7 +87,7 @@ export default function EventsTab({
             selectedEventId={selectedEventId}
             fallbackImageUrl={fallbackImageUrl}
             now={now}
-            onEventSelect={onEventSelect}
+            onEventSelect={handleEventClick}
           />
         )}
 
@@ -81,13 +98,26 @@ export default function EventsTab({
             selectedEventId={selectedEventId}
             fallbackImageUrl={fallbackImageUrl}
             now={now}
-            onEventSelect={onEventSelect}
+            onEventSelect={handleEventClick}
             tone="ended"
           />
         )}
 
         {isEmpty && <EventsEmptyState />}
       </div>
+
+      <EventPreviewDialog
+        open={previewEvent !== null}
+        onOpenChange={(open) => !open && setPreviewEvent(null)}
+        event={previewEvent}
+        now={now}
+        fallbackImageUrl={fallbackImageUrl}
+        onConfirm={() => {
+          if (previewEvent) {
+            onEventSelect(previewEvent.id)
+          }
+        }}
+      />
     </div>
   )
 }
