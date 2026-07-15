@@ -10,6 +10,7 @@ import { Skeleton } from "@/shared/ui"
 import { useTheme } from "@/shared/contexts"
 import { ChallengeWithSolve } from "@/shared/types"
 import { UserEmptyState, UserSection } from "../ui"
+import APP from "@/config"
 
 const Plot = dynamic(() => import("react-plotly.js"), {
   ssr: false,
@@ -21,6 +22,7 @@ type Props = {
   firstBloodIds: string[]
   isDark?: boolean
   flagStats?: { correct_submissions: number; incorrect_submissions: number } | null
+  categoryTotals?: { category: string; total_challenges: number }[]
 }
 
 /* ===================== THEME ===================== */
@@ -38,6 +40,24 @@ const pieColors = [
   "#93c5fd",
   "#1d4ed8",
 ]
+
+/** Map difficulty color names from APP.difficultyStyles to actual hex values */
+const DIFFICULTY_COLOR_HEX: Record<string, string> = {
+  cyan:   "#06b6d4",
+  green:  "#22c55e",
+  yellow: "#eab308",
+  red:    "#ef4444",
+  purple: "#a855f7",
+  gray:   "#6b7280",
+}
+
+function getDifficultyHex(difficulty: string): string {
+  const rawDiff = difficulty.trim()
+  const normalizedDiff = rawDiff === 'imposible' ? 'Impossible'
+    : rawDiff.charAt(0).toUpperCase() + rawDiff.slice(1).toLowerCase()
+  const colorName = (APP.difficultyStyles as Record<string, string>)[normalizedDiff] || 'gray'
+  return DIFFICULTY_COLOR_HEX[colorName] || DIFFICULTY_COLOR_HEX.gray
+}
 
 /* ===================== HELPERS ===================== */
 
@@ -62,6 +82,7 @@ export default function UserStatsPlotly({
   firstBloodIds,
   isDark,
   flagStats,
+  categoryTotals,
 }: Props) {
   const { theme: currentTheme } = useTheme()
   const isDarkMode = typeof isDark === "boolean" ? isDark : currentTheme === "dark"
@@ -92,6 +113,16 @@ export default function UserStatsPlotly({
     byCategory[c] = (byCategory[c] || 0) + 1
   })
 
+  // Build aggregated totals per parent category (for bar chart fallback)
+  const categoryTotalMap: Record<string, number> = {}
+  if (categoryTotals) {
+    categoryTotals.forEach(({ category, total_challenges }) => {
+      const parent = (category || '').split('/')[0]
+      if (!parent) return
+      categoryTotalMap[parent] = (categoryTotalMap[parent] || 0) + total_challenges
+    })
+  }
+
   /* ===== DIFFICULTY ===== */
   const byDifficulty: Record<string, number> = {}
   solvedChallenges.forEach(s => {
@@ -100,7 +131,7 @@ export default function UserStatsPlotly({
   })
 
   const diffKeys = Object.keys(byDifficulty)
-  const diffColors = diffKeys.map((_, index) => pieColors[index % pieColors.length])
+  const diffColors = diffKeys.map(key => getDifficultyHex(key))
   const firstBloodCount = firstBloodIds.length
 
   const categoriesCount = Object.keys(byCategory).length
@@ -108,14 +139,20 @@ export default function UserStatsPlotly({
 
   const timeSeries = groupSolvesOverTime(solvedChallenges)
 
+  // Radar chart data prep
+  const catKeys = Object.keys(byCategory)
+  const catValues = Object.values(byCategory)
+  const radarTheta = catKeys.length > 0 ? [...catKeys, catKeys[0]] : []
+  const radarR = catValues.length > 0 ? [...catValues, catValues[0]] : []
+
   const baseLayout = {
     dragmode: false as const,
     autosize: true,
     showlegend: false,
     paper_bgcolor: t.bg,
     plot_bgcolor: t.bg,
-    font: { color: t.text, size: 12 },
-    margin: { t: 10, b: 30, l: 40, r: 10 },
+    font: { color: t.text, size: 11 },
+    margin: { t: 40, b: 40, l: 60, r: 60 }, // Extra padding to prevent label clipping
     hoverlabel: {
       bgcolor: isDarkMode ? "#111827" : "#ffffff",
       font: { color: t.text },
@@ -133,28 +170,110 @@ export default function UserStatsPlotly({
             description={`${categoriesCount} categories represented in your solves.`}
             icon={LayoutGrid}
           >
-            <Plot
-              key={`cat-${isDarkMode}`}
-              data={[
-                {
-                  type: "pie",
-                  labels: Object.keys(byCategory),
-                  values: Object.values(byCategory),
-                  hole: 0.5,
-                  marker: {
-                    colors: pieColors,
-                    line: { color: t.bg, width: 1 },
+            {catKeys.length >= 3 ? (
+              /* Radar chart — only when 3+ categories so the polygon looks proper */
+              <Plot
+                key={`cat-${isDarkMode}`}
+                data={[
+                  {
+                    type: "scatterpolar",
+                    r: radarR,
+                    theta: radarTheta,
+                    fill: "toself",
+                    fillcolor: isDarkMode ? "rgba(59, 130, 246, 0.25)" : "rgba(37, 99, 235, 0.15)",
+                    line: {
+                      color: isDarkMode ? "#60a5fa" : "#2563eb",
+                      width: 2,
+                    },
+                    marker: {
+                      color: isDarkMode ? "#60a5fa" : "#2563eb",
+                      size: 6,
+                    },
+                    hovertemplate: "%{theta}: %{r} solves<extra></extra>",
                   },
-                  textinfo: "percent",
-                  hovertemplate:
-                    "%{label}<br>%{value} solves<extra></extra>",
-                },
-              ]}
-              layout={{ ...baseLayout, height: 260, showlegend: true }}
-              style={{ width: "100%" }}
-              useResizeHandler
-              config={{ displayModeBar: false }}
-            />
+                ]}
+                layout={{
+                  ...baseLayout,
+                  height: 280,
+                  polar: {
+                    gridshape: "linear",
+                    radialaxis: {
+                      visible: true,
+                      showticklabels: false,
+                      ticks: "",
+                      gridcolor: isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
+                      linecolor: "transparent",
+                    },
+                    angularaxis: {
+                      color: t.text,
+                      gridcolor: isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
+                      linecolor: isDarkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.15)",
+                    },
+                    bgcolor: "transparent",
+                  },
+                }}
+                style={{ width: "100%" }}
+                useResizeHandler
+                config={{ displayModeBar: false }}
+              />
+            ) : (
+              /* Horizontal stacked bar fallback — for 1-2 categories where radar looks broken */
+              <Plot
+                key={`cat-bar-${isDarkMode}`}
+                data={[
+                  {
+                    name: "Solved",
+                    type: "bar",
+                    y: catKeys,
+                    x: catValues,
+                    orientation: "h" as const,
+                    marker: {
+                      color: isDarkMode ? "#60a5fa" : "#2563eb",
+                    },
+                    text: catKeys.map(k => {
+                      const total = categoryTotalMap[k] || catValues[catKeys.indexOf(k)]
+                      return `${byCategory[k]}/${total}`
+                    }),
+                    textposition: "inside" as const,
+                    textfont: { color: "#ffffff", size: 12 },
+                    hovertemplate: "%{y}: %{x} solved<extra></extra>",
+                  },
+                  {
+                    name: "Remaining",
+                    type: "bar",
+                    y: catKeys,
+                    x: catKeys.map(k => {
+                      const total = categoryTotalMap[k] || 0
+                      const solved = byCategory[k] || 0
+                      return Math.max(0, total - solved)
+                    }),
+                    orientation: "h" as const,
+                    marker: {
+                      color: isDarkMode ? "rgba(107, 114, 128, 0.3)" : "rgba(156, 163, 175, 0.3)",
+                    },
+                    hovertemplate: "%{y}: %{x} remaining<extra></extra>",
+                  },
+                ]}
+                layout={{
+                  ...baseLayout,
+                  height: 280,
+                  barmode: "stack",
+                  showlegend: false,
+                  xaxis: {
+                    title: { text: "Challenges" },
+                    gridcolor: t.grid,
+                    dtick: 1,
+                  },
+                  yaxis: {
+                    automargin: true,
+                  },
+                  margin: { t: 20, b: 40, l: 100, r: 20 },
+                }}
+                style={{ width: "100%" }}
+                useResizeHandler
+                config={{ displayModeBar: false }}
+              />
+            )}
           </UserSection>
         </div>
 

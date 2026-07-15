@@ -1,7 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { Calendar, Clock } from 'lucide-react'
+import { Calendar, Clock, Lock, Unlock } from 'lucide-react'
 import Image from 'next/image'
 import { SurfaceCard } from '@/shared/ui'
 import { cn } from '@/shared/lib/utils'
@@ -53,7 +53,8 @@ export default function EventCard({
       <SurfaceCard
         variant="glass"
         className={cn(
-          'relative flex h-full flex-col overflow-hidden transition-all duration-300 group-hover:border-blue-500/50 hover:shadow-md',
+          'relative flex h-full flex-col overflow-hidden transition-all duration-300',
+          event.isLocked ? 'group-hover:border-red-500/30' : 'group-hover:border-blue-500/50',
           selected && 'border-blue-500/50 bg-blue-500/[0.03]',
           tone === 'ended' && 'opacity-70 grayscale-[0.3]'
         )}
@@ -82,10 +83,22 @@ export default function EventCard({
         {/* Content Section */}
         <div className="flex-1 p-4 md:p-5 flex flex-col justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
               <div className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md w-fit ${status.color}`}>
                 {status.label}
               </div>
+              
+              {event.isLocked ? (
+                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md w-fit bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <Lock size={10} />
+                  Locked
+                </div>
+              ) : (
+                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md w-fit bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <Unlock size={10} />
+                  Joined
+                </div>
+              )}
             </div>
 
             <h4 className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">

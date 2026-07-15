@@ -161,6 +161,7 @@ export default function ConfirmDialog({
             onClick={handleConfirm}
             disabled={loading || confirmDisabled || (verificationText !== undefined && verificationValue !== verificationText)}
             className="text-xs font-medium"
+            autoFocus={!verificationText}
           >
             {loading ? "Processing..." : confirmLabel}
           </Button>

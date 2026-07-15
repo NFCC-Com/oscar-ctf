@@ -203,6 +203,7 @@ export default function UserProfile({
               solvedChallenges={solvedChallenges}
               firstBloodIds={firstBloodIds}
               flagStats={flagStats}
+              categoryTotals={categoryTotals}
             />
           </div>
         )}

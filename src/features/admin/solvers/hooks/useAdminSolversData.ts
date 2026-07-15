@@ -28,6 +28,7 @@ export function useAdminSolversData() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [pendingDeleteDetail, setPendingDeleteDetail] = useState<PendingDeleteDetail>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const fetchSolvers = useCallback(async (startOffset = 0) => {
     try {
@@ -36,6 +37,7 @@ export function useAdminSolversData() {
       setSolvers((prev) => (startOffset === 0 ? data : [...prev, ...data]))
       setOffset(startOffset + 100)
       setHasMore(data.length === 100)
+      if (startOffset === 0) setSelectedIds([])
     } catch (err) {
       console.error(err)
       toast.error('Failed to fetch solvers')
@@ -46,6 +48,7 @@ export function useAdminSolversData() {
 
   const searchSolvers = useCallback(async () => {
     const keyword = searchQuery.trim()
+    setSelectedIds([])
     if (!keyword) {
       await fetchSolvers(0)
       return
@@ -73,6 +76,7 @@ export function useAdminSolversData() {
 
   const resetSearch = useCallback(async () => {
     setSearchQuery('')
+    setSelectedIds([])
     await fetchSolvers(0)
   }, [fetchSolvers])
 
@@ -91,12 +95,39 @@ export function useAdminSolversData() {
     try {
       await deleteSolver(id)
       setSolvers((prev) => prev.filter((s) => s.solve_id !== id))
+      setSelectedIds((prev) => prev.filter((val) => val !== id))
       toast.success('Solve deleted successfully')
     } catch (err) {
       console.error(err)
       toast.error('Failed to delete solve')
     }
   }, [])
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((val) => val !== id) : [...prev, id]
+    )
+  }, [])
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) =>
+      prev.length === solvers.length ? [] : solvers.map((s) => s.solve_id)
+    )
+  }, [solvers])
+
+  const doBulkDelete = useCallback(async () => {
+    if (selectedIds.length === 0) return
+    const toastId = toast.loading(`Deleting ${selectedIds.length} solve(s)...`)
+    try {
+      await Promise.all(selectedIds.map((id) => deleteSolver(id)))
+      setSolvers((prev) => prev.filter((s) => !selectedIds.includes(s.solve_id)))
+      toast.success(`Successfully deleted ${selectedIds.length} solve(s)`, { id: toastId })
+      setSelectedIds([])
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to delete some or all selected solves', { id: toastId })
+    }
+  }, [selectedIds])
 
   useEffect(() => {
     let mounted = true
@@ -151,5 +182,10 @@ export function useAdminSolversData() {
     resetSearch,
     askDelete,
     doDelete,
+    selectedIds,
+    setSelectedIds,
+    toggleSelect,
+    toggleSelectAll,
+    doBulkDelete,
   }
 }
