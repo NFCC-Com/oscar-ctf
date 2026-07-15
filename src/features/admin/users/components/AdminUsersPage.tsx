@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { ShieldCheck, Users } from 'lucide-react'
+import { ShieldCheck, Users, Tag } from 'lucide-react'
 import { Button } from '@/shared/ui'
 import {
   AdminContentLoading,
@@ -16,14 +16,16 @@ import {
 import { useAdminUsersData } from '../hooks/useAdminUsersData'
 import UserRolesTab from './UserRolesTab'
 import UsersTableCard from './UsersTableCard'
+import UserTagsTab from './UserTagsTab'
 import BatchImportDialog from './BatchImportDialog'
 import AddUserDialog from './AddUserDialog'
 
-type AdminUsersTab = 'users' | 'roles'
+type AdminUsersTab = 'users' | 'roles' | 'tags'
 
 const USER_TABS = [
   { value: 'users' as const, label: 'Users', icon: Users },
   { value: 'roles' as const, label: 'Roles', icon: ShieldCheck },
+  { value: 'tags' as const, label: 'Tags', icon: Tag },
 ]
 export default function AdminUsersPage() {
   const [activeTab, setActiveTab] = useTabState<AdminUsersTab>('tab', 'users')
@@ -192,8 +194,10 @@ export default function AdminUsersPage() {
       <div className="space-y-0 mt-2">
         {activeTab === 'users' ? (
           <UsersTableCard {...adminUsersData} />
-        ) : (
+        ) : activeTab === 'roles' ? (
           <UserRolesTab />
+        ) : (
+          <UserTagsTab users={adminUsersData.users} onRefresh={adminUsersData.onRefresh} />
         )}
       </div>
 

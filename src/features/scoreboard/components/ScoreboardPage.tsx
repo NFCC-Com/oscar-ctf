@@ -1,12 +1,13 @@
 'use client'
 
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { Coins, Droplet, Trophy, Rocket } from 'lucide-react'
 import Loader from '@/shared/components/Loader'
 import EmptyState from '@/shared/components/EmptyState'
 import PageLoader from '@/shared/components/PageLoader'
 import PageBackground from '@/shared/components/PageBackground'
-import { AppTabs } from '@/shared/ui'
+import { AppTabs, FilterSelect } from '@/shared/ui'
 import { CardContent } from '@/shared/ui/card'
 import { SurfaceCard } from '@/shared/ui'
 import {
@@ -45,7 +46,19 @@ export default function ScoreboardPage() {
     isDark,
     eventParam,
     recentSolvesMap,
+    selectedTag,
+    setSelectedTag,
+    activeTags,
   } = useScoreboardPageData()
+
+  const categoryOptions = useMemo(() => [
+    { value: 'all', label: 'All Categories' },
+    ...activeTags.map((tag) => ({
+      value: tag,
+      label: tag,
+      className: 'font-mono font-semibold'
+    }))
+  ], [activeTags])
 
   if (authLoading) return <Loader fullscreen />
   if (!user) return null
@@ -73,9 +86,7 @@ export default function ScoreboardPage() {
             onViewChange={setView}
           />
 
-          <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-800 hidden sm:block mx-1" />
-
-          <div className="w-full sm:w-[180px]">
+          <div className="w-full sm:w-[130px]">
             <EventSelect
               value={selectedEvent}
               onChange={setSelectedEvent}
@@ -86,6 +97,17 @@ export default function ScoreboardPage() {
               getEventLabel={(event: any) => String(event?.name ?? event?.title ?? 'Untitled')}
             />
           </div>
+
+          {activeTags.length > 0 && (
+            <FilterSelect
+              options={categoryOptions}
+              value={selectedTag || 'all'}
+              defaultValue="all"
+              onChange={(val) => setSelectedTag(val === 'all' ? '' : val)}
+              placeholder="All Categories"
+              className="w-full sm:w-[160px]"
+            />
+          )}
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">

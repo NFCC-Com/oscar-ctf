@@ -60,11 +60,25 @@ export default function ProfileHeader({
 
         <div className="flex min-w-0 flex-1 flex-col gap-3 text-center sm:text-left">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <h1 className={cn(TYPO_PAGE_TITLE_CLASS, "max-w-full truncate")}
-              title={userDetail.username}
-            >
-              {userDetail.username}
-            </h1>
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 min-w-0">
+              <h1 className={cn(TYPO_PAGE_TITLE_CLASS, "leading-tight truncate")}
+                title={userDetail.username}
+              >
+                {userDetail.username}
+              </h1>
+              {userDetail.tags && userDetail.tags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                  {userDetail.tags.map((tag: string) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center text-xs font-bold font-mono px-2 py-0.5 rounded-md bg-blue-100/80 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 border border-blue-500/10"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
             <EventSelect
               value={effectiveSelectedEvent}
               onChange={setSelectedEvent}

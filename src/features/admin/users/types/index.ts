@@ -8,6 +8,7 @@ export type AdminUserRow = {
   bio: string | null
   sosmed: UserSocialLinks
   profile_picture_url: string | null
+  tags: string[]
   banned_until: string | null
   ban_reason: string | null
   created_at: string

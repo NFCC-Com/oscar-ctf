@@ -6,6 +6,7 @@ import {
   getFirstBloodLeaderboard,
   getLeaderboardSummary,
   getTopProgressByUsernames,
+  getActiveUserTags,
 } from '@/shared/lib'
 import { getRecentSolves } from '@/features/logs/lib/log-service'
 import { getSolvedEventIds } from '@/features/events/services/event.service'
@@ -45,10 +46,24 @@ export function useScoreboardPageData() {
     params.set('tab', tab)
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }, [searchParams, pathname, router])
+
+  const selectedTag = useMemo(() => {
+    return searchParams.get('tag') || ''
+  }, [searchParams])
+  const setSelectedTag = useCallback((value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (value) {
+      params.set('tag', value)
+    } else {
+      params.delete('tag')
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [searchParams, pathname, router])
   const { startedEvents, selectedEvent, setSelectedEvent } = useEventContext()
   const [solvedEventIds, setSolvedEventIds] = useState<string[] | null>(null)
   const [hasMounted, setHasMounted] = useState(false)
   const [stableLeaderboard, setStableLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [activeTags, setActiveTags] = useState<string[]>([])
   const leaderboardLengthRef = useRef(0)
   const fetchStateRef = useRef({ event: selectedEvent, fb: firstBloodMode, limit: 100 })
 
@@ -58,6 +73,10 @@ export function useScoreboardPageData() {
 
   useEffect(() => {
     getSolvedEventIds().then(setSolvedEventIds)
+  }, [])
+
+  useEffect(() => {
+    getActiveUserTags().then(setActiveTags)
   }, [])
 
   useEffect(() => {
@@ -80,7 +99,7 @@ export function useScoreboardPageData() {
       const lastFetch = fetchStateRef.current
 
       // Check if we already have sufficient data for the current context to avoid refetching
-      const isSameContext = lastFetch.event === selectedEvent && lastFetch.fb === firstBloodMode
+      const isSameContext = lastFetch.event === selectedEvent && lastFetch.fb === firstBloodMode && (lastFetch as any).tag === selectedTag
       if (isSameContext && lastFetch.limit >= targetLimit && leaderboardLengthRef.current > 0) {
         return
       }
@@ -106,12 +125,12 @@ export function useScoreboardPageData() {
         const firstBloodLeaderboard = await getFirstBloodLeaderboard(targetLimit, 0, eventParam)
         setLeaderboard(firstBloodLeaderboard)
         setRecentSolvesMapState(recentSolvesMap)
-        fetchStateRef.current = { event: selectedEvent, fb: firstBloodMode, limit: targetLimit }
+        fetchStateRef.current = { event: selectedEvent, fb: firstBloodMode, limit: targetLimit, tag: selectedTag } as any
         if (isFirstLoad) setLoading(false)
         return
       }
 
-      const summary = await getLeaderboardSummary(targetLimit, 0, eventParam)
+      const summary = await getLeaderboardSummary(targetLimit, 0, eventParam, selectedTag)
       const topUsernames = summary.slice(0, 10).map((row: LeaderboardSummaryRow) => row.username)
       const progressMap = await getTopProgressByUsernames(topUsernames, eventParam)
 
@@ -124,12 +143,12 @@ export function useScoreboardPageData() {
 
       setLeaderboard(result.entries)
       setRecentSolvesMapState(recentSolvesMap)
-      fetchStateRef.current = { event: selectedEvent, fb: firstBloodMode, limit: targetLimit }
+      fetchStateRef.current = { event: selectedEvent, fb: firstBloodMode, limit: targetLimit, tag: selectedTag } as any
       if (isFirstLoad) setLoading(false)
     }
 
     fetchData()
-  }, [user, firstBloodMode, selectedEvent, view])
+  }, [user, firstBloodMode, selectedEvent, view, selectedTag])
 
   const eventParam = getScoreboardEventParam(selectedEvent)
 
@@ -165,5 +184,8 @@ export function useScoreboardPageData() {
     isDark: theme === 'dark',
     eventParam,
     recentSolvesMap: recentSolvesMapState,
+    selectedTag,
+    setSelectedTag,
+    activeTags,
   }
 }

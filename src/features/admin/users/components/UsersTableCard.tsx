@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, KeyRound, Ban, Unlock } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, KeyRound, Ban, Unlock, Tag } from 'lucide-react'
 import { ImageWithFallback } from '@/shared/components'
 import {
   Button,
@@ -37,7 +37,7 @@ import {
   ADMIN_FORM_FIELD_CLASS,
 } from '../../ui/form-field-styles'
 import type { AdminUserRow, UserSocialLinks } from '../types'
-import { adminChangePassword, adminBanUser, adminUnbanUser } from '../services/admin-users.service'
+import { adminChangePassword, adminBanUser, adminUnbanUser, adminAssignTagsBulk } from '../services/admin-users.service'
 import toast from 'react-hot-toast'
 import ConfirmDialog from '@/shared/components/ConfirmDialog'
 
@@ -143,7 +143,36 @@ export default function UsersTableCard({
   const [banReason, setBanReason] = useState('')
   const [unbanUserObj, setUnbanUserObj] = useState<{ id: string; username: string } | null>(null)
 
+  const [editTagsUser, setEditTagsUser] = useState<AdminUserRow | null>(null)
+  const [editTagsInput, setEditTagsInput] = useState('')
+
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleEditTags = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editTagsUser) return
+
+    const cleanTags = editTagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0)
+
+    setIsSubmitting(true)
+    try {
+      const res = await adminAssignTagsBulk([editTagsUser.username], cleanTags, 'set')
+      if (res.success) {
+        toast.success(`Successfully updated tags for ${editTagsUser.username}!`)
+        setEditTagsUser(null)
+        onRefresh?.()
+      } else {
+        toast.error(res.error || 'Failed to update tags.')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'An error occurred.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -227,6 +256,7 @@ export default function UsersTableCard({
                     <TableHead className="pl-6 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">User</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Role</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Email</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Tags</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Created</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Updated</TableHead>
                     <TableHead className="pr-6 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</TableHead>
@@ -303,6 +333,22 @@ export default function UsersTableCard({
                         <TableCell className="font-mono text-xs text-muted-foreground">
                           {listedUser.email || '-'}
                         </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1 max-w-[180px]">
+                            {listedUser.tags && listedUser.tags.length > 0 ? (
+                              listedUser.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-100/80 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 border border-blue-500/10 font-mono"
+                                >
+                                  {tag}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-400 dark:text-gray-600 italic">-</span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right text-xs text-muted-foreground">
                           {formatDate(listedUser.created_at)}
                         </TableCell>
@@ -339,6 +385,19 @@ export default function UsersTableCard({
                                 >
                                   <KeyRound className="h-3.5 w-3.5 mr-1" />
                                   Password
+                                </Button>
+
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-xl h-8 w-24 flex items-center justify-center px-3 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-600 dark:text-emerald-400 dark:border-emerald-400/20 dark:hover:bg-emerald-500/15"
+                                  onClick={() => {
+                                    setEditTagsUser(listedUser)
+                                    setEditTagsInput(listedUser.tags?.join(', ') || '')
+                                  }}
+                                >
+                                  <Tag className="h-3.5 w-3.5 mr-1" />
+                                  Tags
                                 </Button>
 
                                 {listedUser.is_admin ? (
@@ -583,6 +642,62 @@ export default function UsersTableCard({
           }
         }}
       />
+
+      {/* Edit Tags Dialog */}
+      <Dialog
+        open={editTagsUser !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditTagsUser(null)
+        }}
+      >
+        <DialogContent className={DIALOG_GLASS_CONTENT_MD_CLASS}>
+          <DialogHeader className="border-b pb-3 dark:border-gray-800">
+            <DialogTitle className="text-base font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <Tag className="h-5 w-5 text-emerald-500" />
+              Edit Tags for <span className="font-semibold">{editTagsUser?.username}</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {editTagsUser && (
+            <form onSubmit={handleEditTags} className="space-y-4">
+              <div className={ADMIN_FORM_FIELD_CLASS}>
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  User Tags (Comma-separated)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g. mahasiswa, smk, senior"
+                  value={editTagsInput}
+                  onChange={(e) => setEditTagsInput(e.target.value)}
+                  disabled={isSubmitting}
+                />
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                  Separate multiple tags with commas. Leaving it empty will clear all tags.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 border-t pt-3 dark:border-gray-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl px-4"
+                  onClick={() => setEditTagsUser(null)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 border border-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Saving...' : 'Save Tags'}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminDataSurface>
   )
 }

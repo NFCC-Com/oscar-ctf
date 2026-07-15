@@ -103,7 +103,8 @@ BEGIN
         'solo_score', COALESCE(us.solo_score, 0),
         'first_solve_count', COALESCE(fs.first_solves, 0),
         'first_solve_score', COALESCE(fs.first_solve_score, 0),
-        'picture', public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)
+        'picture', public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data),
+        'tags', COALESCE(u.tags, '{}'::TEXT[])
       )
       ORDER BY (u.id = t.captain_user_id) DESC, tm.joined_at ASC
     ),
@@ -285,11 +286,13 @@ GRANT EXECUTE ON FUNCTION get_team_by_name(TEXT, uuid, text) TO authenticated;
 
 
 DROP FUNCTION IF EXISTS get_team_scoreboard(integer, integer, uuid, text);
+DROP FUNCTION IF EXISTS get_team_scoreboard(integer, integer, uuid, text, text);
 CREATE OR REPLACE FUNCTION get_team_scoreboard(
   limit_rows integer DEFAULT 100,
   offset_rows integer DEFAULT 0,
   p_event_id uuid DEFAULT NULL,
-  p_event_mode text DEFAULT 'any'
+  p_event_mode text DEFAULT 'any',
+  p_tag text DEFAULT NULL
 )
 RETURNS TABLE (
   team_id UUID,
@@ -300,12 +303,30 @@ RETURNS TABLE (
   unique_challenges BIGINT,
   total_solves BIGINT,
   member_count BIGINT,
+  member_tags TEXT[],
   rank BIGINT
 ) AS $$
 BEGIN
   RETURN QUERY
-  WITH members_count AS (
-    SELECT t.id AS team_id, t.name AS team_name, t.picture_url, COUNT(tm.user_id) AS member_count
+  WITH team_member_tags AS (
+    -- Aggregate distinct non-empty tags from all members of each team
+    SELECT
+      tm.team_id AS team_id,
+      COALESCE(
+        ARRAY_AGG(DISTINCT tag) FILTER (WHERE tag IS NOT NULL AND tag <> ''),
+        '{}'::TEXT[]
+      ) AS member_tags
+    FROM public.team_members tm
+    JOIN public.users u ON u.id = tm.user_id
+    LEFT JOIN LATERAL UNNEST(u.tags) AS tag ON TRUE
+    GROUP BY tm.team_id
+  ),
+  members_count AS (
+    SELECT
+      t.id AS team_id,
+      t.name AS team_name,
+      t.picture_url,
+      COUNT(tm.user_id) AS member_count
     FROM public.teams t
     LEFT JOIN public.team_members tm ON tm.team_id = t.id
     GROUP BY t.id, t.name, t.picture_url
@@ -344,10 +365,13 @@ BEGIN
     COALESCE(a.unique_challenges, 0) AS unique_challenges,
     COALESCE(a.total_solves, 0) AS total_solves,
     COALESCE(mc.member_count, 0) AS member_count,
+    COALESCE(tmt.member_tags, '{}'::TEXT[]) AS member_tags,
     RANK() OVER (ORDER BY COALESCE(us.unique_score, 0) DESC) AS rank
   FROM members_count mc
   LEFT JOIN agg a ON a.team_id = mc.team_id
   LEFT JOIN unique_score_calc us ON us.team_id = mc.team_id
+  LEFT JOIN team_member_tags tmt ON tmt.team_id = mc.team_id
+  WHERE (p_tag IS NULL OR p_tag = '' OR p_tag = ANY(COALESCE(tmt.member_tags, '{}'::TEXT[])))
   ORDER BY COALESCE(us.unique_score, 0) DESC
   LIMIT limit_rows OFFSET offset_rows;
 END;
@@ -355,7 +379,7 @@ $$ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, auth, extensions;
 
-GRANT EXECUTE ON FUNCTION get_team_scoreboard(integer, integer, uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_team_scoreboard(integer, integer, uuid, text, text) TO authenticated;
 
 DROP FUNCTION IF EXISTS get_team_solves_by_names(TEXT[], uuid, text);
 CREATE OR REPLACE FUNCTION get_team_solves_by_names(

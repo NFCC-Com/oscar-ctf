@@ -127,6 +127,7 @@ export type LeaderboardEntry = {
   score: number
   rank: number
   picture?: string | null
+  tags?: string[]
   progress: {
     date: string
     score: number

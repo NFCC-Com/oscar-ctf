@@ -683,6 +683,7 @@ export type Database = {
           is_admin: boolean
           profile_picture_url: string | null
           sosmed: Json | null
+          tags: string[]
           updated_at: string | null
           username: string
         }
@@ -695,6 +696,7 @@ export type Database = {
           is_admin?: boolean
           profile_picture_url?: string | null
           sosmed?: Json | null
+          tags?: string[]
           updated_at?: string | null
           username: string
         }
@@ -707,6 +709,7 @@ export type Database = {
           is_admin?: boolean
           profile_picture_url?: string | null
           sosmed?: Json | null
+          tags?: string[]
           updated_at?: string | null
           username?: string
         }
@@ -777,6 +780,10 @@ export type Database = {
         Args: { p_event_id: string; p_user_id: string }
         Returns: boolean
       }
+      admin_assign_tags_bulk: {
+        Args: { p_action: string; p_identifiers: string[]; p_tags: string[] }
+        Returns: Json
+      }
       admin_ban_user: {
         Args: {
           p_duration_minutes: number
@@ -837,6 +844,7 @@ export type Database = {
         Returns: Json
       }
       generate_team_invite_code: { Args: never; Returns: string }
+      get_active_user_tags: { Args: never; Returns: string[] }
       get_activity_stats: {
         Args: { p_end: string; p_start: string }
         Returns: {
@@ -927,6 +935,7 @@ export type Database = {
           is_admin: boolean
           profile_picture_url: string
           sosmed: Json
+          tags: string[]
           total_count: number
           updated_at: string
           username: string
@@ -1038,6 +1047,7 @@ export type Database = {
           offset_rows?: number
           p_event_id?: string
           p_event_mode?: string
+          p_tag?: string
         }
         Returns: {
           id: string
@@ -1045,6 +1055,7 @@ export type Database = {
           picture: string
           rank: number
           score: number
+          tags: string[]
           username: string
         }[]
       }
@@ -1216,9 +1227,11 @@ export type Database = {
           offset_rows?: number
           p_event_id?: string
           p_event_mode?: string
+          p_tag?: string
         }
         Returns: {
           member_count: number
+          member_tags: string[]
           picture_url: string
           rank: number
           team_id: string

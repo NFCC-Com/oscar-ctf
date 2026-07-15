@@ -190,7 +190,7 @@ DECLARE
   v_correct_flags INT := 0;
   v_incorrect_flags INT := 0;
 BEGIN
-  SELECT id, username, bio, sosmed, profile_picture_url, created_at
+  SELECT id, username, bio, sosmed, profile_picture_url, created_at, tags
   INTO v_user
   FROM public.users
   WHERE id = p_id;
@@ -272,7 +272,8 @@ BEGIN
       'sosmed', COALESCE(v_user.sosmed, '{}'::jsonb),
       'profile_picture_url', v_user.profile_picture_url,
       'created_at', v_user.created_at,
-      'last_login_at', v_last_login
+      'last_login_at', v_last_login,
+      'tags', COALESCE(v_user.tags, '{}'::TEXT[])
     ),
     'solved_challenges', v_solves,
     'flag_stats', json_build_object(
@@ -619,6 +620,7 @@ RETURNS TABLE (
   bio text,
   sosmed jsonb,
   profile_picture_url text,
+  tags text[],
   created_at timestamptz,
   updated_at timestamptz,
   banned_until timestamptz,
@@ -639,6 +641,7 @@ BEGIN
       u.bio::text,
       u.sosmed,
       resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::text AS profile_picture_url,
+      u.tags,
       u.created_at,
       u.updated_at,
       u.banned_until,
@@ -650,7 +653,8 @@ BEGIN
       u.username ILIKE '%' || p_search || '%' OR
       u.bio ILIKE '%' || p_search || '%' OR
       au.email ILIKE '%' || p_search || '%' OR
-      u.id::text = p_search
+      u.id::text = p_search OR
+      u.tags::text ILIKE '%' || p_search || '%'
     ) AND (
       p_role = 'all' OR
       (p_role = 'admin' AND u.is_admin = true) OR
@@ -672,6 +676,7 @@ BEGIN
     f.bio,
     f.sosmed,
     f.profile_picture_url,
+    f.tags,
     f.created_at,
     f.updated_at,
     f.banned_until,
@@ -774,6 +779,91 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = auth, public, extensions;
 GRANT EXECUTE ON FUNCTION public.admin_change_password(UUID, TEXT) TO authenticated;
+CREATE OR REPLACE FUNCTION public.get_active_user_tags()
+RETURNS TEXT[] AS $$
+DECLARE
+  v_tags TEXT[];
+BEGIN
+  SELECT ARRAY_AGG(DISTINCT t) INTO v_tags
+  FROM public.users, UNNEST(tags) t
+  WHERE t <> '';
+  RETURN COALESCE(v_tags, '{}'::TEXT[]);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+GRANT EXECUTE ON FUNCTION public.get_active_user_tags() TO authenticated;
+CREATE OR REPLACE FUNCTION public.admin_assign_tags_bulk(
+  p_identifiers TEXT[],
+  p_tags TEXT[],
+  p_action TEXT
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_updated_count INT := 0;
+  v_not_found TEXT[] := ARRAY[]::TEXT[];
+  v_id UUID;
+  v_ident TEXT;
+  v_clean_ident TEXT;
+  v_clean_tags TEXT[];
+BEGIN
+  -- Only admin can run this
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Only global admin can manage tags';
+  END IF;
+  -- Clean up tags (trim and filter empty)
+  SELECT COALESCE(ARRAY_AGG(DISTINCT TRIM(t)), '{}'::TEXT[]) INTO v_clean_tags
+  FROM UNNEST(p_tags) t
+  WHERE TRIM(t) <> '';
+  -- Process each identifier
+  FOREACH v_ident IN ARRAY p_identifiers LOOP
+    v_clean_ident := TRIM(v_ident);
+    IF v_clean_ident = '' THEN
+      CONTINUE;
+    END IF;
+    -- Lookup user by username OR email (case-insensitive)
+    SELECT u.id INTO v_id
+    FROM public.users u
+    LEFT JOIN auth.users au ON au.id = u.id
+    WHERE LOWER(u.username) = LOWER(v_clean_ident)
+       OR LOWER(au.email) = LOWER(v_clean_ident)
+    LIMIT 1;
+    IF v_id IS NULL THEN
+      v_not_found := ARRAY_APPEND(v_not_found, v_clean_ident);
+    ELSE
+      -- Perform action
+      IF p_action = 'set' THEN
+        UPDATE public.users
+        SET tags = COALESCE(v_clean_tags, '{}'::TEXT[]),
+            updated_at = now()
+        WHERE id = v_id;
+      ELSIF p_action = 'add' THEN
+        UPDATE public.users
+        SET tags = ARRAY(
+          SELECT DISTINCT x
+          FROM UNNEST(ARRAY_CAT(tags, COALESCE(v_clean_tags, '{}'::TEXT[]))) x
+          WHERE x <> ''
+        ),
+        updated_at = now()
+        WHERE id = v_id;
+      ELSIF p_action = 'remove' THEN
+        UPDATE public.users
+        SET tags = ARRAY(
+          SELECT x
+          FROM UNNEST(tags) x
+          WHERE NOT (x = ANY(COALESCE(v_clean_tags, '{}'::TEXT[])))
+        ),
+        updated_at = now()
+        WHERE id = v_id;
+      END IF;
+      v_updated_count := v_updated_count + 1;
+    END IF;
+  END LOOP;
+  RETURN JSONB_BUILD_OBJECT(
+    'success_count', v_updated_count,
+    'not_found', v_not_found
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth;
+GRANT EXECUTE ON FUNCTION public.admin_assign_tags_bulk(TEXT[], TEXT[], TEXT) TO authenticated;
 
 -- <<< END: queries/users.sql
 
@@ -1310,11 +1400,13 @@ GRANT EXECUTE ON FUNCTION public.admin_batch_create_users(JSONB, UUID) TO authen
 -- Queries: scoreboard
 -- Relocated from users.sql
 -- ==============================================
+DROP FUNCTION IF EXISTS get_leaderboard(integer, integer, uuid, text);
 CREATE OR REPLACE FUNCTION get_leaderboard(
   limit_rows integer DEFAULT 100,
   offset_rows integer DEFAULT 0,
   p_event_id UUID DEFAULT NULL,
-  p_event_mode TEXT DEFAULT 'any'
+  p_event_mode TEXT DEFAULT 'any',
+  p_tag TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   id UUID,
@@ -1322,7 +1414,8 @@ RETURNS TABLE (
   score BIGINT,
   last_solve TIMESTAMPTZ,
   rank BIGINT,
-  picture TEXT
+  picture TEXT,
+  tags TEXT[]
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -1351,12 +1444,14 @@ BEGIN
         AND NOT (c.event_id IS NULL AND public.get_system_setting('disable_default_challenges') = 'true')
         THEN s.created_at ELSE NULL END) ASC
     ) AS rank,
-    public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::TEXT AS picture
+    public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::TEXT AS picture,
+    u.tags
   FROM public.users u
   LEFT JOIN auth.users au ON au.id = u.id
   LEFT JOIN public.solves s ON u.id = s.user_id
   LEFT JOIN public.challenges c ON s.challenge_id = c.id
-  GROUP BY u.id, u.username, au.raw_user_meta_data, u.profile_picture_url
+  WHERE (p_tag IS NULL OR p_tag = '' OR p_tag = ANY(u.tags))
+  GROUP BY u.id, u.username, au.raw_user_meta_data, u.profile_picture_url, u.tags
   HAVING COALESCE(
     SUM(
       CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id)
@@ -1370,7 +1465,7 @@ END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, auth, extensions;
-GRANT EXECUTE ON FUNCTION get_leaderboard(integer, integer, uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_leaderboard(integer, integer, uuid, text, text) TO authenticated;
 CREATE OR REPLACE FUNCTION get_top_progress(
   p_user_ids UUID[],
   p_limit INT DEFAULT 1000,
@@ -4898,7 +4993,8 @@ BEGIN
         'solo_score', COALESCE(us.solo_score, 0),
         'first_solve_count', COALESCE(fs.first_solves, 0),
         'first_solve_score', COALESCE(fs.first_solve_score, 0),
-        'picture', public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)
+        'picture', public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data),
+        'tags', COALESCE(u.tags, '{}'::TEXT[])
       )
       ORDER BY (u.id = t.captain_user_id) DESC, tm.joined_at ASC
     ),
@@ -5064,11 +5160,13 @@ SECURITY DEFINER
 SET search_path = public, auth, extensions;
 GRANT EXECUTE ON FUNCTION get_team_by_name(TEXT, uuid, text) TO authenticated;
 DROP FUNCTION IF EXISTS get_team_scoreboard(integer, integer, uuid, text);
+DROP FUNCTION IF EXISTS get_team_scoreboard(integer, integer, uuid, text, text);
 CREATE OR REPLACE FUNCTION get_team_scoreboard(
   limit_rows integer DEFAULT 100,
   offset_rows integer DEFAULT 0,
   p_event_id uuid DEFAULT NULL,
-  p_event_mode text DEFAULT 'any'
+  p_event_mode text DEFAULT 'any',
+  p_tag text DEFAULT NULL
 )
 RETURNS TABLE (
   team_id UUID,
@@ -5079,12 +5177,30 @@ RETURNS TABLE (
   unique_challenges BIGINT,
   total_solves BIGINT,
   member_count BIGINT,
+  member_tags TEXT[],
   rank BIGINT
 ) AS $$
 BEGIN
   RETURN QUERY
-  WITH members_count AS (
-    SELECT t.id AS team_id, t.name AS team_name, t.picture_url, COUNT(tm.user_id) AS member_count
+  WITH team_member_tags AS (
+    -- Aggregate distinct non-empty tags from all members of each team
+    SELECT
+      tm.team_id AS team_id,
+      COALESCE(
+        ARRAY_AGG(DISTINCT tag) FILTER (WHERE tag IS NOT NULL AND tag <> ''),
+        '{}'::TEXT[]
+      ) AS member_tags
+    FROM public.team_members tm
+    JOIN public.users u ON u.id = tm.user_id
+    LEFT JOIN LATERAL UNNEST(u.tags) AS tag ON TRUE
+    GROUP BY tm.team_id
+  ),
+  members_count AS (
+    SELECT
+      t.id AS team_id,
+      t.name AS team_name,
+      t.picture_url,
+      COUNT(tm.user_id) AS member_count
     FROM public.teams t
     LEFT JOIN public.team_members tm ON tm.team_id = t.id
     GROUP BY t.id, t.name, t.picture_url
@@ -5123,17 +5239,20 @@ BEGIN
     COALESCE(a.unique_challenges, 0) AS unique_challenges,
     COALESCE(a.total_solves, 0) AS total_solves,
     COALESCE(mc.member_count, 0) AS member_count,
+    COALESCE(tmt.member_tags, '{}'::TEXT[]) AS member_tags,
     RANK() OVER (ORDER BY COALESCE(us.unique_score, 0) DESC) AS rank
   FROM members_count mc
   LEFT JOIN agg a ON a.team_id = mc.team_id
   LEFT JOIN unique_score_calc us ON us.team_id = mc.team_id
+  LEFT JOIN team_member_tags tmt ON tmt.team_id = mc.team_id
+  WHERE (p_tag IS NULL OR p_tag = '' OR p_tag = ANY(COALESCE(tmt.member_tags, '{}'::TEXT[])))
   ORDER BY COALESCE(us.unique_score, 0) DESC
   LIMIT limit_rows OFFSET offset_rows;
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, auth, extensions;
-GRANT EXECUTE ON FUNCTION get_team_scoreboard(integer, integer, uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_team_scoreboard(integer, integer, uuid, text, text) TO authenticated;
 DROP FUNCTION IF EXISTS get_team_solves_by_names(TEXT[], uuid, text);
 CREATE OR REPLACE FUNCTION get_team_solves_by_names(
   p_names TEXT[] DEFAULT NULL,
@@ -6134,7 +6253,7 @@ ON CONFLICT (key) DO NOTHING;
 INSERT INTO public.categories (name, icon, color, description, sort_order)
 VALUES
   ('Intro', 'Lightbulb', 'gray', 'Pengenalan dan tutorial dasar platform.', 1),
-  ('Linux', 'Terminal', 'stone', 'Tantangan terkait command line Linux dan administrasi sistem.', 2),
+  ('Linux', 'Terminal', 'blue', 'Tantangan terkait command line Linux dan administrasi sistem.', 2),
   ('Boot To Root', 'Shield', 'red', 'Tantangan penetrasi dan rooting sistem target.', 3),
   ('Web', 'Globe', 'blue', 'Exploitasi kerentanan aplikasi web (SQLi, XSS, RCE, dll).', 4),
   ('Forensics', 'Search', 'cyan', 'Analisis paket jaringan, memory dump, file header, dan log.', 5),
@@ -6142,7 +6261,7 @@ VALUES
   ('Osint', 'Eye', 'orange', 'Pencarian informasi berbasis open-source intelligence.', 7),
   ('Crypto', 'Lock', 'yellow', 'Pemecahan sandi, analisis cipher, dan kriptografi.', 8),
   ('Reverse', 'Cpu', 'purple', 'Analisis binary, decompiling, dan memahami logika aplikasi.', 9),
-  ('Pwn', 'Flame', 'red', 'Eksploitasi memory corruption, buffer overflow, dll.', 10),
+  ('Pwn', 'Bomb', 'red', 'Eksploitasi memory corruption, buffer overflow, dll.', 10),
   ('Stegnography', 'Image', 'pink', 'Menemukan informasi tersembunyi di dalam media gambar/audio.', 11),
   ('Misc', 'FolderOpen', 'emerald', 'Tantangan umum yang tidak masuk ke kategori khusus.', 12),
   ('Blockchain', 'Coins', 'yellow', 'Kerentanan smart contract dan ekosistem blockchain.', 13),
