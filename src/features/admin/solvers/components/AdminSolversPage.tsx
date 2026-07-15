@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from 'react'
 import ConfirmDialog from '@/shared/components/ConfirmDialog'
 import SolversListCard from './SolversListCard'
 import { useAdminSolversData } from '../hooks/useAdminSolversData'
@@ -29,7 +30,13 @@ export default function AdminSolversPage() {
     resetSearch,
     askDelete,
     doDelete,
+    selectedIds,
+    toggleSelect,
+    toggleSelectAll,
+    doBulkDelete,
   } = useAdminSolversData()
+
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false)
 
   if (authLoading || (isLoading && !isAdminUser)) return <AdminContentLoading variant="solvers" />
   if (!user || !isAdminUser) return null
@@ -57,6 +64,10 @@ export default function AdminSolversPage() {
           onReset={() => void resetSearch()}
           onAskDelete={askDelete}
           onLoadMore={fetchSolvers}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          onBulkDelete={() => setBulkConfirmOpen(true)}
         />
       </AdminPageShell>
 
@@ -76,12 +87,25 @@ export default function AdminSolversPage() {
             )}
           </div>
         }
-        confirmLabel="Delete"
         onConfirm={async () => {
           if (!pendingDelete) return
           await doDelete(pendingDelete)
           setPendingDelete(null)
           setPendingDeleteDetail(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={bulkConfirmOpen}
+        onOpenChange={setBulkConfirmOpen}
+        title="Delete Selected Solves"
+        variant="destructive"
+        description={`Are you sure you want to delete ${selectedIds.length} solve record(s)? This action cannot be undone.`}
+        confirmLabel="Delete All Selected"
+        verificationText="yes"
+        verificationPlaceholder="Type 'yes' to confirm"
+        onConfirm={async () => {
+          await doBulkDelete()
         }}
       />
     </>

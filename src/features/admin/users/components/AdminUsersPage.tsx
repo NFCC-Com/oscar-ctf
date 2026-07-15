@@ -17,6 +17,7 @@ import { useAdminUsersData } from '../hooks/useAdminUsersData'
 import UserRolesTab from './UserRolesTab'
 import UsersTableCard from './UsersTableCard'
 import BatchImportDialog from './BatchImportDialog'
+import AddUserDialog from './AddUserDialog'
 
 type AdminUsersTab = 'users' | 'roles'
 
@@ -27,6 +28,7 @@ const USER_TABS = [
 export default function AdminUsersPage() {
   const [activeTab, setActiveTab] = useTabState<AdminUsersTab>('tab', 'users')
   const [importOpen, setImportOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
   const adminUsersData = useAdminUsersData()
   const { user, authLoading, accessReady, isAllowed, isLoading } = adminUsersData
   const hasActiveUserFilters =
@@ -128,6 +130,14 @@ export default function AdminUsersPage() {
 
                   <Button
                     type="button"
+                    onClick={() => setAddOpen(true)}
+                    className="h-9 shrink-0 rounded-xl bg-gray-800 hover:bg-gray-700 dark:bg-[#1f2937]/50 dark:hover:bg-[#1f2937] text-white font-bold text-xs border border-gray-300 dark:border-gray-700"
+                  >
+                    Add User
+                  </Button>
+
+                  <Button
+                    type="button"
                     onClick={() => setImportOpen(true)}
                     className="h-9 shrink-0 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs"
                   >
@@ -190,6 +200,12 @@ export default function AdminUsersPage() {
       <BatchImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
+        onSuccess={adminUsersData.onRefresh}
+      />
+
+      <AddUserDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
         onSuccess={adminUsersData.onRefresh}
       />
     </AdminPageShell>
