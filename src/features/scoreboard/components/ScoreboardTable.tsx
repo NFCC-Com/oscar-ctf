@@ -82,6 +82,18 @@ const ScoreboardTable: React.FC<ScoreboardTableProps> = ({
             >
               {entry.username}
             </Link>
+            {entry.tags && entry.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 items-center">
+                {entry.tags.map((tag: string) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100/80 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 font-mono border border-blue-500/10"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
             {!!recentCount && recentCount > 0 && (
               <span
                 className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-green-500/10 px-1.5 py-0.5 text-[10px] font-bold text-green-600 dark:bg-green-500/20 dark:text-green-400"

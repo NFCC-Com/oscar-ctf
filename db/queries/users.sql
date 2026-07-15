@@ -137,7 +137,7 @@ DECLARE
   v_correct_flags INT := 0;
   v_incorrect_flags INT := 0;
 BEGIN
-  SELECT id, username, bio, sosmed, profile_picture_url, created_at
+  SELECT id, username, bio, sosmed, profile_picture_url, created_at, tags
   INTO v_user
   FROM public.users
   WHERE id = p_id;
@@ -227,7 +227,8 @@ BEGIN
       'sosmed', COALESCE(v_user.sosmed, '{}'::jsonb),
       'profile_picture_url', v_user.profile_picture_url,
       'created_at', v_user.created_at,
-      'last_login_at', v_last_login
+      'last_login_at', v_last_login,
+      'tags', COALESCE(v_user.tags, '{}'::TEXT[])
     ),
     'solved_challenges', v_solves,
     'flag_stats', json_build_object(
@@ -622,6 +623,7 @@ RETURNS TABLE (
   bio text,
   sosmed jsonb,
   profile_picture_url text,
+  tags text[],
   created_at timestamptz,
   updated_at timestamptz,
   banned_until timestamptz,
@@ -643,6 +645,7 @@ BEGIN
       u.bio::text,
       u.sosmed,
       resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::text AS profile_picture_url,
+      u.tags,
       u.created_at,
       u.updated_at,
       u.banned_until,
@@ -654,7 +657,8 @@ BEGIN
       u.username ILIKE '%' || p_search || '%' OR
       u.bio ILIKE '%' || p_search || '%' OR
       au.email ILIKE '%' || p_search || '%' OR
-      u.id::text = p_search
+      u.id::text = p_search OR
+      u.tags::text ILIKE '%' || p_search || '%'
     ) AND (
       p_role = 'all' OR
       (p_role = 'admin' AND u.is_admin = true) OR
@@ -676,6 +680,7 @@ BEGIN
     f.bio,
     f.sosmed,
     f.profile_picture_url,
+    f.tags,
     f.created_at,
     f.updated_at,
     f.banned_until,
@@ -799,3 +804,97 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = auth, public, extensions;
 
 GRANT EXECUTE ON FUNCTION public.admin_change_password(UUID, TEXT) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_active_user_tags()
+RETURNS TEXT[] AS $$
+DECLARE
+  v_tags TEXT[];
+BEGIN
+  SELECT ARRAY_AGG(DISTINCT t) INTO v_tags
+  FROM public.users, UNNEST(tags) t
+  WHERE t <> '';
+  RETURN COALESCE(v_tags, '{}'::TEXT[]);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION public.get_active_user_tags() TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_assign_tags_bulk(
+  p_identifiers TEXT[],
+  p_tags TEXT[],
+  p_action TEXT
+)
+RETURNS JSONB AS $$
+DECLARE
+  v_updated_count INT := 0;
+  v_not_found TEXT[] := ARRAY[]::TEXT[];
+  v_id UUID;
+  v_ident TEXT;
+  v_clean_ident TEXT;
+  v_clean_tags TEXT[];
+BEGIN
+  -- Only admin can run this
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Only global admin can manage tags';
+  END IF;
+
+  -- Clean up tags (trim and filter empty)
+  SELECT COALESCE(ARRAY_AGG(DISTINCT TRIM(t)), '{}'::TEXT[]) INTO v_clean_tags
+  FROM UNNEST(p_tags) t
+  WHERE TRIM(t) <> '';
+
+  -- Process each identifier
+  FOREACH v_ident IN ARRAY p_identifiers LOOP
+    v_clean_ident := TRIM(v_ident);
+    IF v_clean_ident = '' THEN
+      CONTINUE;
+    END IF;
+
+    -- Lookup user by username OR email (case-insensitive)
+    SELECT u.id INTO v_id
+    FROM public.users u
+    LEFT JOIN auth.users au ON au.id = u.id
+    WHERE LOWER(u.username) = LOWER(v_clean_ident)
+       OR LOWER(au.email) = LOWER(v_clean_ident)
+    LIMIT 1;
+
+    IF v_id IS NULL THEN
+      v_not_found := ARRAY_APPEND(v_not_found, v_clean_ident);
+    ELSE
+      -- Perform action
+      IF p_action = 'set' THEN
+        UPDATE public.users
+        SET tags = COALESCE(v_clean_tags, '{}'::TEXT[]),
+            updated_at = now()
+        WHERE id = v_id;
+      ELSIF p_action = 'add' THEN
+        UPDATE public.users
+        SET tags = ARRAY(
+          SELECT DISTINCT x
+          FROM UNNEST(ARRAY_CAT(tags, COALESCE(v_clean_tags, '{}'::TEXT[]))) x
+          WHERE x <> ''
+        ),
+        updated_at = now()
+        WHERE id = v_id;
+      ELSIF p_action = 'remove' THEN
+        UPDATE public.users
+        SET tags = ARRAY(
+          SELECT x
+          FROM UNNEST(tags) x
+          WHERE NOT (x = ANY(COALESCE(v_clean_tags, '{}'::TEXT[])))
+        ),
+        updated_at = now()
+        WHERE id = v_id;
+      END IF;
+      v_updated_count := v_updated_count + 1;
+    END IF;
+  END LOOP;
+
+  RETURN JSONB_BUILD_OBJECT(
+    'success_count', v_updated_count,
+    'not_found', v_not_found
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth;
+
+GRANT EXECUTE ON FUNCTION public.admin_assign_tags_bulk(TEXT[], TEXT[], TEXT) TO authenticated;

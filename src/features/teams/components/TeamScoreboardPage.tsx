@@ -10,7 +10,8 @@ import EmptyState from '@/shared/components/EmptyState'
 import PageLoader from '@/shared/components/PageLoader'
 import PageBackground from '@/shared/components/PageBackground'
 import EventSelect from '@/features/events/components/EventSelect'
-import { AppTabs, Card, CardContent } from '@/shared/ui'
+import { getActiveUserTags } from '@/shared/lib'
+import { AppTabs, Card, CardContent, FilterSelect } from '@/shared/ui'
 import {
   PAGE_MAIN_CONTAINER_6XL,
   SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS,
@@ -43,6 +44,16 @@ export default function TeamScoreboardPage() {
   const router = useRouter()
   const { startedEvents, selectedEvent, setSelectedEvent } = useEventContext()
   const [solvedEventIds, setSolvedEventIds] = useState<string[] | null>(null)
+  const [activeTags, setActiveTags] = useState<string[]>([])
+
+  const categoryOptions = useMemo(() => [
+    { value: 'all', label: 'All Categories' },
+    ...activeTags.map((tag) => ({
+      value: tag,
+      label: tag,
+      className: 'font-mono font-semibold'
+    }))
+  ], [activeTags])
 
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -69,6 +80,19 @@ export default function TeamScoreboardPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }, [searchParams, pathname, router])
 
+  const selectedTag = useMemo(() => {
+    return searchParams.get('tag') || ''
+  }, [searchParams])
+  const setSelectedTag = useCallback((value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (value) {
+      params.set('tag', value)
+    } else {
+      params.delete('tag')
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [searchParams, pathname, router])
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login')
@@ -83,6 +107,7 @@ export default function TeamScoreboardPage() {
 
   useEffect(() => {
     getSolvedEventIds().then(setSolvedEventIds)
+    getActiveUserTags().then(setActiveTags)
   }, [])
 
   const filteredStartedEvents = useMemo(() => {
@@ -95,7 +120,7 @@ export default function TeamScoreboardPage() {
     return solved
   }, [startedEvents, solvedEventIds, selectedEvent])
 
-  const { loading, entries, series, currentTeamName } = useTeamScoreboard(user, showTotalScore, selectedEvent, view)
+  const { loading, entries, series, currentTeamName } = useTeamScoreboard(user, showTotalScore, selectedEvent, view, selectedTag)
 
   const isDark = theme === 'dark'
   const scoreLabel = showTotalScore ? 'Total Score' : 'Unique Score'
@@ -124,7 +149,7 @@ export default function TeamScoreboardPage() {
     const safeToRank = Math.max(safeFromRank, Math.floor(toRank))
     const fetchLimit = Math.max(10, safeToRank)
     const scoreKey = showTotalScore ? 'total_score' : 'unique_score'
-    const { entries: data } = await getTeamScoreboard(fetchLimit, 0, p_event_id, p_event_mode)
+    const { entries: data } = await getTeamScoreboard(fetchLimit, 0, p_event_id, p_event_mode, selectedTag || null)
     const result = buildScoreboard(data || [], {
       nameKey: 'team_name',
       scoreKey,
@@ -156,7 +181,7 @@ export default function TeamScoreboardPage() {
       fromRank: safeFromRank,
       toRank: safeToRank,
     }
-  }, [exportEventLabel, exportType, selectedEvent, showTotalScore])
+  }, [exportEventLabel, exportType, selectedEvent, showTotalScore, selectedTag])
 
   if (authLoading) {
     return <Loader fullscreen color="text-blue-500" />
@@ -176,8 +201,6 @@ export default function TeamScoreboardPage() {
             onViewChange={setView}
           />
 
-          <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-800 hidden sm:block mx-1" />
-
           <div className="w-full sm:w-auto">
             <EventSelect
               value={String(selectedEvent)}
@@ -189,6 +212,17 @@ export default function TeamScoreboardPage() {
               getEventLabel={(ev: any) => String(ev?.name ?? ev?.title ?? 'Untitled')}
             />
           </div>
+
+          {activeTags.length > 0 && (
+            <FilterSelect
+              options={categoryOptions}
+              value={selectedTag || 'all'}
+              defaultValue="all"
+              onChange={(val) => setSelectedTag(val === 'all' ? '' : val)}
+              placeholder="All Categories"
+              className="w-full sm:w-[160px]"
+            />
+          )}
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">

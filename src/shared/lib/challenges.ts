@@ -564,7 +564,7 @@ export async function getChallengesLite(showAll: boolean = true) {
 /**
  * Get leaderboard with progress
  */
-export async function getLeaderboard(limit = 100, offset = 0, eventId?: string | null | 'all') {
+export async function getLeaderboard(limit = 100, offset = 0, eventId?: string | null | 'all', tag?: string | null) {
   // Map frontend eventId values to RPC parameters
   let p_event_mode: string = 'any'
   let p_event_id: string | null = null
@@ -589,6 +589,7 @@ export async function getLeaderboard(limit = 100, offset = 0, eventId?: string |
     offset_rows: offset,
     p_event_id,
     p_event_mode,
+    p_tag: tag || null,
   })
   if (error) throw error
   return data
@@ -597,8 +598,8 @@ export async function getLeaderboard(limit = 100, offset = 0, eventId?: string |
 /**
  * Get lightweight leaderboard summary: username and final score (no progress history)
  */
-export async function getLeaderboardSummary(limit = 100, offset = 0, eventId?: string | null | 'all') {
-  const data = await getLeaderboard(limit, offset, eventId)
+export async function getLeaderboardSummary(limit = 100, offset = 0, eventId?: string | null | 'all', tag?: string | null) {
+  const data = await getLeaderboard(limit, offset, eventId, tag)
   return (data || []).map((d: any) => ({
     id: d.id,
     username: d.username,
@@ -606,6 +607,7 @@ export async function getLeaderboardSummary(limit = 100, offset = 0, eventId?: s
     rank: d.rank,
     last_solve: d.last_solve,
     picture: d.picture,
+    tags: d.tags || [],
   }))
 }
 
@@ -1227,5 +1229,16 @@ export function subscribeToSolves(onSolve: (payload: { username: string, challen
   return () => {
     console.log('[subscribeToSolves] Unsubscribing from solves-insert channel...')
     supabase.removeChannel(channel)
+  }
+}
+
+export async function getActiveUserTags(): Promise<string[]> {
+  try {
+    const { data, error } = await supabase.rpc('get_active_user_tags')
+    if (error) throw error
+    return Array.isArray(data) ? data.map(String) : []
+  } catch (err) {
+    console.error('Error fetching active user tags:', err)
+    return []
   }
 }

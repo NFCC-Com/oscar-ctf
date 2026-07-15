@@ -15,6 +15,7 @@ function normalizeAdminUser(row: any): AdminUserRow {
     bio: row.bio ? String(row.bio) : null,
     sosmed: normalizeSocialLinks(row.sosmed),
     profile_picture_url: row.profile_picture_url ? String(row.profile_picture_url) : null,
+    tags: Array.isArray(row.tags) ? row.tags.map(String) : [],
     banned_until: row.banned_until ? String(row.banned_until) : null,
     ban_reason: row.ban_reason ? String(row.ban_reason) : null,
     created_at: String(row.created_at ?? ''),
@@ -130,5 +131,35 @@ export async function adminBatchCreateUsers(users: any[], eventId: string | null
     }
   } catch (err: any) {
     return { success: false, successCount: 0, failedCount: 0, results: [], error: err.message || 'Network error' }
+  }
+}
+
+export async function adminAssignTagsBulk(
+  identifiers: string[],
+  tags: string[],
+  action: 'add' | 'remove' | 'set'
+): Promise<{ success: boolean; successCount: number; notFound: string[]; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('admin_assign_tags_bulk', {
+      p_identifiers: identifiers,
+      p_tags: tags,
+      p_action: action,
+    })
+    if (error) {
+      return { success: false, successCount: 0, notFound: [], error: error.message }
+    }
+    const res = data as any
+    return {
+      success: true,
+      successCount: Number(res.success_count || 0),
+      notFound: Array.isArray(res.not_found) ? res.not_found.map(String) : [],
+    }
+  } catch (err: any) {
+    return {
+      success: false,
+      successCount: 0,
+      notFound: [],
+      error: err.message || 'Network error',
+    }
   }
 }

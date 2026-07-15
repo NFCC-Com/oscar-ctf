@@ -69,6 +69,18 @@ export default function TeamMembersSection({
                         }`}>
                         {m.role}
                       </span>
+                      {m.tags && m.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 items-center">
+                          {m.tags.map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center text-[8px] font-bold px-1.5 py-0.2 rounded bg-blue-100/80 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 font-mono border border-blue-500/10"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-1 flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400">

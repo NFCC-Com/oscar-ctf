@@ -13,6 +13,7 @@ export type TeamMember = {
 	solo_score?: number
 	first_solve_count?: number
 	first_solve_score?: number
+	tags?: string[]
 }
 
 export type TeamInfo = {
@@ -82,11 +83,11 @@ export async function getMyTeam(p_event_id?: string | null, p_event_mode: string
 		const members = (data?.members ?? []) as TeamMember[]
 
 		return {
-            team,
-            members,
-            solved_event_ids: data?.solved_event_ids ?? [],
-            has_main_solved: !!data?.has_main_solved,
-        }
+			team,
+			members,
+			solved_event_ids: data?.solved_event_ids ?? [],
+			has_main_solved: !!data?.has_main_solved,
+		}
 	} catch (err: any) {
 		return { team: null, members: [], error: err?.message || 'Failed to fetch team' }
 	}
@@ -108,6 +109,7 @@ export type TeamScoreboardEntry = {
 	total_score: number
 	total_solves: number
 	member_count: number
+	member_tags?: string[]
 	rank: number
 }
 
@@ -142,7 +144,7 @@ export type TeamUniqueSolveRow = {
 	challenge_category?: string | null
 }
 
-type TeamProgressRow = {
+export type TeamProgressRow = {
 	team_name: string
 	created_at: string
 	points: number
@@ -277,10 +279,12 @@ export async function getTeamScoreboard(
 	limit = 100,
 	offset = 0,
 	p_event_id?: string | null,
-	p_event_mode: string = 'any'
+	p_event_mode: string = 'any',
+	p_tag?: string | null
 ): Promise<{ entries: TeamScoreboardEntry[]; error?: string }> {
 	try {
-		const params = { limit_rows: limit, offset_rows: offset, p_event_id: p_event_id ?? null, p_event_mode }
+		const params: Record<string, unknown> = { limit_rows: limit, offset_rows: offset, p_event_id: p_event_id ?? null, p_event_mode }
+		if (p_tag) params.p_tag = p_tag
 		const { data, error } = await callTeamRpc('get_team_scoreboard', params)
 		if (error) return { entries: [], error: error.message }
 		return { entries: (data as TeamScoreboardEntry[]) || [] }

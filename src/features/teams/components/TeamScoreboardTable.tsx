@@ -46,7 +46,7 @@ export default function TeamScoreboardTable({
       key: 'team',
       header: 'Team',
       render: (entry) => (
-        <div className="flex min-w-[180px] items-center gap-2">
+        <div className="flex min-w-[180px] flex-wrap items-center gap-2">
           <ImageWithFallback
             src={entry.picture_url}
             alt={entry.team_name}
@@ -62,10 +62,22 @@ export default function TeamScoreboardTable({
           >
             {entry.team_name}
           </Link>
-          <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+          <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 mr-1">
             <Users size={11} />
             {entry.member_count}
           </span>
+          {entry.member_tags && entry.member_tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 items-center">
+              {entry.member_tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100/80 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 font-mono border border-blue-500/10"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       ),
     },

@@ -3,7 +3,7 @@ import { getMyTeam, getTeamScoreboard, getTopTeamProgressByNames, getTopTeamUniq
 import { buildScoreboard, getOrderedProgressSeries } from '@/features/scoreboard/lib/build-scoreboard'
 import { TeamScoreboardEntry, TeamProgressSeries } from '../types'
 
-export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEvent: string | number, view: 'top' | 'all' = 'top') {
+export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEvent: string | number, view: 'top' | 'all' = 'top', selectedTag?: string) {
   const [loading, setLoading] = useState(true)
   const [entries, setEntries] = useState<TeamScoreboardEntry[]>([])
   const [series, setSeries] = useState<TeamProgressSeries[]>([])
@@ -21,7 +21,7 @@ export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEv
 
       const fetchLimit = view === 'all' ? 1000 : 100
       const [{ entries: data, error: scoreboardError }, teamResult] = await Promise.all([
-        getTeamScoreboard(fetchLimit, 0, p_event_id, p_event_mode),
+        getTeamScoreboard(fetchLimit, 0, p_event_id, p_event_mode, selectedTag || null),
         getMyTeam(p_event_id, p_event_mode),
       ])
 
@@ -66,7 +66,7 @@ export function useTeamScoreboard(user: any, showTotalScore: boolean, selectedEv
       if (isFirstLoad) setLoading(false)
     }
     fetchData()
-  }, [user, showTotalScore, selectedEvent, view])
+  }, [user, showTotalScore, selectedEvent, view, selectedTag])
 
   return {
     loading,

@@ -20,6 +20,7 @@ export type UserDetail = {
   last_login_at?: string | null
   solved_challenges: ChallengeWithSolve[]
   flag_stats: { correct_submissions: number; incorrect_submissions: number }
+  tags?: string[] | null
 }
 
 export type UserProfileLite = {
@@ -84,6 +85,7 @@ export async function getUserDetail(userId: string, eventId?: string | null, eve
         correct_submissions: data.flag_stats?.correct_submissions ?? 0,
         incorrect_submissions: data.flag_stats?.incorrect_submissions ?? 0,
       },
+      tags: data.user.tags ?? [],
     }
   } catch (error) {
     console.error('Error fetching user detail:', error)

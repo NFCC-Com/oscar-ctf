@@ -3,11 +3,14 @@
 -- Relocated from users.sql
 -- ==============================================
 
+DROP FUNCTION IF EXISTS get_leaderboard(integer, integer, uuid, text);
+
 CREATE OR REPLACE FUNCTION get_leaderboard(
   limit_rows integer DEFAULT 100,
   offset_rows integer DEFAULT 0,
   p_event_id UUID DEFAULT NULL,
-  p_event_mode TEXT DEFAULT 'any'
+  p_event_mode TEXT DEFAULT 'any',
+  p_tag TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   id UUID,
@@ -15,7 +18,8 @@ RETURNS TABLE (
   score BIGINT,
   last_solve TIMESTAMPTZ,
   rank BIGINT,
-  picture TEXT
+  picture TEXT,
+  tags TEXT[]
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -44,12 +48,14 @@ BEGIN
         AND NOT (c.event_id IS NULL AND public.get_system_setting('disable_default_challenges') = 'true')
         THEN s.created_at ELSE NULL END) ASC
     ) AS rank,
-    public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::TEXT AS picture
+    public.resolve_profile_picture(u.profile_picture_url, au.raw_user_meta_data)::TEXT AS picture,
+    u.tags
   FROM public.users u
   LEFT JOIN auth.users au ON au.id = u.id
   LEFT JOIN public.solves s ON u.id = s.user_id
   LEFT JOIN public.challenges c ON s.challenge_id = c.id
-  GROUP BY u.id, u.username, au.raw_user_meta_data, u.profile_picture_url
+  WHERE (p_tag IS NULL OR p_tag = '' OR p_tag = ANY(u.tags))
+  GROUP BY u.id, u.username, au.raw_user_meta_data, u.profile_picture_url, u.tags
   HAVING COALESCE(
     SUM(
       CASE WHEN public.match_event_mode(p_event_mode, p_event_id, c.event_id)
@@ -64,7 +70,7 @@ $$ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, auth, extensions;
 
-GRANT EXECUTE ON FUNCTION get_leaderboard(integer, integer, uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_leaderboard(integer, integer, uuid, text, text) TO authenticated;
 
 CREATE OR REPLACE FUNCTION get_top_progress(
   p_user_ids UUID[],
