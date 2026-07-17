@@ -53,7 +53,6 @@ export function useAdminChallengesData() {
       setChallenges(challengeList)
       setSiteInfo(info)
 
-      return challengeList
       setScheduledJobsMap(
         Object.fromEntries(
           (scheduledJobs || [])
@@ -69,6 +68,8 @@ export function useAdminChallengesData() {
       setEvents(visibleEvents)
 
       await refreshSolvers(0)
+
+      return challengeList
     } catch (err) {
       console.error('Failed to init admin data:', err)
       toast.error('Failed to load admin dashboard data')
