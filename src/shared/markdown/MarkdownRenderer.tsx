@@ -59,9 +59,9 @@ function CodeBlockWrapper({ children, isDark = true }: { children: React.ReactNo
   }
 
   return (
-    <div className="relative mt-2 mb-3">
+    <div className="relative mt-2 mb-3 group/code">
       {hasOverflow && (
-        <div className="absolute top-2 right-2 flex gap-1 z-10">
+        <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-70 hover:opacity-100 md:opacity-0 md:group-hover/code:opacity-100 md:focus-within:opacity-100 transition-all duration-200">
           <button
             type="button"
             onClick={handleCopy}
@@ -121,9 +121,9 @@ function BlockquoteWrapper({ children, isDark = true }: { children: React.ReactN
   }
 
   return (
-    <div className="relative mb-3">
+    <div className="relative mb-3 group/quote">
       {hasOverflow && (
-        <div className="absolute -top-8 right-0 flex gap-1 z-10">
+        <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-70 hover:opacity-100 md:opacity-0 md:group-hover/quote:opacity-100 md:focus-within:opacity-100 transition-all duration-200">
           <button
             type="button"
             onClick={() => setIsWrapped(!isWrapped)}
@@ -241,8 +241,8 @@ export function MarkdownRenderer({ content, className = '', onCommentsExtracted,
             h2: ({ ...props }) => <h2 className="text-xs font-semibold text-blue-300 mb-1.5" {...props} />,
             h3: ({ ...props }) => <h3 className="text-[11px] font-semibold text-blue-200 mb-1.5" {...props} />,
             p: ({ ...props }) => <div className="mb-1.5 leading-relaxed" {...props} />,
-            ul: ({ ...props }) => <ul className="mb-1.5 list-disc list-inside space-y-0.5 ml-1.5" {...props} />,
-            ol: ({ ...props }) => <ol className="mb-1.5 list-decimal list-inside space-y-0.5 ml-1.5" {...props} />,
+            ul: ({ ...props }) => <ul className="mb-1.5 list-disc list-outside pl-4 space-y-0.5" {...props} />,
+            ol: ({ ...props }) => <ol className="mb-1.5 list-decimal list-outside pl-4 space-y-0.5" {...props} />,
             li: ({ ...props }) => <li className="list-item" {...props} />,
             strong: ({ ...props }) => <strong className="font-bold text-blue-300/90" {...props} />,
             em: ({ ...props }) => <em className="italic opacity-80" {...props} />,
@@ -296,9 +296,9 @@ export function MarkdownRenderer({ content, className = '', onCommentsExtracted,
           h2: ({ ...props }) => <h2 className="text-base font-semibold mb-2 text-blue-300 tracking-tight" {...props} />,
           h3: ({ ...props }) => <h3 className="text-sm font-semibold mb-2 text-blue-200" {...props} />,
           p: ({ ...props }) => <div className="mb-2 leading-relaxed text-gray-300" {...props} />,
-          ul: ({ ...props }) => <ul className="mb-3 space-y-1 list-disc list-inside ml-1" {...props} />,
-          ol: ({ ...props }) => <ol className="mb-3 space-y-1 list-decimal list-inside ml-1" {...props} />,
-          li: ({ ...props }) => <li className="ml-4 mb-1 list-item" {...props} />,
+          ul: ({ ...props }) => <ul className="mb-3 space-y-1 list-disc list-outside pl-5" {...props} />,
+          ol: ({ ...props }) => <ol className="mb-3 space-y-1 list-decimal list-outside pl-5" {...props} />,
+          li: ({ ...props }) => <li className="mb-1" {...props} />,
           code: ({ inline, children, ...props }: any) =>
             inline ? (
               <code className="bg-gray-800 px-2 py-0.5 rounded text-xs font-mono text-blue-300 font-medium" {...props}>
@@ -355,7 +355,9 @@ export function RulesMarkdownRenderer({ content, className = '' }: MarkdownRende
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
           p: ({ ...props }) => <div className="mb-2 leading-relaxed" {...props} />,
-          li: ({ ...props }) => <li className="ml-6 list-disc mb-1" {...props} />,
+          ul: ({ ...props }) => <ul className="mb-3 space-y-1 list-disc list-outside pl-5" {...props} />,
+          ol: ({ ...props }) => <ol className="mb-3 space-y-1 list-decimal list-outside pl-5" {...props} />,
+          li: ({ ...props }) => <li className="mb-1" {...props} />,
           strong: ({ ...props }) => <strong className="font-bold text-gray-900 dark:text-blue-400" {...props} />,
           em: ({ ...props }) => <em className="italic text-gray-700 dark:text-gray-300" {...props} />,
           a: ({ ...props }) => <a className={`${THEME_PRIMARY_TEXT_CLASS} hover:text-blue-700 dark:hover:text-blue-300 underline font-medium transition-colors`} target="_blank" rel="noopener noreferrer" {...props} />,

@@ -427,14 +427,14 @@ ${links || '- (No links)'}
             }`}
         >
           {challengeTab === 'challenge' && (
-            <div className="min-h-full flex flex-col pb-5">
-              {/* Description at the Top */}
-              <div className="flex-1 relative group">
+            <div className="min-h-full flex flex-col pb-5 relative group/challenge-tab">
+              {/* Floating Sticky Action Bar */}
+              <div className="sticky top-0 h-0 w-full z-20 flex justify-end pointer-events-none">
                 <button
                   type="button"
                   title="Copy Challenge Markdown"
                   onClick={handleCopyChallengeMarkdown}
-                  className="absolute right-0 top-0.5 z-10 flex items-center justify-center h-8 w-8 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-100 text-gray-500 hover:text-gray-800 dark:bg-gray-800/40 dark:hover:bg-gray-800 dark:border-gray-700/60 dark:text-gray-400 dark:hover:text-gray-200 transition-all duration-200"
+                  className="pointer-events-auto mt-0.5 flex items-center justify-center h-8 w-8 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 shadow-sm transition-all duration-200 opacity-70 hover:opacity-100 md:opacity-0 md:group-hover/challenge-tab:opacity-100 md:focus:opacity-100"
                 >
                   {copiedMarkdown ? (
                     <Check size={14} className="shrink-0 text-emerald-500 dark:text-emerald-400" />
@@ -442,7 +442,11 @@ ${links || '- (No links)'}
                     <ClipboardCopy size={14} className="shrink-0" />
                   )}
                 </button>
-                <div className="max-w-full overflow-x-auto break-words mt-1 pr-10">
+              </div>
+
+              {/* Description at the Top */}
+              <div className="flex-1">
+                <div className="max-w-full overflow-x-auto break-words mt-1">
                   <ChallengeDescription description={challenge.description} />
                 </div>
               </div>
