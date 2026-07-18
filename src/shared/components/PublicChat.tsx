@@ -1,10 +1,21 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
-import { Send, Loader2, MessageSquare, AlertCircle, Trash2, Heart } from 'lucide-react'
+import { Send, Loader2, MessageSquare, AlertCircle, Trash2 } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import { useAuth } from '@/shared/contexts/AuthContext'
 import toast from 'react-hot-toast'
+import { MarkdownRenderer } from '@/shared/markdown/MarkdownRenderer'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/ui'
 
 interface ChatMessage {
   id: string
@@ -32,6 +43,7 @@ export default function PublicChat({ donors = [] }: PublicChatProps) {
   const [sending, setSending] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const [isAdminUser, setIsAdminUser] = useState(false)
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const profilesCacheRef = useRef<Record<string, UserProfile>>({})
@@ -63,19 +75,32 @@ export default function PublicChat({ donors = [] }: PublicChatProps) {
     }
   }, [user])
 
-  // Load client-side cooldown countdown
+  // Calculate cooldown dynamically based on user's last message in the feed
   useEffect(() => {
-    const lastSent = localStorage.getItem('nxctf_last_chat_sent')
-    if (lastSent) {
-      const elapsed = Date.now() - parseInt(lastSent, 10)
+    if (!user || messages.length === 0) {
+      setCooldown(0)
+      return
+    }
+
+    const myMessages = messages.filter((m) => m.user_id === user.id)
+    if (myMessages.length > 0) {
+      // Messages are sorted oldest to newest, so the last item is the latest
+      const latestMsg = myMessages[myMessages.length - 1]
+      const sentTime = new Date(latestMsg.created_at).getTime()
+      const elapsed = Date.now() - sentTime
       const remaining = Math.max(0, 3 * 60 * 1000 - elapsed)
+
       if (remaining > 0) {
         setCooldown(Math.ceil(remaining / 1000))
+      } else {
+        setCooldown(0)
       }
+    } else {
+      setCooldown(0)
     }
-  }, [])
+  }, [messages, user])
 
-  // Cooldown timer interval
+  // Cooldown countdown timer interval
   useEffect(() => {
     if (cooldown <= 0) return
     const timer = setTimeout(() => setCooldown(cooldown - 1), 1000)
@@ -241,10 +266,6 @@ export default function PublicChat({ donors = [] }: PublicChatProps) {
       if (error) throw error
 
       setNewMessage('')
-      // Set local cooldown (3 minutes)
-      const now = Date.now()
-      localStorage.setItem('nxctf_last_chat_sent', now.toString())
-      setCooldown(3 * 60)
     } catch (err: any) {
       console.error('Failed to send message:', err)
       toast.error(err.message || 'Gagal mengirim pesan.')
@@ -253,8 +274,7 @@ export default function PublicChat({ donors = [] }: PublicChatProps) {
     }
   }
 
-  const handleDelete = async (messageId: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus pesan ini?')) return
+  const confirmDelete = async (messageId: string) => {
     try {
       const { error } = await (supabase as any).rpc('delete_chat_message', {
         p_message_id: messageId,
@@ -366,17 +386,17 @@ export default function PublicChat({ donors = [] }: PublicChatProps) {
                       </span>
                     </div>
 
-                    {/* Message Body */}
-                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap break-words pr-8">
-                      {msg.message}
-                    </p>
+                    {/* Message Body (Markdown rendered) */}
+                    <div className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed break-words pr-8">
+                      <MarkdownRenderer content={msg.message} variant="compact" />
+                    </div>
                   </div>
 
                   {/* Hover Delete Action Button */}
                   {canDelete && (
                     <div className="absolute right-2 top-2.5 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 flex items-center gap-1 bg-white dark:bg-gray-900 shadow-sm border border-gray-100 dark:border-gray-800 rounded-lg p-0.5">
                       <button
-                        onClick={() => handleDelete(msg.id)}
+                        onClick={() => setDeleteMessageId(msg.id)}
                         className="p-1 text-gray-400 hover:text-red-500 hover:bg-gray-50 dark:hover:bg-gray-850 rounded-md transition-colors"
                         title="Hapus komentar"
                       >
@@ -394,24 +414,30 @@ export default function PublicChat({ donors = [] }: PublicChatProps) {
       {/* Input Panel */}
       <div className="px-5 pb-4 pt-3 bg-white dark:bg-gray-900/40 border-t border-gray-100 dark:border-gray-800/80">
         {user ? (
-          <form onSubmit={handleSend} className="flex gap-2">
-            <input
-              type="text"
+          <form onSubmit={handleSend} className="flex gap-2 items-end">
+            <textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSend(e)
+                }
+              }}
               placeholder={
                 cooldown > 0
                   ? `Cooldown aktif (Tunggu ${formatCooldown(cooldown)})...`
-                  : "Ketik pesan publik..."
+                  : "Ketik komentar publik (Markdown didukung)..."
               }
               disabled={cooldown > 0}
               maxLength={500}
-              className="flex-1 min-w-0 bg-gray-50 hover:bg-gray-100/55 focus:bg-white dark:bg-gray-800 dark:hover:bg-gray-700/50 dark:focus:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-red-500 dark:focus:border-red-500 rounded-xl px-3 py-1.5 text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              rows={2}
+              className="flex-1 min-w-0 bg-gray-50 hover:bg-gray-100/55 focus:bg-white dark:bg-gray-800 dark:hover:bg-gray-700/50 dark:focus:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-red-500 dark:focus:border-red-500 rounded-xl px-3 py-1.5 text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
             />
             <button
               type="submit"
               disabled={sending || !newMessage.trim() || cooldown > 0}
-              className="flex items-center justify-center h-8 w-8 rounded-xl bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:hover:bg-red-500 transition-all shadow-sm shrink-0"
+              className="flex items-center justify-center h-8 w-8 rounded-xl bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:hover:bg-red-500 transition-all shadow-sm shrink-0 mb-1"
             >
               {sending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -435,6 +461,36 @@ export default function PublicChat({ donors = [] }: PublicChatProps) {
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog Component */}
+      <AlertDialog open={deleteMessageId !== null} onOpenChange={(open) => { if (!open) setDeleteMessageId(null) }}>
+        <AlertDialogContent className="border border-gray-150 dark:border-gray-800/80 bg-white dark:bg-gray-950 rounded-2xl p-5 max-w-sm w-full">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-sm font-bold text-gray-900 dark:text-white">
+              Hapus Komentar?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+              Apakah Anda yakin ingin menghapus komentar ini? Tindakan ini akan menghapus komentar secara permanen dan tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4 flex items-center justify-end gap-2">
+            <AlertDialogCancel className="h-8 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-semibold px-4 hover:bg-gray-50 dark:hover:bg-gray-850 transition-colors">
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deleteMessageId) {
+                  await confirmDelete(deleteMessageId)
+                  setDeleteMessageId(null)
+                }
+              }}
+              className="h-8 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-4 transition-colors"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
