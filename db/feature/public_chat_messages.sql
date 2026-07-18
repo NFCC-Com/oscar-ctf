@@ -23,9 +23,21 @@ CREATE POLICY "Allow public read access to chat messages"
 DROP POLICY IF EXISTS "Allow authenticated insert of own chat messages" ON public.public_chat_messages;
 DROP POLICY IF EXISTS "Allow users to delete their own chat messages" ON public.public_chat_messages;
 
--- Enable Realtime for this table
-ALTER PUBLICATION supabase_realtime DROP TABLE public.public_chat_messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.public_chat_messages;
+-- Enable Realtime for this table (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'public_chat_messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime
+      ADD TABLE public.public_chat_messages;
+  END IF;
+END
+$$;
 
 -- Grant permissions to public roles (SELECT ONLY - no direct INSERT/UPDATE/DELETE)
 GRANT SELECT ON public.public_chat_messages TO authenticated, anon;
