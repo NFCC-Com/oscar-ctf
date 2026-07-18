@@ -12,6 +12,8 @@ import {
 import { SurfaceCard } from '@/shared/ui/surface'
 import CustomBadge from '@/shared/ui/CustomBadge'
 import { NXCTF } from '@/_vars/const'
+import PublicChat from '@/shared/components/PublicChat'
+import { AppTabs } from '@/shared/ui'
 
 interface Donor {
   donator: string;
@@ -35,6 +37,7 @@ export default function DonationSection() {
   const [leaderboard, setLeaderboard] = useState<Donor[]>([])
   const [recent, setRecent] = useState<RecentDonation[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'supporters' | 'chat'>('supporters')
 
   // Fetch Saweria data
   useEffect(() => {
@@ -101,8 +104,8 @@ export default function DonationSection() {
     }).format(value).replace(/\s+/g, '')
   }
 
-  // Show top 10 supporters for a complete list
-  const top10 = Array.from({ length: 10 }, (_, i) => {
+  // Show top 15 supporters for a complete list
+  const top15 = Array.from({ length: 15 }, (_, i) => {
     return leaderboard[i] || { donator: '...', amount: 0, currency: 'IDR' }
   })
 
@@ -129,95 +132,123 @@ export default function DonationSection() {
         </span>
       </button>
 
-      {/* Donation Dialog Modal */}
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent 
-          className="max-w-md sm:max-w-lg p-5" 
+        <DialogContent
+          className="max-w-md sm:max-w-lg h-[820px] p-0 overflow-hidden flex flex-col scroll-hidden"
           hideCloseButton={true}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <DialogHeader className="border-b border-gray-100 dark:border-gray-800 pb-2">
+          {/* Header Section */}
+          <DialogHeader className="pt-5 px-5 pb-1">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-base font-bold text-gray-900 dark:text-white">Dukung Operasional</DialogTitle>
+              <DialogTitle className="text-base font-bold text-gray-900 dark:text-white">
+                Dukung Operasional
+              </DialogTitle>
               <CustomBadge
                 label="Donasi"
                 color="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                 width={50}
               />
             </div>
-            <DialogDescription className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-              Dukungan operasional hosting, API, dan server event CTF publik.
+            <DialogDescription className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed text-justify">
+              Dukungan operasional hosting, feature, pembuatan soal ctf, langganan AI, dan upgrade server untuk ctf nxctf ini.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Leaders Board */}
-          <div className="space-y-2 py-1">
-            <div className="flex items-center gap-2 pb-1 border-b border-gray-100 dark:border-gray-800">
-              <Trophy className="h-3.5 w-3.5 text-cyan-500" />
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-gray-800 dark:text-gray-300">Top Supporters</span>
-            </div>
-
-            <div className="flex flex-col divide-y divide-gray-100/50 dark:divide-gray-800/50">
-              {top10.map((item, idx) => {
-                const rank = String(idx + 1).padStart(2, '0')
-                const isPlaceholder = item.donator === '...'
-
-                return (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between py-1.5 transition hover:bg-gray-50/30 dark:hover:bg-white/[0.01] px-1 rounded"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`font-mono text-xs w-4 text-right ${isPlaceholder ? 'text-gray-400 dark:text-gray-600' : 'text-cyan-500 dark:text-cyan-400 font-semibold'}`}>
-                        {rank}
-                      </span>
-                      <span className={`font-mono text-sm ${isPlaceholder ? 'text-gray-400 dark:text-gray-600' : 'text-gray-800 dark:text-gray-200 font-semibold'}`}>
-                        {item.donator}
-                      </span>
-                    </div>
-                    <span className={isPlaceholder
-                      ? 'font-mono text-[11px] text-gray-400 dark:text-gray-600'
-                      : 'font-mono text-xs font-bold text-cyan-600 dark:text-cyan-400'
-                    }>
-                      {isPlaceholder ? '—' : formatIDR(item.amount)}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+          {/* Unified AppTabs component from design system */}
+          <div className="px-5">
+            <AppTabs
+              items={[
+                { value: 'supporters', label: 'Supporters' },
+                { value: 'chat', label: 'Chat Publik' }
+              ]}
+              value={activeTab}
+              onValueChange={(val) => setActiveTab(val as 'supporters' | 'chat')}
+              variant="panel"
+              stretch
+              ariaLabel="Donation dialog tabs"
+            />
           </div>
 
-          {/* Marquee Ticker */}
-          <SurfaceCard className="overflow-hidden px-3 py-1.5 bg-gray-50/50 dark:bg-black/10 rounded-lg" variant="flat">
-            <div className="relative overflow-hidden rounded mask-edges-custom w-full">
-              <div className="marquee-track-custom text-xs font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap inline-block">
-                <span>{marqueeText.repeat(8)}</span>
-              </div>
-            </div>
-          </SurfaceCard>
+          {/* Content Body - Height fills the remaining space inside h-[820px] */}
+          <div className="flex-1 min-w-0 w-full overflow-hidden flex flex-col">
+            {activeTab === 'supporters' ? (
+              <div className="flex-1 flex flex-col justify-between min-w-0 w-full px-5 pb-5 mt-2">
+                {/* Leaders Board */}
+                <div className="space-y-1 py-0.5 h-[420px] overflow-y-auto scroll-hidden shrink-0">
+                  <div className="flex items-center gap-2 pb-1 border-b border-gray-100 dark:border-gray-800">
+                    <Trophy className="h-3.5 w-3.5 text-cyan-500" />
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-gray-800 dark:text-gray-300">Top Supporters</span>
+                  </div>
 
-          {/* Footer Call-To-Action */}
-          <div className="flex flex-col gap-2.5 pt-1">
-            <p className="text-[10px] leading-relaxed text-gray-400 dark:text-gray-500">
-              Setiap donasi sangat membantu untuk mempertahankan biaya infrastruktur server CTF agar tetap aktif. Pembayaran mendukung QRIS, Gopay, OVO, Dana, LinkAja, dll.
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <a
-                href={donationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 px-5 text-xs font-semibold shadow transition-all duration-200 hover:-translate-y-0.5"
-              >
-                Donasi via Web Saweria
-                <ArrowUpRight className="h-4 w-4" />
-              </a>
-              <button
-                onClick={handleDismiss}
-                className="w-full text-center text-[11px] text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors py-1 hover:underline underline-offset-2"
-              >
-                Tutup Sementara / Nanti Saja
-              </button>
-            </div>
+                  <div className="flex flex-col divide-y divide-gray-100/50 dark:divide-gray-800/50">
+                    {top15.map((item, idx) => {
+                      const rank = String(idx + 1).padStart(2, '0')
+                      const isPlaceholder = item.donator === '...'
+
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between py-1 transition hover:bg-gray-50/30 dark:hover:bg-white/[0.01] px-1 rounded"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={`font-mono text-xs w-4 text-right ${isPlaceholder ? 'text-gray-400 dark:text-gray-600' : 'text-cyan-500 dark:text-cyan-400 font-semibold'}`}>
+                              {rank}
+                            </span>
+                            <span className={`font-mono text-sm ${isPlaceholder ? 'text-gray-400 dark:text-gray-600' : 'text-gray-800 dark:text-gray-200 font-semibold'}`}>
+                              {item.donator}
+                            </span>
+                          </div>
+                          <span className={isPlaceholder
+                            ? 'font-mono text-[11px] text-gray-400 dark:text-gray-600'
+                            : 'font-mono text-xs font-bold text-cyan-600 dark:text-cyan-400'
+                          }>
+                            {isPlaceholder ? '—' : formatIDR(item.amount)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Marquee Ticker */}
+                <SurfaceCard className="overflow-hidden px-3 py-0.5 bg-gray-50/50 dark:bg-black/10 rounded-lg w-full shrink-0" variant="flat">
+                  <div className="relative overflow-hidden rounded mask-edges-custom w-full">
+                    <div className="marquee-track-custom text-xs font-mono text-gray-500 dark:text-gray-400 whitespace-nowrap inline-block">
+                      <span>{marqueeText.repeat(8)}</span>
+                    </div>
+                  </div>
+                </SurfaceCard>
+
+                {/* Footer Call-To-Action */}
+                <div className="flex flex-col gap-2 pt-2 shrink-0">
+                  <p className="text-[10px] leading-relaxed text-gray-400 dark:text-gray-500">
+                    Setiap donasi sangat membantu untuk mempertahankan biaya infrastruktur server CTF agar tetap aktif. Pembayaran mendukung QRIS, Gopay, OVO, Dana, LinkAja, dll.
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    <a
+                      href={donationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 px-5 text-xs font-semibold shadow transition-all duration-200 hover:-translate-y-0.5"
+                    >
+                      Donasi via Web Saweria
+                      <ArrowUpRight className="h-4 w-4" />
+                    </a>
+                    <button
+                      onClick={handleDismiss}
+                      className="w-full text-center text-[11px] text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors py-1 hover:underline underline-offset-2"
+                    >
+                      Tutup Sementara / Nanti Saja
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 min-w-0 w-full h-full flex flex-col">
+                <PublicChat donors={top15} />
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
