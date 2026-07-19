@@ -115,7 +115,7 @@ export default function EventFilterPills({
     })
 
     return options
-  }, [hideAllEventOption, hideMainEventOption, mainLabel, sortedEvents])
+  }, [hideAllEventOption, hideMainEventOption, mainLabel, sortedEvents, settings.disable_default_challenges])
 
   const selectedOptionIndex = React.useMemo(() => {
     return eventOptions.findIndex((option) => option.value === selectedEventId)

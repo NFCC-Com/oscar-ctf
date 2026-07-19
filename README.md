@@ -71,8 +71,8 @@ After running the development server, you can open `http://localhost:3000` and s
 
 ### 5. Setting the Supabase authentication settings
 Go to Dashboard → Authentication → Sign in / Providers
-- Enable "Allow manual linking" (Opsional)
-- Disable "Confirm Email" (Opsional)
+- Enable "Allow manual linking" (Optional)
+- Disable "Confirm Email" (Optional)
 
 Go to your Supabase dashboard → Authentication → Settings → Site URL and add `http://localhost:3000` (or your Vercel domain if you deployed) and save.
 
@@ -223,7 +223,7 @@ using HTML templates.
 - Supabase Custom SMTP: https://supabase.com/docs/guides/auth/auth-smtp
 - Resend × Supabase Partner: https://supabase.com/partners/catalog/resend
 
-### Opsional Supabase Reset Emils
+### Optional Supabase Reset Email template
 ```html
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
    <tr>
@@ -253,28 +253,39 @@ using HTML templates.
 src/
 ├── app/                    # Next.js pages & API routes
 │   ├── admin/             # Admin dashboard pages
-│   ├── challenges/        # Challenge listing & detail
-│   ├── scoreboard/        # Leaderboards
+│   ├── challenges/        # Challenge arena
+│   ├── scoreboard/        # Scoreboard rankings
 │   ├── teams/             # Team management
-│   ├── profile/           # User profiles
-│   ├── api/nxctl/         # NXCTL API integration
-│   └── ...other pages
-├── shared/
-│   ├── components/        # Reusable React components
-│   ├── contexts/          # React contexts (Auth, Events, etc.)
-│   ├── hooks/             # Custom React hooks
-│   ├── lib/               # Business logic & utilities
-│   ├── types/             # TypeScript interfaces
-│   └── ui/                # Shadcn UI components
-├── config.ts              # App configuration
-├── secret.ts              # Server-only secrets
-└── middleware.ts          # Maintenance mode detection
+│   ├── profile/           # User dashboard & statistics
+│   ├── api/               # Serverless API routes (e.g. nxctl)
+│   └── layout.tsx         # Root app layout
+├── features/               # Feature modules (Domain-driven architecture)
+│   ├── admin/             # Admin business logic & UI pages
+│   ├── auth/              # Authentication screens, overlays, and services
+│   ├── challenges/        # Main challenge filters, cards, and solvers
+│   ├── events/            # Multi-event switching contexts
+│   ├── logs/              # Flag logs auditing list
+│   ├── scoreboard/        # Leaderboards logic and dynamic charts
+│   ├── teams/             # Squad management forms & invites
+│   └── users/             # User profiles solvers statistics
+├── widgets/                # Independent context widgets
+│   ├── dev-config/        # Platform GUI configuration editor
+│   └── notifications/     # Realtime notification panels
+├── shared/                 # Universal shared resources
+│   ├── components/        # Globally reusable components (Loader, etc.)
+│   ├── contexts/          # Root React contexts (Auth, Theme, Settings)
+│   ├── lib/               # Shared utilities and dynamic algorithms
+│   ├── styles/            # Tailwind theme token definitions
+│   ├── types/             # Common TypeScript interface definitions
+│   └── ui/                # Base UI primitives (Dialog, Button, Badge)
+├── config.ts              # Global environment configurations
+└── middleware.ts          # Maintenance check route handler
 
 db/
-├── init.sql               # Generated from schema + queries
-├── schema/                # PostgreSQL table definitions
-├── queries/               # Stored procedures & RPC functions
-└── seed/                  # Initial data
+├── init.sql               # Generated complete sql seed
+├── schema/                # PostgreSQL table schema layouts
+├── queries/               # Stored functions & RLS policy procedures
+└── seed/                  # Seed files
 ```
 
 ## 🛠️ Available Scripts
@@ -301,17 +312,25 @@ npm run update-types:local  # Generate TypeScript types from local Supabase
 | **Lucide Icons** | Beautiful icons |
 
 ## 📊 How It Works
+NXCTF operates using a modern split-layer architecture:
+
+1. **Routing & Composition**: Next.js App Router serves as the orchestration layer, utilizing React Contexts (`Auth`, `Theme`, `Settings`) to deliver uniform state tracking.
+2. **Database & Realtime Service**: Supabase delivers the storage, authorization, and real-time events. Data modifications (e.g. flag validation, hint unlocking) are dispatched via secure, row-level protected (RLS) PostgreSQL stored procedures (RPCs) to protect flags.
+3. **Dynamic Container Provisioning**: When connected to `NXCTL`, the frontend calls API proxies to request ephemeral container operations (spawning, restarting, or extending dynamic targets), returning safe connection variables back to the browser.
+4. **First Bloods & Scoreboard**: Timeline curves are dynamically generated by comparing the first blood timestamp of each challenge to solves, recalculating rankings on the fly.
 
 ## 🤝 Support & Contributing
-- 📖 [NXCTL Documentation](https://docs.nxctf.my.id)
-- 🐛 Report issues on GitHub or your repository issue tracker
-- 💬 Questions? Open a discussion
+We welcome contributions to NXCTF! If you find a bug, want to request a feature, or want to contribute code:
+
+1. Fork this repository.
+2. Create a branch: `git checkout -b feature/your-awesome-feature`.
+3. Commit your changes: `git commit -m "feat: add some feature"`.
+4. Push to the branch: `git push origin feature/your-awesome-feature`.
+5. Open a **Pull Request**.
+
+For bug reports or questions, feel free to open a [GitHub Issue](https://github.com/nxctf/nxctf/issues).
 
 ## 📝 License
-
 Apache License 2.0 - Feel free to use and modify for your competitions!
 
 Built with ❤️ by the CTF community. Good luck with your challenges! 🚩
-
-
----

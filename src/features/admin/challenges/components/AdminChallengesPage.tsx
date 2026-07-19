@@ -1,19 +1,22 @@
 "use client"
 
 import React, { useEffect, useState, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 import { useAuth } from '@/shared/contexts/AuthContext'
 import { useCategories } from '@/shared/contexts/CategoriesContext'
 import APP from '@/config'
-import ConfirmDialog from '@/shared/components/ConfirmDialog'
+
+// Lazy-load modals & hosts to reduce initial admin dashboard chunk size
+const ConfirmDialog = dynamic(() => import('@/shared/components/ConfirmDialog'), { ssr: false })
+const ChallengeFormDialogHost = dynamic(() => import('./ChallengeFormDialogHost'), { ssr: false })
+const FlagPreviewDialog = dynamic(() => import('./FlagPreviewDialog').then(mod => mod.FlagPreviewDialog), { ssr: false })
+const RepostModal = dynamic(() => import('./RepostModal'), { ssr: false })
+const ScheduleModal = dynamic(() => import('./ScheduleModal'), { ssr: false })
 
 import ChallengeListPanel from './ChallengeListPanel'
-import ChallengeFormDialogHost from './ChallengeFormDialogHost'
-import { FlagPreviewDialog } from './FlagPreviewDialog'
-import RepostModal from './RepostModal'
-import ScheduleModal from './ScheduleModal'
 import { useAdminChallengesData } from '../hooks/useAdminChallengesData'
 import { useChallengeForm } from '../hooks/useChallengeForm'
 import { getAdminScope, getEvents, getFilteredAdminChallenges } from '../lib'
@@ -118,7 +121,7 @@ export default function AdminChallengesPage() {
     }
 
     init()
-  }, [user, authLoading, searchParams, initAdminData, router, resetForm])
+  }, [user, authLoading, searchParams, initAdminData, router, resetForm, loadChallengeForEdit])
 
   // Handlers
   const handleOpenAdd = () => {

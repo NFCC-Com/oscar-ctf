@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
+import Image from 'next/image'
 import { Send, Loader2, MessageSquare, AlertCircle, Trash2 } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import { useAuth } from '@/shared/contexts/AuthContext'
@@ -354,11 +355,14 @@ export default function PublicChat({ donors = [] }: PublicChatProps) {
                   {/* Profile Picture */}
                   <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0 border border-gray-150 dark:border-gray-700/60 flex items-center justify-center select-none mt-0.5">
                     {profile.profile_picture_url ? (
-                      <img
+                      <Image
                         src={profile.profile_picture_url}
                         alt={profile.username}
+                        width={32}
+                        height={32}
                         className="h-full w-full object-cover"
                         referrerPolicy="no-referrer"
+                        unoptimized
                       />
                     ) : (
                       <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase font-mono">

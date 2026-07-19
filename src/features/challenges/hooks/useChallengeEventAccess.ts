@@ -242,7 +242,7 @@ export function useChallengeEventAccess({
 
       return { ...event, isLocked }
     })
-  }, [events, isGlobalAdminUser, eventAdminIds, eventMembershipCache, allMembershipsLoaded, eventMembership])
+  }, [events, isGlobalAdminUser, eventAdminIds, eventMembershipCache, allMembershipsLoaded])
 
   return {
     eventMembership,

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import dynamic from 'next/dynamic'
 import { headers } from 'next/headers'
 // @ts-ignore: side-effect CSS import without type declarations
 import 'react-medium-image-zoom/dist/styles.css'
@@ -16,7 +17,12 @@ import { getPageMinHeightStyle, PAGE_BG_BASE_CLASS } from '@/shared/styles/page-
 import { THEME_PRIMARY_SELECTION_CLASS } from '@/shared/styles/theme-colors'
 import APP from '@/config'
 import { BASE_URL } from '@/_vars/const'
-import DonationSection from '@/shared/components/DonationSection'
+
+// Lazy-load DonationSection — separate chunk, client-only, zero cost if env var is missing
+const DonationSection = dynamic(
+  () => import('@/shared/components/DonationSection'),
+  { ssr: false }
+)
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -121,7 +127,7 @@ export default async function RootLayout({
                   <CategoriesProvider>
                     <Navbar />
                     <div className="pt-14">{children}</div>
-                    {!isAdminPage && <DonationSection />}
+                    {!isAdminPage && process.env.NEXT_PUBLIC_SAWERIA_API_URL && <DonationSection />}
                     <Toaster position="top-right" reverseOrder={false} />
                     <ScrollToggle />
                   </CategoriesProvider>

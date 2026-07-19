@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
 import APP from "@/config";
 
@@ -44,7 +44,7 @@ export function CategoriesProvider({
   // Use untyped client to bypass typescript database.types sync issues
   const client = supabase as any;
 
-  const fetchFromDb = async () => {
+  const fetchFromDb = useCallback(async () => {
     try {
       const [catRes, subRes] = await Promise.all([
         client
@@ -77,9 +77,9 @@ export function CategoriesProvider({
     } finally {
       setLoading(false);
     }
-  };
+  }, [client]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
@@ -103,11 +103,11 @@ export function CategoriesProvider({
     } catch {
       await fetchFromDb();
     }
-  };
+  }, [fetchFromDb]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   return (
     <CategoriesContext.Provider

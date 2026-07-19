@@ -65,6 +65,7 @@ export function useChallengeStats(
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, eventId, challenges, filters?.excludedEventIds])
 
   return stats

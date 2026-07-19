@@ -34,8 +34,9 @@ export function useGeoSubmission({
 
   // Clean up timeouts on unmount
   useEffect(() => {
+    const timeouts = feedbackTimeoutsRef.current
     return () => {
-      Object.values(feedbackTimeoutsRef.current).forEach(clearTimeout)
+      Object.values(timeouts).forEach(clearTimeout)
     }
   }, [])
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { Coins, Droplet, Trophy, Rocket } from 'lucide-react'
 import Loader from '@/shared/components/Loader'
@@ -21,7 +22,10 @@ import {
 } from '@/shared/styles'
 import EventSelect from '@/features/events/components/EventSelect'
 import { useScoreboardPageData } from '../hooks'
-import ScoreboardChart from './ScoreboardChart'
+const ScoreboardChart = dynamic(() => import('./ScoreboardChart'), {
+  ssr: false,
+  loading: () => <div className="h-[350px] flex items-center justify-center text-gray-400">Loading chart...</div>
+})
 import ScoreboardTable from './ScoreboardTable'
 import ScoreboardScopeTabs from './ScoreboardScopeTabs'
 import ScoreboardExportActions from './ScoreboardExportActions'

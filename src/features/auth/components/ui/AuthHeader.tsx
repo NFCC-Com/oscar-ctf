@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import APP from '@/config'
 import { NXCTF } from '@/_vars/const'
 import { THEME_PRIMARY_PILL_CLASS } from '@/shared/styles'
@@ -17,10 +18,13 @@ export function AuthHeader({ badge, title, subtitle }: AuthHeaderProps) {
       {/* Top Row: Logo (left) & Badge (right) */}
       <div className="mb-0.5 flex w-full items-center justify-between">
         {logoUrl && (
-          <img
+          <Image
             src={logoUrl}
             alt="Logo"
+            width={64}
+            height={64}
             className="h-16 w-16 object-contain select-none"
+            unoptimized
           />
         )}
         {badge ? (

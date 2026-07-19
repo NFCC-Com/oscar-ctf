@@ -75,13 +75,14 @@ export default function DonationSection() {
     fetchData()
   }, [apiUrl])
 
-  // Handle auto-open on mount with sessionStorage
+  // Handle auto-open on mount with sessionStorage (delayed so it doesn't feel sudden)
   useEffect(() => {
     if (!apiUrl) return
 
     const hasDismissed = sessionStorage.getItem('nxctf_donate_dismissed')
     if (!hasDismissed) {
-      setIsOpen(true)
+      const timer = setTimeout(() => setIsOpen(true), 1500)
+      return () => clearTimeout(timer)
     }
   }, [apiUrl])
 

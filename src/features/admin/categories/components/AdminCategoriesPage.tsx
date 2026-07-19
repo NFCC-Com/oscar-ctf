@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import { isGlobalAdmin } from "@/features/admin/services/admin.service";
@@ -104,7 +104,7 @@ export default function AdminCategoriesPage() {
 
   // ─── Data loading ──────────────────────────────────────────────────────────
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [catRes, subRes] = await Promise.all([
@@ -129,7 +129,7 @@ export default function AdminCategoriesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [client]);
 
   useEffect(() => {
     let mounted = true;
@@ -161,7 +161,7 @@ export default function AdminCategoriesPage() {
     return () => {
       mounted = false;
     };
-  }, [authLoading, user, router]);
+  }, [authLoading, user, router, loadData]);
 
   // ─── Category handlers ─────────────────────────────────────────────────────
 

@@ -86,7 +86,7 @@ function FlyToController({ searchResult }: { searchResult: { lat: number; lng: n
 // Expose the map instance to a ref so we can call zoomIn/zoomOut from outside BaseMap
 function MapRefGetter({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
   const map = useMap()
-  useEffect(() => { mapRef.current = map }, [map])
+  useEffect(() => { mapRef.current = map }, [map, mapRef])
   return null
 }
 
@@ -146,11 +146,12 @@ export default function GeoMap({
     }
     fetchTarget()
     return () => { active = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [challenge.id, isSolved])
 
   useEffect(() => {
     if (feedback?.success && !isRevealed) { onReveal?.(); setRevealCardOpen(true) }
-  }, [feedback?.success])
+  }, [feedback?.success, isRevealed, onReveal, setRevealCardOpen])
 
   const handleMapClick = (latlng: L.LatLng) =>
     handleGeoGuessChange(challenge.id, { lat: latlng.lat, lng: latlng.lng })
