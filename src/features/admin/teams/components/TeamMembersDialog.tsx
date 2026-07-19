@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Button } from '@/shared/ui'
 import { DIALOG_GLASS_CONTENT_MD_CLASS } from '@/shared/styles'
@@ -29,7 +29,7 @@ export default function TeamMembersDialog({
   const [memberToAction, setMemberToAction] = useState<{ member: AdminTeamMember; action: 'kick' | 'captain' } | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
 
-  const fetchMembers = () => {
+  const fetchMembers = useCallback(() => {
     if (!open || !teamId) return
     setLoading(true)
     setError(null)
@@ -47,7 +47,7 @@ export default function TeamMembersDialog({
       .finally(() => {
         setLoading(false)
       })
-  }
+  }, [open, teamId])
 
   useEffect(() => {
     if (open && teamId) {
@@ -56,7 +56,7 @@ export default function TeamMembersDialog({
       setMembers([])
       setMemberToAction(null)
     }
-  }, [open, teamId])
+  }, [open, teamId, fetchMembers])
 
   const handleConfirmAction = async () => {
     if (!teamId || !memberToAction) return

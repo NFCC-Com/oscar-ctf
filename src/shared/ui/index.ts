@@ -1,4 +1,4 @@
-﻿export {
+export {
   Dialog,
   DialogContent,
   DialogTitle,
@@ -47,6 +47,6 @@ export {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from './alert-dialog'
 
 export { default as CustomBadge } from './CustomBadge'

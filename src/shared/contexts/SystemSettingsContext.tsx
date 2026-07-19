@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
 export type SystemSettings = {
@@ -48,7 +48,7 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('system_settings')
@@ -90,9 +90,9 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const cached = localStorage.getItem(CACHE_KEY)
       if (cached) {
@@ -109,11 +109,11 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
     } catch {
       await fetchSettings()
     }
-  }
+  }, [fetchSettings])
 
   useEffect(() => {
     void loadData()
-  }, [])
+  }, [loadData])
 
   return (
     <SystemSettingsContext.Provider value={{ settings, loading, refresh: fetchSettings }}>

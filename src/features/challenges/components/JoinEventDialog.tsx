@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/shared/ui/dialog"
 import { Button, Input } from "@/shared/ui"
 import { DIALOG_GLASS_CONTENT_MD_CLASS } from "@/shared/styles"
@@ -84,10 +85,12 @@ export default function JoinEventDialog({
               {/* Event image */}
               {imageUrl ? (
                 <div className="relative h-32 w-full overflow-hidden bg-gray-900/10 dark:bg-gray-800/30">
-                  <img
+                  <Image
                     src={imageUrl}
                     alt={event?.name || 'Event'}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                   {/* Gradient overlay for text readability */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />

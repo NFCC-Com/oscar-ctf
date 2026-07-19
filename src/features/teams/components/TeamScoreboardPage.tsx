@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useCallback, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Coins, Sparkles, Trophy, Rocket, Globe, Users } from 'lucide-react'
 
@@ -21,7 +22,10 @@ import { useAuth } from '@/shared/contexts/AuthContext'
 import { useTheme } from '@/shared/contexts/ThemeContext'
 import { useEventContext } from '@/features/events/contexts/EventContext'
 
-import TeamScoreboardChart from './TeamScoreboardChart'
+const TeamScoreboardChart = dynamic(() => import('./TeamScoreboardChart'), {
+  ssr: false,
+  loading: () => <div className="h-[350px] flex items-center justify-center text-gray-400">Loading chart...</div>
+})
 import TeamScoreboardTable from './TeamScoreboardTable'
 import { useTeamScoreboard } from '../hooks/useTeamScoreboard'
 import ScoreboardExportActions from '@/features/scoreboard/components/ScoreboardExportActions'

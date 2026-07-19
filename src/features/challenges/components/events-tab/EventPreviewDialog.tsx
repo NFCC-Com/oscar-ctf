@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/shared/ui/dialog'
 import { Button } from '@/shared/ui'
 import { DIALOG_GLASS_CONTENT_MD_CLASS } from '@/shared/styles'
@@ -93,10 +94,12 @@ export default function EventPreviewDialog({
           {/* Banner Image */}
           <div className="relative h-40 w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
             {imageUrl ? (
-              <img
+              <Image
                 src={imageUrl}
                 alt={event.name}
-                className="h-full w-full object-cover"
+                fill
+                className="object-cover"
+                unoptimized
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-blue-500/20">

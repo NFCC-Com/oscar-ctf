@@ -522,7 +522,7 @@ export default function BaseScoreboardChart({
         spanGaps: true,
       }
     }),
-  }), [builtData, drawOrderByName, labels, series, solveDateSets])
+  }), [builtData, drawOrderByName, labels, series])
 
   React.useEffect(() => {
     const chart = chartRef.current
