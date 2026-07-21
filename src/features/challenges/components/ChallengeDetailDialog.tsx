@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Flag, Check, CheckCircle2, ListChecks, Server, Key, MapPin, ClipboardCopy } from 'lucide-react'
+import { Flag, Check, CheckCircle2, ListChecks, Server, Key, MapPin, ClipboardCopy, Star } from 'lucide-react'
 import toast from 'react-hot-toast'
 import APP from '@/config'
 import { useSystemSettings } from '@/shared/contexts/SystemSettingsContext'
@@ -19,6 +19,8 @@ import ChallengeHints from './challenge-detail/ChallengeHints'
 import ChallengeMetadata from './challenge-detail/ChallengeMetadata'
 import ChallengeTasksTeaser from './challenge-detail/ChallengeTasksTeaser'
 import SubChallengePanel from './challenge-detail/SubChallengePanel'
+import { useAuth } from '@/shared/contexts/AuthContext'
+import { useChallengeRating } from '../hooks/useChallengeRating'
 import {
   ChallengeFooter,
   QuestionFooter,
@@ -100,6 +102,7 @@ interface ChallengeDetailDialogProps {
   geoCooldownSeconds?: number
   handleGeoSubmit?: (challengeId: string, coords: GeoCoordinates, prefix: string) => Promise<boolean>
   handleGeoGuessChange?: (challengeId: string, coords: GeoCoordinates | null) => void
+  onRatingSubmit?: () => void | Promise<unknown>
 }
 
 const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
@@ -111,6 +114,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   setChallengeTab,
   onClose,
   flagInputs,
+  onRatingSubmit,
   handleFlagInputChange,
   handleFlagSubmit,
   submitting,
@@ -269,6 +273,9 @@ ${links || '- (No links)'}
   }, [challenge?.id, challengeTab])
 
   const { settings } = useSystemSettings()
+  const { user } = useAuth()
+  const showAverageRating = settings.enable_challenge_rating && (settings.show_rating_to_participants || user?.is_admin);
+  const canRate = settings.enable_challenge_rating;
 
   if (!challenge) return null
 
@@ -307,13 +314,20 @@ ${links || '- (No links)'}
         <div className="p-4 md:px-6 pb-0 shrink-0">
           <div className="flex flex-col gap-3 mb-5">
             {/* ROW 1: Title & Event */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
               <DialogTitle asChild>
                 <h2 className="select-text text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight leading-tight flex-1 min-w-0">
                   {dialogTitle}
                 </h2>
               </DialogTitle>
-              <div className="flex items-center gap-2 shrink-0 select-none mt-1 sm:mt-1.5">
+              <div className="flex items-center gap-2.5 shrink-0 select-none">
+                {showAverageRating && challenge.avg_rating !== undefined && challenge.avg_rating !== null && (
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-amber-500 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded select-none">
+                    <Star size={11} className="fill-current text-amber-400 dark:text-amber-500 shrink-0" />
+                    <span className="leading-none">{Number(challenge.avg_rating).toFixed(1)}</span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal leading-none">({challenge.total_ratings})</span>
+                  </div>
+                )}
                 <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] font-bold">
                   {eventName}
                 </span>
@@ -472,6 +486,10 @@ ${links || '- (No links)'}
                   challenge={challenge}
                   setShowHintModal={setShowHintModal}
                 />
+
+                {canRate && isSolved && (
+                  <ChallengeRatingInput challengeId={challenge.id} enabled={canRate} onRatingSubmit={onRatingSubmit} />
+                )}
               </div>
             </div>
           )}
@@ -599,6 +617,87 @@ ${links || '- (No links)'}
         onClose={() => setShowHintModal({ challenge: null })}
       />
     </Dialog>
+  )
+}
+
+interface ChallengeRatingInputProps {
+  challengeId: string
+  enabled: boolean
+  onRatingSubmit?: () => void | Promise<unknown>
+}
+
+function ChallengeRatingInput({ challengeId, enabled, onRatingSubmit }: ChallengeRatingInputProps) {
+  const { myRating, isLoading, isSubmitting, fetchMyRating, submitRating } = useChallengeRating({ enabled })
+  const [hoverRating, setHoverRating] = useState<number | null>(null)
+
+  React.useEffect(() => {
+    if (enabled && challengeId) {
+      void fetchMyRating(challengeId)
+    }
+  }, [challengeId, enabled, fetchMyRating])
+
+  if (!enabled) return null
+
+  return (
+    <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 backdrop-blur-sm">
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          Rate this challenge
+        </span>
+        <div className="flex items-center gap-1.5">
+          {isLoading ? (
+            <span className="text-xs text-gray-400 dark:text-gray-500">Loading rating...</span>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const active = star <= (hoverRating ?? myRating ?? 0)
+                  return (
+                    <button
+                      key={star}
+                      type="button"
+                      disabled={isSubmitting}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      onClick={async () => {
+                        const res = await submitRating(challengeId, star)
+                        if (res.success) {
+                          toast.success('Thank you for rating!')
+                          if (onRatingSubmit) {
+                            void onRatingSubmit()
+                          }
+                        } else {
+                          toast.error(res.message || 'Failed to submit rating')
+                        }
+                      }}
+                      className="p-0.5 transition-transform duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Star
+                        size={20}
+                        className={`transition-colors ${active
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-gray-300 dark:text-gray-600 fill-transparent'
+                          }`}
+                      />
+                    </button>
+                  )
+                })}
+              </div>
+              {myRating !== null && !isSubmitting && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1.5 font-medium">
+                  (Your rating: {myRating} ⭐)
+                </span>
+              )}
+              {isSubmitting && (
+                <span className="text-xs text-gray-400 dark:text-gray-500 ml-1.5 animate-pulse">
+                  Saving...
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 

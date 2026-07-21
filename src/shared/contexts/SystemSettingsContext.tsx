@@ -16,6 +16,8 @@ export type SystemSettings = {
   event_main_image_url: string
   event_fallback_image_url: string
   flag_format: string
+  enable_challenge_rating: boolean
+  show_rating_to_participants: boolean
 }
 
 export const DEFAULT_SETTINGS: SystemSettings = {
@@ -31,6 +33,8 @@ export const DEFAULT_SETTINGS: SystemSettings = {
   event_main_image_url: 'https://raw.githubusercontent.com/nxctf/assets/refs/heads/main/event/active_nxctf.png',
   event_fallback_image_url: '',
   flag_format: 'NXCTF{your_flag_here}',
+  enable_challenge_rating: false,
+  show_rating_to_participants: false,
 }
 
 type SystemSettingsContextType = {

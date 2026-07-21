@@ -14,6 +14,8 @@ VALUES
   ('disable_edit_username', 'false', 'Disable editing username'),
   ('disable_signup', 'false', 'Disable new user registrations'),
   ('disable_default_challenges', 'false', 'Disable default/main challenges (not bound to any event)'),
+  ('enable_challenge_rating', 'false', 'Enable 1-5 star rating for solved challenges'),
+  ('show_rating_to_participants', 'false', 'Allow participants to view challenge ratings'),
   ('max_team_members', '5', 'Maximum number of members allowed per team'),
   ('discord_link', 'https://discord.gg/5etKks6aQQ', 'Community Discord invitation URL'),
   ('event_main_label', 'main', 'The label name for the main featured event'),

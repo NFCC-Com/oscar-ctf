@@ -123,9 +123,49 @@ export type Database = {
           },
         ]
       }
+      challenge_ratings: {
+        Row: {
+          challenge_id: string
+          created_at: string | null
+          rating: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string | null
+          rating: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string | null
+          rating?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_ratings_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenges: {
         Row: {
           attachments: Json | null
+          avg_rating: number | null
           category: string
           created_at: string | null
           decay_per_solve: number | null
@@ -143,11 +183,13 @@ export type Database = {
           points: number
           services: string[] | null
           title: string
+          total_ratings: number | null
           total_solves: number | null
           updated_at: string | null
         }
         Insert: {
           attachments?: Json | null
+          avg_rating?: number | null
           category: string
           created_at?: string | null
           decay_per_solve?: number | null
@@ -165,11 +207,13 @@ export type Database = {
           points: number
           services?: string[] | null
           title: string
+          total_ratings?: number | null
           total_solves?: number | null
           updated_at?: string | null
         }
         Update: {
           attachments?: Json | null
+          avg_rating?: number | null
           category?: string
           created_at?: string | null
           decay_per_solve?: number | null
@@ -187,6 +231,7 @@ export type Database = {
           points?: number
           services?: string[] | null
           title?: string
+          total_ratings?: number | null
           total_solves?: number | null
           updated_at?: string | null
         }
@@ -462,6 +507,35 @@ export type Database = {
           {
             foreignKeyName: "notifications_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_chat_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_chat_messages_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -1139,7 +1213,21 @@ export type Database = {
           log_username: string
         }[]
       }
+      get_my_challenge_rating: {
+        Args: { p_challenge_id: string }
+        Returns: number
+      }
       get_my_event_membership: { Args: { p_event_id: string }; Returns: Json }
+      get_my_rated_challenges: {
+        Args: never
+        Returns: {
+          category: string
+          challenge_id: string
+          challenge_title: string
+          rating: number
+          updated_at: string
+        }[]
+      }
       get_my_submission_status: {
         Args: { p_challenge_id: string }
         Returns: {
@@ -1380,6 +1468,14 @@ export type Database = {
           username: string
         }[]
       }
+      get_unrated_solved_challenges: {
+        Args: { p_limit?: number }
+        Returns: {
+          category: string
+          challenge_id: string
+          challenge_title: string
+        }[]
+      }
       get_user_event_access: {
         Args: { p_user_id: string }
         Returns: {
@@ -1562,6 +1658,10 @@ export type Database = {
         Args: { p_event_id: string; p_join_key?: string; p_join_mode: string }
         Returns: Json
       }
+      submit_challenge_rating: {
+        Args: { p_challenge_id: string; p_rating: number }
+        Returns: Json
+      }
       submit_flag: {
         Args: { p_challenge_id: string; p_flag: string }
         Returns: Json
@@ -1570,6 +1670,7 @@ export type Database = {
         Args: { p_answers: Json; p_challenge_id: string }
         Returns: Json
       }
+      sync_challenge_ratings: { Args: never; Returns: undefined }
       sync_challenge_solves: { Args: never; Returns: undefined }
       transfer_team_captain: {
         Args: { p_new_captain_user_id: string; p_team_id: string }

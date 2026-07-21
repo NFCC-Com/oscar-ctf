@@ -150,7 +150,9 @@ export function useChallengeDialogState({
       (selectedChallenge as any).is_team_solved !== (updatedChallenge as any).is_team_solved ||
       selectedChallenge.total_solves !== updatedChallenge.total_solves ||
       selectedChallenge.points !== updatedChallenge.points ||
-      selectedChallenge.updated_at !== updatedChallenge.updated_at
+      selectedChallenge.updated_at !== updatedChallenge.updated_at ||
+      selectedChallenge.avg_rating !== updatedChallenge.avg_rating ||
+      selectedChallenge.total_ratings !== updatedChallenge.total_ratings
 
     if (!hasChanged) return
 
