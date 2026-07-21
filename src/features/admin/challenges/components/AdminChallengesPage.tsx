@@ -239,7 +239,7 @@ export default function AdminChallengesPage() {
         open={!!scheduleTarget}
         onOpenChange={(v) => { if (!v) setScheduleTarget(null) }}
         challenge={scheduleTarget}
-        existingScheduledAt={scheduleTarget?.id ? scheduledJobsMap[scheduleTarget.id] : undefined}
+        existingScheduledJob={scheduleTarget?.id ? scheduledJobsMap[scheduleTarget.id] : undefined}
         onSuccess={() => initAdminData(true)}
       />
     </>

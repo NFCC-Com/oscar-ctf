@@ -12,7 +12,11 @@ interface ScheduleModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   challenge: Challenge | null
-  existingScheduledAt?: string
+  existingScheduledJob?: {
+    scheduled_at: string
+    repost?: boolean
+    notify?: boolean
+  }
   onSuccess?: () => void
 }
 
@@ -28,17 +32,23 @@ function oneHourLater(): string {
   return toDatetimeLocalValue(d)
 }
 
-export default function ScheduleModal({ open, onOpenChange, challenge, existingScheduledAt, onSuccess }: ScheduleModalProps) {
+export default function ScheduleModal({ open, onOpenChange, challenge, existingScheduledJob, onSuccess }: ScheduleModalProps) {
   const [scheduledAt, setScheduledAt] = useState(oneHourLater())
   const [repostOnActivate, setRepostOnActivate] = useState(false)
+  const [notifyOnActivate, setNotifyOnActivate] = useState(false)
   const [firstBlood, setFirstBlood] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [fbLoaded, setFbLoaded] = useState(false)
 
   useEffect(() => {
     if (open && challenge) {
-      setScheduledAt(existingScheduledAt ? toDatetimeLocalValue(new Date(existingScheduledAt)) : oneHourLater())
-      setRepostOnActivate(false)
+      setScheduledAt(
+        existingScheduledJob?.scheduled_at
+          ? toDatetimeLocalValue(new Date(existingScheduledJob.scheduled_at))
+          : oneHourLater()
+      )
+      setRepostOnActivate(existingScheduledJob?.repost ?? false)
+      setNotifyOnActivate(existingScheduledJob?.notify ?? false)
       setFirstBlood(null)
       setFbLoaded(false)
       getChallengeFirstBlood(challenge.id).then((fb) => {
@@ -46,7 +56,7 @@ export default function ScheduleModal({ open, onOpenChange, challenge, existingS
         setFbLoaded(true)
       })
     }
-  }, [open, challenge, existingScheduledAt])
+  }, [open, challenge, existingScheduledJob])
 
   const firstBloodDate = firstBlood ? new Date(firstBlood) : null
   const selectedDate = new Date(scheduledAt)
@@ -58,7 +68,9 @@ export default function ScheduleModal({ open, onOpenChange, challenge, existingS
     if (!challenge || isRepostInvalid) return
     setLoading(true)
     try {
-      const payload = repostOnActivate ? { repost: true } : {}
+      const payload: any = {}
+      if (repostOnActivate) payload.repost = true
+      if (notifyOnActivate) payload.notify = true
       const jobId = await createScheduledJob(
         'challenge_activate',
         new Date(scheduledAt).toISOString(),
@@ -66,7 +78,7 @@ export default function ScheduleModal({ open, onOpenChange, challenge, existingS
         payload
       )
       if (jobId) {
-        toast.success(`Scheduled activation for ${formatDate(scheduledAt)}${repostOnActivate ? ' with repost' : ''}`)
+        toast.success(`Scheduled activation for ${formatDate(scheduledAt)}${repostOnActivate ? ' with repost' : ''}${notifyOnActivate ? ' and notification' : ''}`)
         onSuccess?.()
         onOpenChange(false)
       }
@@ -82,7 +94,7 @@ export default function ScheduleModal({ open, onOpenChange, challenge, existingS
       <DialogContent className="sm:max-w-md p-5 gap-3" aria-describedby={undefined}>
         <DialogTitle className="text-sm font-semibold">Schedule Challenge Activation</DialogTitle>
         <p className="text-xs text-muted-foreground">
-          {existingScheduledAt ? 'Update existing' : 'Set a'} schedule to auto-activate <strong>{challenge?.title}</strong>.
+          {existingScheduledJob ? 'Update existing' : 'Set a'} schedule to auto-activate <strong>{challenge?.title}</strong>.
         </p>
 
         <div className="space-y-2">
@@ -114,6 +126,14 @@ export default function ScheduleModal({ open, onOpenChange, challenge, existingS
             <Switch
               checked={repostOnActivate}
               onCheckedChange={setRepostOnActivate}
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-sm text-muted-foreground">Send notification on activation</span>
+            <Switch
+              checked={notifyOnActivate}
+              onCheckedChange={setNotifyOnActivate}
             />
           </div>
 

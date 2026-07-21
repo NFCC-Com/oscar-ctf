@@ -28,24 +28,34 @@ function EndpointChip({ endpoint }: { endpoint: any }) {
   const isHttp = endpoint.isHttp
 
   const colorClass = isSsh
-    ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300'
+    ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20'
     : isTcp
-      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-      : 'border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-300'
+      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20'
+      : 'border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20'
 
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-1.5 flex-1">
         <code
-          className={`min-w-0 flex-1 truncate rounded border px-2 py-1 font-mono text-[11px] ${colorClass}`}
-          title={endpoint.label}
+          className={`min-w-0 flex-1 truncate rounded border px-2 py-1 font-mono text-[11px] cursor-pointer transition-colors duration-150 ${colorClass}`}
+          title={isSsh ? 'Click to copy SSH command' : 'Click to copy command'}
+          onClick={(e) => {
+            e.stopPropagation()
+            navigator.clipboard?.writeText(endpoint.copyText)
+            toast.success(isSsh ? 'Copied SSH command' : 'Copied endpoint')
+          }}
         >
           {endpoint.label}
         </code>
         {isSsh && endpoint.password && (
           <code
-            className="shrink-0 rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] text-amber-700 dark:text-amber-300"
-            title={`Password: ${endpoint.password}`}
+            className="shrink-0 rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] text-amber-700 dark:text-amber-300 cursor-pointer transition-colors duration-150 hover:bg-amber-500/20"
+            title="Click to copy password"
+            onClick={(e) => {
+              e.stopPropagation()
+              navigator.clipboard?.writeText(endpoint.password)
+              toast.success('Copied password')
+            }}
           >
             <span className="select-none pr-0.5 text-[8px] font-bold uppercase tracking-wider text-amber-500/70">pw</span>
             {endpoint.password}
@@ -246,9 +256,8 @@ export default function AdminLiveServicesTable({
               return (
                 <Fragment key={row.id}>
                   <TableRow
-                    className={`${ADMIN_ROW_CLASS} ${
-                      hasEndpoints ? 'cursor-pointer' : ''
-                    }`}
+                    className={`${ADMIN_ROW_CLASS} ${hasEndpoints ? 'cursor-pointer' : ''
+                      }`}
                     onClick={() => hasEndpoints && toggleRow(row.id)}
                   >
                     <TableCell className="pl-6 w-10" onClick={(e) => e.stopPropagation()}>
@@ -260,9 +269,8 @@ export default function AdminLiveServicesTable({
                           aria-label={isExpanded ? 'Collapse endpoints' : 'Expand endpoints'}
                         >
                           <ChevronRight
-                            className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-                              isExpanded ? 'rotate-90' : ''
-                            }`}
+                            className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''
+                              }`}
                           />
                         </button>
                       )}

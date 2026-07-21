@@ -32,13 +32,27 @@ export const ServiceEndpoints: React.FC<ServiceEndpointsProps> = ({
           {endpoint.isTcp || !isHttpEndpoint(endpoint.endpoint) ? (
             <div className="flex min-w-0 flex-col gap-1">
               <div className={`grid items-center gap-2 min-w-0 ${endpoint.isSsh && endpoint.password ? 'grid-cols-[minmax(0,1fr)_minmax(70px,120px)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]'}`}>
-                <code className={`min-w-0 truncate rounded border px-2 py-1 font-mono text-[11px] ${endpoint.isSsh ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200' : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'}`}>
+                <code
+                  className={`min-w-0 truncate rounded border px-2 py-1 font-mono text-[11px] cursor-pointer transition-colors duration-150 ${endpoint.isSsh
+                      ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20'
+                      : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+                    }`}
+                  title={endpoint.isSsh ? 'Click to copy SSH command' : 'Click to copy command'}
+                  onClick={() => {
+                    navigator.clipboard.writeText(endpoint.copyText)
+                    toast.success(endpoint.copyMessage)
+                  }}
+                >
                   {endpoint.command}
                 </code>
                 {endpoint.isSsh && endpoint.password && (
                   <code
-                    className="min-w-0 truncate rounded border border-amber-500/20 bg-amber-500/10 px-2 py-1 font-mono text-[11px] text-amber-300"
-                    title={`Password: ${endpoint.password}`}
+                    className="min-w-0 truncate rounded border border-amber-500/20 bg-amber-500/10 px-2 py-1 font-mono text-[11px] text-amber-300 cursor-pointer transition-colors duration-150 hover:bg-amber-500/20"
+                    title="Click to copy password"
+                    onClick={() => {
+                      navigator.clipboard.writeText(endpoint.password)
+                      toast.success('Copied password')
+                    }}
                   >
                     <span className="select-none pr-1 text-[9px] font-bold uppercase tracking-wider text-amber-500/70">pw</span>
                     {endpoint.password}

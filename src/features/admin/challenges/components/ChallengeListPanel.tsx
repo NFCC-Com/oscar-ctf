@@ -18,7 +18,7 @@ interface ChallengeListPanelProps {
   selectedEventId: AdminChallengeEventId
   isRefreshing: boolean
   isGlobalAdmin: boolean
-  scheduledJobsMap?: Record<string, string>
+  scheduledJobsMap?: Record<string, { scheduled_at: string; repost?: boolean; notify?: boolean }>
   onFiltersChange: React.Dispatch<React.SetStateAction<AdminChallengeFilterState>>
   onEventChange: (eventId: AdminChallengeEventId) => void
   onAdd: () => void
@@ -124,7 +124,7 @@ const ChallengeListPanel: React.FC<ChallengeListPanelProps> = ({
                 <ChallengeListItem
                   key={challenge.id}
                   challenge={challenge}
-                  scheduledAt={scheduledJobsMap?.[challenge.id]}
+                  scheduledAt={scheduledJobsMap?.[challenge.id]?.scheduled_at}
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onViewFlag={onViewFlag}
