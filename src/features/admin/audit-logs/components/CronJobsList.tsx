@@ -159,6 +159,14 @@ function ScheduleDetailDialog({
             </div>
           )}
 
+          {/* Notify flag */}
+          {isActivate && (
+            <div className="grid grid-cols-3 gap-2">
+              <span className="text-muted-foreground">Notify</span>
+              <span className="col-span-2 font-medium">{job.payload?.notify === true ? 'Yes, send notification on activation' : 'No'}</span>
+            </div>
+          )}
+
           {/* Error */}
           {job.error_message && (
             <div className="grid grid-cols-3 gap-2">
@@ -274,7 +282,7 @@ export default function ScheduledJobsList({ tabs }: { tabs?: React.ReactNode }) 
             <TableRow>
               <TableHead>Type</TableHead>
               <TableHead>Target</TableHead>
-              <TableHead>Repost</TableHead>
+              <TableHead>Options</TableHead>
               <TableHead>Scheduled At</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-12" />
@@ -309,13 +317,21 @@ export default function ScheduledJobsList({ tabs }: { tabs?: React.ReactNode }) 
                     )}
                   </TableCell>
                   <TableCell>
-                    {isActivate ? (
-                      hasRepost
-                        ? <RotateCcw className="size-3.5 text-green-500" />
-                        : <span className="text-muted-foreground text-xs">-</span>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">-</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isActivate && hasRepost && (
+                        <span title="Recreate post date">
+                          <RotateCcw className="size-3.5 text-green-500" />
+                        </span>
+                      )}
+                      {isActivate && sj.payload?.notify === true && (
+                        <span title="Send notification">
+                          <Bell className="size-3.5 text-blue-500" />
+                        </span>
+                      )}
+                      {(!isActivate || (!hasRepost && sj.payload?.notify !== true)) && (
+                        <span className="text-muted-foreground text-xs">-</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs whitespace-nowrap">
                     {formatJakartaDate(sj.scheduled_at)}

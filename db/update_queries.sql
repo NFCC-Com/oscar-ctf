@@ -6335,6 +6335,27 @@ BEGIN
         ELSE
           v_result := 'Challenge activated';
         END IF;
+        IF (v_job.payload->>'notify')::boolean = true THEN
+          DECLARE
+            v_chall_title TEXT;
+          BEGIN
+            SELECT title INTO v_chall_title
+            FROM public.challenges
+            WHERE id = v_job.target_id;
+            IF v_chall_title IS NOT NULL THEN
+              INSERT INTO public.notifications(title, message, level, created_by, created_at)
+              VALUES (
+                'New Challenge',
+                v_chall_title,
+                'info_challenges',
+                v_job.created_by,
+                now()
+              )
+              RETURNING id INTO v_notif_id;
+              v_result := v_result || ' and notification sent: ' || v_notif_id;
+            END IF;
+          END;
+        END IF;
       ELSIF v_job.job_type = 'notification' THEN
         INSERT INTO public.notifications(title, message, level, created_by, created_at)
         VALUES (

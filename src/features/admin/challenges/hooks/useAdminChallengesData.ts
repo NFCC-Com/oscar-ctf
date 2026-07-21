@@ -21,7 +21,7 @@ export function useAdminChallengesData() {
   const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null)
   const [events, setEvents] = useState<Event[]>([])
   const [adminScope, setAdminScope] = useState<AdminScope | null>(null)
-  const [scheduledJobsMap, setScheduledJobsMap] = useState<Record<string, string>>({})
+  const [scheduledJobsMap, setScheduledJobsMap] = useState<Record<string, { scheduled_at: string; repost?: boolean; notify?: boolean }>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -57,7 +57,14 @@ export function useAdminChallengesData() {
         Object.fromEntries(
           (scheduledJobs || [])
             .filter((j: any) => j.job_type === 'challenge_activate' && j.target_id)
-            .map((j: any) => [String(j.target_id), j.scheduled_at])
+            .map((j: any) => [
+              String(j.target_id),
+              {
+                scheduled_at: j.scheduled_at,
+                repost: j.payload?.repost === true,
+                notify: j.payload?.notify === true,
+              }
+            ])
         )
       )
 
