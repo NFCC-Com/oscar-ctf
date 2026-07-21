@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
-import APP from "@/config";
 
 export type DbCategory = {
   name: string;
@@ -30,7 +29,6 @@ const CategoriesContext = createContext<CategoriesContextType | undefined>(
 );
 
 const CACHE_KEY = "nxctf_categories_cache";
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export function CategoriesProvider({
   children,
@@ -86,23 +84,21 @@ export function CategoriesProvider({
         const {
           categories: cachedCats,
           subCategories: cachedSubs,
-          timestamp,
         } = JSON.parse(cached);
         setCategories(cachedCats);
         setSubCategories(cachedSubs);
         setLoading(false);
-
-        // Check if cache has expired
-        if (Date.now() - timestamp > CACHE_TTL) {
-          // Revalidate in the background
-          fetchFromDb();
-        }
       } else {
         await fetchFromDb();
+        return;
       }
     } catch {
       await fetchFromDb();
+      return;
     }
+    // Always revalidate in the background when serving from cache.
+    // Categories table is small (< 20 rows), so this is negligible.
+    fetchFromDb();
   }, [fetchFromDb]);
 
   useEffect(() => {
