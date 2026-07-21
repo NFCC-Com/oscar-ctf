@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/shared/contexts/AuthContext";
+import { useCategories } from "@/shared/contexts/CategoriesContext";
 import { isGlobalAdmin } from "@/features/admin/services/admin.service";
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -52,6 +53,7 @@ import SortableSubCategoryRow from "./SortableSubCategoryRow";
 export default function AdminCategoriesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { refresh: refreshCategoriesContext } = useCategories();
   const [accessReady, setAccessReady] = useState(false);
   const [isAllowed, setIsAllowed] = useState(false);
 
@@ -211,6 +213,7 @@ export default function AdminCategoriesPage() {
       }
       setCategoryDialogOpen(false);
       await loadData();
+      refreshCategoriesContext();
     } catch (err: any) {
       toast.error(err.message || "Failed to save category");
     }
@@ -230,6 +233,7 @@ export default function AdminCategoriesPage() {
       toast.success("Category deleted successfully");
       setDeleteCategoryDialogOpen(false);
       await loadData();
+      refreshCategoriesContext();
     } catch (err: any) {
       toast.error(
         err.message ||
@@ -280,6 +284,7 @@ export default function AdminCategoriesPage() {
       }
       setSubCategoryDialogOpen(false);
       await loadData();
+      refreshCategoriesContext();
     } catch (err: any) {
       toast.error(err.message || "Failed to save subcategory");
     }
@@ -299,6 +304,7 @@ export default function AdminCategoriesPage() {
       toast.success("Subcategory deleted successfully");
       setDeleteSubCategoryDialogOpen(false);
       await loadData();
+      refreshCategoriesContext();
     } catch (err: any) {
       toast.error(err.message || "Failed to delete subcategory");
     }
@@ -322,6 +328,7 @@ export default function AdminCategoriesPage() {
       });
       if (error) throw error;
       toast.success("Category order updated");
+      refreshCategoriesContext();
     } catch (err: any) {
       toast.error("Failed to save category order");
       await loadData();
@@ -346,6 +353,7 @@ export default function AdminCategoriesPage() {
       });
       if (error) throw error;
       toast.success("Subcategory order updated");
+      refreshCategoriesContext();
     } catch (err: any) {
       toast.error("Failed to save subcategory order");
       await loadData();

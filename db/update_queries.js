@@ -24,6 +24,7 @@ const orderedFiles = [
   "queries/sub_challenges.sql",
   "queries/solves.sql",
   "queries/flag_submissions.sql",
+  "queries/challenge_ratings.sql",
   "queries/teams.sql",
   "queries/team_members.sql",
   "queries/notifications.sql",

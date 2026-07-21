@@ -41,6 +41,7 @@ export default function ChallengeDialogs({ data }: ChallengeDialogsProps) {
         solvers={data.solvers}
         challengeTab={data.challengeTab}
         showQuestionTab={!!data.selectedSubChallengeState?.hasQuestions}
+        onRatingSubmit={data.loadChallenges}
         setChallengeTab={(tab) => {
           if ((tab === 'solvers' || tab === 'question') && data.selectedChallenge) {
             return data.handleTabChange(tab, data.selectedChallenge.id)

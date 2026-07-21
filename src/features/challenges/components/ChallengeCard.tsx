@@ -1,11 +1,13 @@
 // React Imports
 import React, { memo } from "react";
-import { Flame, Sparkles, AlertTriangle, Flag, CheckCircle2, ListChecks, Server, Variable, MapPin, Shield } from 'lucide-react';
+import { Flame, Sparkles, AlertTriangle, Flag, CheckCircle2, ListChecks, Server, Variable, MapPin, Shield, Star } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 // Shared Imports
 import APP from '@/config';
 import { useCategories } from '@/shared/contexts/CategoriesContext';
+import { useSystemSettings } from '@/shared/contexts/SystemSettingsContext';
+import { useAuth } from '@/shared/contexts/AuthContext';
 import { ChallengeWithSolve } from '@/shared/types'
 import { getCategoryDetails, getCategoryIcon, getDifficultyStyle, getChallengeFeatureType, getCategoryCardHoverStyles } from '../lib'
 
@@ -49,6 +51,10 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
   const categoryBadgeColor = dbCat ? `bg-${dbCat.color}-500/15 text-${dbCat.color}-500` : getCategoryDetails(challenge.category).badgeColor;
   const CategoryIcon = dbCat ? ((LucideIcons as any)[dbCat.icon] || Shield) : getCategoryIcon(challenge.category);
   const cardHover = getCategoryCardHoverStyles(categoryIconColor);
+
+  const { settings } = useSystemSettings();
+  const { user } = useAuth();
+  const showRating = settings.enable_challenge_rating && (settings.show_rating_to_participants || user?.is_admin);
 
   const handleOpen = () => {
     if (!isMaintenance) onOpenChallenge(challenge);
@@ -174,14 +180,20 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
             </div>
           </div>
 
-          {/* Title */}
-          <div className="mb-4 flex-1">
-            <h3 className={`text-sm font-bold leading-5 line-clamp-1 md:text-base md:leading-6 transition-colors duration-400
+          {/* Title & Rating */}
+          <div className="mb-4 flex-1 flex items-start justify-between gap-3">
+            <h3 className={`text-sm font-bold leading-5 line-clamp-1 md:text-base md:leading-6 transition-colors duration-400 flex-1 min-w-0
               ${isAnySolved
                 ? `text-gray-400 ${cardHover.titleHover}`
                 : `text-white ${cardHover.titleHover}`}`}>
               {challenge.title}
             </h3>
+            {showRating && challenge.avg_rating !== undefined && challenge.avg_rating !== null && (
+              <div className="flex items-center gap-0.5 shrink-0 select-none text-[9px] font-black text-amber-500 transition-opacity duration-300 opacity-25 group-hover:opacity-100 mt-0.5 sm:mt-1">
+                <Star size={9} className="fill-current text-amber-500" />
+                <span>{Number(challenge.avg_rating).toFixed(1)}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -201,43 +213,40 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, highlightTeamS
                   {normalizedDiff}
                 </span>
                 {featureType !== 'N' && (
-                  <>
-                    <span className="text-gray-600 dark:text-gray-500 select-none">•</span>
-                    <div className="flex items-center gap-1.5">
-                      {featureType.includes('T') && (
-                        <span title="Tasks (Sub-challenges)">
-                          <ListChecks
-                            size={13}
-                            className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-blue-500 dark:group-hover:text-blue-400"
-                          />
-                        </span>
-                      )}
-                      {featureType.includes('S') && (
-                        <span title="Active Service Container">
-                          <Server
-                            size={13}
-                            className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-emerald-500 dark:group-hover:text-emerald-400"
-                          />
-                        </span>
-                      )}
-                      {featureType.includes('F') && (
-                        <span title="Dynamic / Custom Flag">
-                          <Variable
-                            size={13}
-                            className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-amber-500 dark:group-hover:text-amber-400"
-                          />
-                        </span>
-                      )}
-                      {featureType.includes('G') && (
-                        <span title="Location-based (Geo Guess)">
-                          <MapPin
-                            size={13}
-                            className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-rose-500 dark:group-hover:text-rose-400"
-                          />
-                        </span>
-                      )}
-                    </div>
-                  </>
+                  <div className="flex items-center gap-1.5 ml-1">
+                    {featureType.includes('T') && (
+                      <span title="Tasks (Sub-challenges)">
+                        <ListChecks
+                          size={13}
+                          className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-blue-500 dark:group-hover:text-blue-400"
+                        />
+                      </span>
+                    )}
+                    {featureType.includes('S') && (
+                      <span title="Active Service Container">
+                        <Server
+                          size={13}
+                          className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-emerald-500 dark:group-hover:text-emerald-400"
+                        />
+                      </span>
+                    )}
+                    {featureType.includes('F') && (
+                      <span title="Dynamic / Custom Flag">
+                        <Variable
+                          size={13}
+                          className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-amber-500 dark:group-hover:text-amber-400"
+                        />
+                      </span>
+                    )}
+                    {featureType.includes('G') && (
+                      <span title="Location-based (Geo Guess)">
+                        <MapPin
+                          size={13}
+                          className="text-gray-400 dark:text-gray-500 transition-colors duration-200 group-hover:text-rose-500 dark:group-hover:text-rose-400"
+                        />
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             )}

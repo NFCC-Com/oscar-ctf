@@ -89,7 +89,7 @@ export async function getChallengesList(
       let query = supabase
         .from('challenges')
         .select(
-          'id, event_id, title, category, points, max_points, difficulty, is_active, is_maintenance, is_dynamic, min_points, decay_per_solve, total_solves, created_at, updated_at, flag_placeholder, services'
+          'id, event_id, title, category, points, max_points, difficulty, is_active, is_maintenance, is_dynamic, min_points, decay_per_solve, total_solves, created_at, updated_at, flag_placeholder, services, avg_rating, total_ratings'
         )
         .order('points', { ascending: true })
         .order('total_solves', { ascending: false })
@@ -172,7 +172,7 @@ export async function getChallengeDetail(challengeId: string): Promise<Challenge
     const { data, error } = await supabase
       .from('challenges')
       .select(
-        'id, event_id, title, description, category, points, max_points, hint, attachments, difficulty, is_active, is_maintenance, is_dynamic, min_points, decay_per_solve, total_solves, created_at, updated_at, flag_placeholder, services'
+        'id, event_id, title, description, category, points, max_points, hint, attachments, difficulty, is_active, is_maintenance, is_dynamic, min_points, decay_per_solve, total_solves, created_at, updated_at, flag_placeholder, services, avg_rating, total_ratings'
       )
       .eq('id', challengeId)
       .single()

@@ -24,6 +24,8 @@ const getChallengesSnapshot = (challenges: ChallengeWithSolve[]) => {
     is_team_solved: !!challenge.is_team_solved,
     has_questions: !!challenge.has_questions,
     is_maintenance: !!challenge.is_maintenance,
+    avg_rating: challenge.avg_rating ?? null,
+    total_ratings: challenge.total_ratings ?? 0,
   })))
 }
 

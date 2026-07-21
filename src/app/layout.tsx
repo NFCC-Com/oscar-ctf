@@ -24,6 +24,11 @@ const DonationSection = dynamic(
   { ssr: false }
 )
 
+const RatingNotificationWidget = dynamic(
+  () => import('@/features/challenges/components/RatingNotificationWidget'),
+  { ssr: false }
+)
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: `${APP.shortName} - ${APP.fullName}`,
@@ -128,6 +133,7 @@ export default async function RootLayout({
                     <Navbar />
                     <div className="pt-14">{children}</div>
                     {!isAdminPage && process.env.NEXT_PUBLIC_SAWERIA_API_URL && <DonationSection />}
+                    {!isAdminPage && <RatingNotificationWidget />}
                     <Toaster position="top-right" reverseOrder={false} />
                     <ScrollToggle />
                   </CategoriesProvider>
