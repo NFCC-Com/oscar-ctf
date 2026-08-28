@@ -29,26 +29,28 @@ export default function LoginForm() {
     setCaptchaToken,
     turnstileKey,
     captchaEnabled,
-    captchaSiteKey
+    captchaSiteKey,
+    captchaMode,
   } = useLogin()
 
   return (
-    <AuthCard>
+    <AuthCard shake={Boolean(error)}>
       <AuthHeader
-        badge="Welcome Back"
+        badge="AUTH_PORTAL"
         title={`Sign in to ${APP.fullName}`}
-        subtitle="Continue your CTF journey"
+        subtitle="Authenticate to access active challenges and scoreboard"
       />
 
-      <form className="space-y-5" onSubmit={handleLogin}>
-        <div className="space-y-4">
+      <form className="space-y-4" onSubmit={handleLogin}>
+        <div className="space-y-3.5">
           <AuthInput
             id="identifier"
             name="identifier"
+            label="Email or Username"
             type="text"
             autoComplete="username"
             required
-            placeholder="Email or username"
+            placeholder="operator@domain.com or username"
             icon={Mail}
             value={formData.identifier}
             onChange={handleChange}
@@ -56,16 +58,17 @@ export default function LoginForm() {
           <AuthInput
             id="password"
             name="password"
+            label="Password"
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             required
-            placeholder="Password"
+            placeholder="••••••••••••"
             icon={Lock}
             rightElement={
               <button
                 type="button"
                 onClick={() => setShowPassword((value) => !value)}
-                className={`rounded-lg p-1 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
+                className={`rounded-lg p-1.5 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -76,25 +79,29 @@ export default function LoginForm() {
           />
         </div>
 
-        {error && (
-          <AuthStatusMessage tone="error">{error}</AuthStatusMessage>
-        )}
-
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-0.5">
           <Link
             href="/forgot-password"
-            className={`text-xs font-semibold transition-colors hover:text-blue-500 dark:hover:text-blue-300 ${THEME_PRIMARY_TEXT_CLASS}`}
+            className={`text-xs font-mono font-medium transition-colors hover:text-blue-500 dark:hover:text-blue-300 ${THEME_PRIMARY_TEXT_CLASS}`}
           >
             Forgot password?
           </Link>
         </div>
 
+        {error && (
+          <AuthStatusMessage tone="error" title="Authentication Error">
+            {error}
+          </AuthStatusMessage>
+        )}
+
         {captchaEnabled && (
           <AuthTurnstile
             turnstileKey={turnstileKey}
             siteKey={captchaSiteKey}
+            mode={captchaMode}
             onSuccess={(token) => setCaptchaToken(token)}
             onExpire={() => setCaptchaToken(null)}
+            onError={() => setCaptchaToken(null)}
           />
         )}
 

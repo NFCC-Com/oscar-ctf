@@ -25,23 +25,26 @@ export default function ForgotPasswordForm() {
     setCaptchaToken,
     turnstileKey,
     captchaEnabled,
-    captchaSiteKey
+    captchaSiteKey,
+    captchaMode,
   } = useForgotPassword()
 
   return (
-    <AuthCard>
+    <AuthCard shake={Boolean(error)}>
       <AuthHeader
-        badge="Password Recovery"
-        title="Reset your password"
-        subtitle="We'll send you a reset link"
+        badge="RECOVERY"
+        title="Reset Password"
+        subtitle="Provide your registered email to receive access restoration instructions"
       />
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <AuthInput
-          type="email"
+          id="email"
           name="email"
+          label="Registered Email Address"
+          type="email"
           required
-          placeholder="Email address"
+          placeholder="operative@agency.com"
           icon={Mail}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -51,31 +54,35 @@ export default function ForgotPasswordForm() {
           <AuthTurnstile
             turnstileKey={turnstileKey}
             siteKey={captchaSiteKey}
+            mode={captchaMode}
             onSuccess={(token) => setCaptchaToken(token)}
             onExpire={() => setCaptchaToken(null)}
+            onError={() => setCaptchaToken(null)}
           />
         )}
         
         {error && (
-          <AuthStatusMessage tone="error">{error}</AuthStatusMessage>
+          <AuthStatusMessage tone="error" title="Recovery Failed">
+            {error}
+          </AuthStatusMessage>
         )}
         
         {success && (
-          <AuthStatusMessage tone="success" title="Check your email for reset instructions">
+          <AuthStatusMessage tone="success" title="Instructions Dispatched">
             {success}
           </AuthStatusMessage>
         )}
         
         <AuthButton type="submit" loading={loading}>
-          Send Reset Email
+          Send Reset Link
         </AuthButton>
       </form>
       <div className="mt-6 text-center">
         <Link
           href="/login"
-          className={`text-sm font-semibold transition-colors hover:text-blue-500 dark:hover:text-blue-300 ${THEME_PRIMARY_TEXT_CLASS}`}
+          className={`text-xs font-mono font-medium transition-colors hover:text-blue-500 dark:hover:text-blue-300 ${THEME_PRIMARY_TEXT_CLASS}`}
         >
-          Back to Login
+          &larr; Back to Sign In
         </Link>
       </div>
     </AuthCard>

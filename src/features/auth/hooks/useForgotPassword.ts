@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AuthService } from '../services/auth.service'
-import { CAPTCHA_ENABLED, CAPTCHA_SITE_KEY } from '@/_vars/const'
+import { CAPTCHA_ENABLED, CAPTCHA_SITE_KEY, CAPTCHA_MODE } from '@/_vars/const'
 
 export function useForgotPassword() {
   const [email, setEmail] = useState('')
@@ -48,6 +48,7 @@ export function useForgotPassword() {
     setCaptchaToken,
     turnstileKey,
     captchaEnabled: CAPTCHA_ENABLED,
-    captchaSiteKey: CAPTCHA_SITE_KEY
+    captchaSiteKey: CAPTCHA_SITE_KEY,
+    captchaMode: CAPTCHA_MODE,
   }
 }

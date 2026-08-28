@@ -11,6 +11,7 @@ import {
   AuthInput,
   AuthStatusMessage,
   PasswordMatchIndicator,
+  PasswordStrength,
 } from './ui'
 
 export default function ResetPasswordForm() {
@@ -28,63 +29,79 @@ export default function ResetPasswordForm() {
   } = useResetPassword()
 
   return (
-    <AuthCard>
+    <AuthCard shake={Boolean(error)}>
       <AuthHeader
-        title="Change Password"
+        badge="CREDENTIAL_UPDATE"
+        title="Set New Password"
+        subtitle="Specify a strong, secure passphrase for your operative account"
       />
 
-      <form className="space-y-5" onSubmit={handleResetPassword}>
-        <AuthInput
-          type={showNewPassword ? 'text' : 'password'}
-          name="newPassword"
-          required
-          placeholder="New password"
-          icon={Lock}
-          rightElement={
-            <button
-              type="button"
-              onClick={() => setShowNewPassword((value) => !value)}
-              className={`rounded-lg p-1 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
-              aria-label={showNewPassword ? 'Hide password' : 'Show password'}
-            >
-              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          }
-          value={newPassword}
-          onChange={e => setNewPassword(e.target.value)}
-        />
+      <form className="space-y-4" onSubmit={handleResetPassword}>
+        <div className="space-y-3.5">
+          <AuthInput
+            id="newPassword"
+            label="New Password"
+            type={showNewPassword ? 'text' : 'password'}
+            name="newPassword"
+            required
+            placeholder="••••••••••••"
+            icon={Lock}
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((value) => !value)}
+                className={`rounded-lg p-1.5 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
+                aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            }
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+          />
 
-        <AuthInput
-          type={showConfirmPassword ? 'text' : 'password'}
-          name="confirmPassword"
-          required
-          placeholder="Confirm new password"
-          icon={Lock}
-          rightElement={
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword((value) => !value)}
-              className={`rounded-lg p-1 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
-              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-            >
-              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          }
-          value={confirmPassword}
-          onChange={e => setConfirmPassword(e.target.value)}
-        />
+          {newPassword && (
+            <PasswordStrength password={newPassword} />
+          )}
 
-        <PasswordMatchIndicator
-          password={newPassword}
-          confirmPassword={confirmPassword}
-        />
+          <AuthInput
+            id="confirmPassword"
+            label="Confirm New Password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            name="confirmPassword"
+            required
+            placeholder="••••••••••••"
+            icon={Lock}
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((value) => !value)}
+                className={`rounded-lg p-1.5 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            }
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+          />
+
+          <PasswordMatchIndicator
+            password={newPassword}
+            confirmPassword={confirmPassword}
+          />
+        </div>
 
         {error && (
-          <AuthStatusMessage tone="error">{error}</AuthStatusMessage>
+          <AuthStatusMessage tone="error" title="Update Failed">
+            {error}
+          </AuthStatusMessage>
         )}
 
         {success && (
-          <AuthStatusMessage tone="success">{success}</AuthStatusMessage>
+          <AuthStatusMessage tone="success" title="Password Updated">
+            {success}
+          </AuthStatusMessage>
         )}
 
         <AuthButton type="submit" loading={loading}>

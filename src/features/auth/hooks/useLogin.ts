@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthService } from '../services/auth.service'
 import { useAuth } from '@/shared/contexts/AuthContext'
-import { CAPTCHA_ENABLED, CAPTCHA_SITE_KEY } from '@/_vars/const'
+import { CAPTCHA_ENABLED, CAPTCHA_SITE_KEY, CAPTCHA_MODE } from '@/_vars/const'
 
 export function useLogin() {
   const router = useRouter()
@@ -68,6 +68,7 @@ export function useLogin() {
     setCaptchaToken,
     turnstileKey,
     captchaEnabled: CAPTCHA_ENABLED,
-    captchaSiteKey: CAPTCHA_SITE_KEY
+    captchaSiteKey: CAPTCHA_SITE_KEY,
+    captchaMode: CAPTCHA_MODE,
   }
 }

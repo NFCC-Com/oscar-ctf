@@ -2,7 +2,7 @@
 
 import React from 'react'
 import APP from '@/config'
-import { AlertCircle } from 'lucide-react'
+import { ShieldX } from 'lucide-react'
 import { AuthCard } from './AuthCard'
 import { AuthFooter } from './AuthFooter'
 import { AuthHeader } from './AuthHeader'
@@ -11,24 +11,22 @@ export function SignupDisabled() {
   return (
     <AuthCard>
       <AuthHeader
-        badge="Closed"
+        badge="REGISTRATION_LOCKED"
         title="Registration Closed"
-        subtitle={`Join ${APP.fullName} event`}
+        subtitle={`Access to ${APP.fullName} is currently restricted`}
       />
 
-      <div className="my-5 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
-        {/* Row 1: Icon and Title side-by-side */}
-        <div className="flex items-center gap-2 font-semibold">
-          <AlertCircle className="h-4.5 w-4.5 text-red-500" />
-          <span>Pendaftaran Dinonaktifkan</span>
+      <div className="my-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-300 dark:bg-amber-950/30">
+        <div className="flex items-center gap-2 font-mono font-bold uppercase tracking-wider">
+          <ShieldX className="h-4 w-4 text-amber-500 shrink-0" />
+          <span>New Operative Access Suspended</span>
         </div>
-        {/* Row 2: Description underneath */}
-        <p className="mt-2 text-xs opacity-90 leading-relaxed">
-          Registrasi saat ini sedang ditutup oleh administrator. Silakan hubungi panitia jika Anda membutuhkan bantuan.
+        <p className="mt-2 text-xs opacity-90 leading-relaxed font-medium">
+          New account creation has been temporarily disabled by event administrators. If you require credentials, please contact the CTF organizers.
         </p>
       </div>
 
-      <AuthFooter text="Sudah punya akun?" href="/login" linkText="Masuk" />
+      <AuthFooter text="Already possess credentials?" href="/login" linkText="Sign in" />
     </AuthCard>
   )
 }

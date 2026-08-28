@@ -17,6 +17,7 @@ import {
   AuthStatusMessage,
   AuthTurnstile,
   PasswordMatchIndicator,
+  PasswordStrength,
   SignupDisabled,
 } from './ui'
 
@@ -34,6 +35,7 @@ export default function RegisterForm() {
     turnstileKey,
     captchaEnabled,
     captchaSiteKey,
+    captchaMode,
     signupDisabled,
     checkingSettings
   } = useRegister()
@@ -48,7 +50,7 @@ export default function RegisterForm() {
       <AuthCard>
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-          <p className="text-sm text-gray-400">Checking registration status...</p>
+          <p className="text-xs font-mono text-gray-400">Checking registration status...</p>
         </div>
       </AuthCard>
     )
@@ -59,21 +61,22 @@ export default function RegisterForm() {
   }
 
   return (
-    <AuthCard>
+    <AuthCard shake={Boolean(error)}>
       <AuthHeader
-        badge="Create Account"
+        badge="RECRUITMENT"
         title={`Join ${APP.fullName}`}
-        subtitle="Start solving challenges today"
+        subtitle="Create an operative account to participate in challenges"
       />
 
-      <form className="space-y-5" onSubmit={handleRegister}>
-        <div className="space-y-4">
+      <form className="space-y-4" onSubmit={handleRegister}>
+        <div className="space-y-3.5">
           <AuthInput
             id="username"
             name="username"
+            label="Operative Username"
             type="text"
             required
-            placeholder="Username"
+            placeholder="e.g. shadow_runner"
             icon={User}
             error={usernameError}
             value={formData.username}
@@ -83,10 +86,11 @@ export default function RegisterForm() {
           <AuthInput
             id="email"
             name="email"
+            label="Email Address"
             type="email"
             autoComplete="email"
             required
-            placeholder="Email address"
+            placeholder="operative@agency.com"
             icon={Mail}
             value={formData.email}
             onChange={handleChange}
@@ -95,16 +99,17 @@ export default function RegisterForm() {
           <AuthInput
             id="password"
             name="password"
+            label="Password"
             type={showPassword ? 'text' : 'password'}
             autoComplete="new-password"
             required
-            placeholder="Password"
+            placeholder="••••••••••••"
             icon={Lock}
             rightElement={
               <button
                 type="button"
                 onClick={() => setShowPassword((value) => !value)}
-                className={`rounded-lg p-1 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
+                className={`rounded-lg p-1.5 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -114,21 +119,25 @@ export default function RegisterForm() {
             onChange={handleChange}
           />
 
-          {/* <PasswordStrength password={formData.password} /> */}
+          {/* Interactive RSCTF-inspired Password Strength Meter */}
+          {formData.password && (
+            <PasswordStrength password={formData.password} />
+          )}
 
           <AuthInput
             id="confirmPassword"
             name="confirmPassword"
+            label="Confirm Password"
             type={showConfirmPassword ? 'text' : 'password'}
             autoComplete="new-password"
             required
-            placeholder="Confirm Password"
+            placeholder="••••••••••••"
             icon={Lock}
             rightElement={
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword((value) => !value)}
-                className={`rounded-lg p-1 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
+                className={`rounded-lg p-1.5 text-gray-400 transition-colors hover:text-blue-500 focus:outline-none ${THEME_PRIMARY_RING_CLASS}`}
                 aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
               >
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -145,11 +154,13 @@ export default function RegisterForm() {
         </div>
 
         {error && (
-          <AuthStatusMessage tone="error">{error}</AuthStatusMessage>
+          <AuthStatusMessage tone="error" title="Registration Failed">
+            {error}
+          </AuthStatusMessage>
         )}
 
         {success && (
-          <AuthStatusMessage tone="success" title="Check your email">
+          <AuthStatusMessage tone="success" title="Account Confirmation Sent">
             {success}
           </AuthStatusMessage>
         )}
@@ -158,13 +169,15 @@ export default function RegisterForm() {
           <AuthTurnstile
             turnstileKey={turnstileKey}
             siteKey={captchaSiteKey}
+            mode={captchaMode}
             onSuccess={(token) => setCaptchaToken(token)}
             onExpire={() => setCaptchaToken(null)}
+            onError={() => setCaptchaToken(null)}
           />
         )}
 
         <AuthButton type="submit" loading={loading}>
-          Register
+          Create Account
         </AuthButton>
 
         <AuthDivider />

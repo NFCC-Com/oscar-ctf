@@ -33,6 +33,7 @@ export const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:30
 
 // Turnstile captcha configuration
 export const CAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || ''
+export const CAPTCHA_MODE = (process.env.NEXT_PUBLIC_TURNSTILE_MODE?.trim().toLowerCase() as 'normal' | 'custom' | 'invisible') || 'custom'
 export const CAPTCHA_ENABLED = Boolean(CAPTCHA_SITE_KEY)
 
 export const CHALLENGE_DESC_TEMPLATE = `> Author: nama
