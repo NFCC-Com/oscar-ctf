@@ -1,7 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { Flag, Trophy, Users, BookOpen, Compass, Gavel, User, Shield, X } from 'lucide-react'
 import ImageWithFallback from '@/shared/components/ImageWithFallback'
+import { useSystemHealth } from '@/shared/hooks/useSystemHealth'
+import { getCustomNxctlConfig } from '@/shared/lib/nxctl-node-config'
+import { cn } from '@/shared/lib/utils'
 
 interface MobileMenuProps {
   mobileMenuOpen: boolean
@@ -204,8 +207,39 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
             </Link>
           </>
         )}
+
+        {/* Mobile System Status Footer */}
+        <div className="pt-3 mt-3 border-t border-gray-200/80 dark:border-gray-800/80">
+          <MobileSystemStatus />
+        </div>
       </div>
     </div>
   )
 }
+
+function MobileSystemStatus() {
+  const { database, nxctl, overall } = useSystemHealth()
+  const [config] = useState(getCustomNxctlConfig)
+
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-gray-200/80 bg-gray-50/50 p-2.5 dark:border-white/5 dark:bg-white/[0.02] text-xs font-mono">
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            'h-2 w-2 rounded-full',
+            overall === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+          )}
+        />
+        <span className="font-bold text-gray-700 dark:text-gray-300">System Telemetry</span>
+      </div>
+
+      <div className="flex items-center gap-2 text-[10px] text-gray-500">
+        <span>DB: {database.latencyMs !== undefined ? `${database.latencyMs}ms` : 'ok'}</span>
+        <span>·</span>
+        <span>NXCTL: {nxctl.status === 'online' ? (config.enabled ? 'relay' : 'ok') : nxctl.status}</span>
+      </div>
+    </div>
+  )
+}
+
 export default MobileMenu

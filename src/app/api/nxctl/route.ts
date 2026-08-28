@@ -3,13 +3,23 @@ import { createClient } from '@supabase/supabase-js'
 import { NXCTL_API_ADMIN_SECRET, NXCTL_API_TOKEN, NXCTL_API_URL } from '@/_vars/secret'
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/_vars/const'
 
-const apiUrl = NXCTL_API_URL.replace(/\/$/, '')
+function getTargetApiUrl(request?: Request): string {
+  if (request) {
+    const customUrl = request.headers.get('X-Custom-NXCTL-Url')?.trim()
+    if (customUrl && (customUrl.startsWith('http://') || customUrl.startsWith('https://'))) {
+      return customUrl.replace(/\/$/, '')
+    }
+  }
+  return (NXCTL_API_URL || '').replace(/\/$/, '')
+}
+
 const CHALLENGE_KEY_HEADER = 'X-NXCTL-Challenge-Key'
 
 type NxctlAction = 'up' | 'down' | 'restart' | 'extend'
 
-async function safeFetch(url: string, options?: RequestInit) {
-  if (!apiUrl) {
+async function safeFetch(url: string, options?: RequestInit, targetApiUrl?: string) {
+  const effectiveUrl = targetApiUrl || url
+  if (!effectiveUrl) {
     return {
       ok: false,
       status: 503,
@@ -44,20 +54,28 @@ async function safeFetch(url: string, options?: RequestInit) {
   }
 }
 
-function buildNxctlHeaders(challengeKey?: string | null, includeAdminSecret = false) {
+function buildNxctlHeaders(request?: Request, challengeKey?: string | null, includeAdminSecret = false) {
   const headers: Record<string, string> = {}
+  const customSecret = request?.headers.get('X-Custom-NXCTL-Secret')?.trim()
+  const customUrl = request?.headers.get('X-Custom-NXCTL-Url')?.trim()
 
-  if (NXCTL_API_TOKEN) {
-    headers.Authorization = `Bearer ${NXCTL_API_TOKEN}`
+  if (customUrl) {
+    if (customSecret) {
+      headers.Authorization = `Bearer ${customSecret}`
+    }
+  } else {
+    if (NXCTL_API_TOKEN) {
+      headers.Authorization = `Bearer ${NXCTL_API_TOKEN}`
+    }
+
+    if (includeAdminSecret && NXCTL_API_ADMIN_SECRET) {
+      headers['X-NXCTL-Admin-Secret'] = NXCTL_API_ADMIN_SECRET
+    }
   }
 
   const key = String(challengeKey || '').trim()
   if (key) {
     headers[CHALLENGE_KEY_HEADER] = key
-  }
-
-  if (includeAdminSecret && NXCTL_API_ADMIN_SECRET) {
-    headers['X-NXCTL-Admin-Secret'] = NXCTL_API_ADMIN_SECRET
   }
 
   return headers
@@ -150,7 +168,7 @@ function parseStatusFilter(searchParams: URLSearchParams) {
   return Array.from(new Set(names))
 }
 
-function buildStatusUrl(targetNames: string[]) {
+function buildStatusUrl(apiUrl: string, targetNames: string[]) {
   if (targetNames.length === 0) return `${apiUrl}/status`
 
   const statusParams = new URLSearchParams()
@@ -183,8 +201,8 @@ function isTargetedStatusAccessError(result: Awaited<ReturnType<typeof safeFetch
   )
 }
 
-async function fetchStatus(targetNames: string[], headers: Record<string, string>) {
-  const result = await safeFetch(buildStatusUrl(targetNames), { headers })
+async function fetchStatus(apiUrl: string, targetNames: string[], headers: Record<string, string>) {
+  const result = await safeFetch(buildStatusUrl(apiUrl, targetNames), { headers }, apiUrl)
 
   if (
     targetNames.length <= 1 ||
@@ -196,7 +214,7 @@ async function fetchStatus(targetNames: string[], headers: Record<string, string
 
   const results = []
   for (const name of targetNames) {
-    const item = await safeFetch(buildStatusUrl([name]), { headers })
+    const item = await safeFetch(buildStatusUrl(apiUrl, [name]), { headers }, apiUrl)
     if (item.ok && Array.isArray(item.data)) {
       results.push(...item.data)
     }
@@ -228,17 +246,46 @@ export async function GET(request: Request) {
     return jsonError('Your account is temporarily banned', 403)
   }
 
+  const apiUrl = getTargetApiUrl(request)
+  const isCustomNode = Boolean(request.headers.get('X-Custom-NXCTL-Url')?.trim())
   const { searchParams } = new URL(request.url)
   const action = searchParams.get('action')
   const challengeKey = challengeKeyFromRequest(request, searchParams.get('key'))
+
+  if (action === 'ping') {
+    if (!apiUrl) {
+      return NextResponse.json({
+        ok: false,
+        status: 'unconfigured',
+        latencyMs: 0,
+        isCustom: false,
+        message: 'NXCTL URL is not configured',
+      })
+    }
+
+    const start = Date.now()
+    const result = await safeFetch(`${apiUrl}/status`, {
+      headers: buildNxctlHeaders(request, challengeKey),
+    }, apiUrl)
+    const latencyMs = Date.now() - start
+
+    return NextResponse.json({
+      ok: result.ok,
+      status: result.ok ? 'online' : result.status === 401 || result.status === 403 ? 'auth_required' : 'offline',
+      statusCode: result.status,
+      latencyMs,
+      isCustom: isCustomNode,
+      url: isCustomNode ? apiUrl : 'default',
+    })
+  }
 
   if (action === 'admin-challenges') {
     const isAdmin = await isGlobalAdminRequest(request)
     if (!isAdmin) return jsonError('Global admin access required', 403)
 
     const result = await safeFetch(`${apiUrl}/admin/challenges`, {
-      headers: buildNxctlHeaders(null, true),
-    })
+      headers: buildNxctlHeaders(request, null, true),
+    }, apiUrl)
 
     return jsonResponse(result)
   }
@@ -248,8 +295,9 @@ export async function GET(request: Request) {
     if (!isAdmin) return jsonError('Global admin access required', 403)
 
     const result = await fetchStatus(
+      apiUrl,
       parseStatusFilter(searchParams),
-      buildNxctlHeaders(challengeKey, true)
+      buildNxctlHeaders(request, challengeKey, true)
     )
 
     return jsonResponse(result)
@@ -263,8 +311,8 @@ export async function GET(request: Request) {
     }
 
     const result = await safeFetch(`${apiUrl}/inspect/${servicePath(name)}`, {
-      headers: buildNxctlHeaders(challengeKey),
-    })
+      headers: buildNxctlHeaders(request, challengeKey),
+    }, apiUrl)
 
     return jsonResponse(result)
   }
@@ -274,8 +322,9 @@ export async function GET(request: Request) {
   }
 
   const result = await fetchStatus(
+    apiUrl,
     parseStatusFilter(searchParams),
-    buildNxctlHeaders(challengeKey)
+    buildNxctlHeaders(request, challengeKey)
   )
 
   return jsonResponse(result)
@@ -285,6 +334,8 @@ export async function POST(request: Request) {
   if (await isUserBanned(request)) {
     return jsonError('Your account is temporarily banned', 403)
   }
+
+  const apiUrl = getTargetApiUrl(request)
 
   try {
     const body = await request.json()
@@ -311,8 +362,8 @@ export async function POST(request: Request) {
       const adminPath = action === 'down' ? '/admin/down' : `/${action}?all=true`
       const result = await safeFetch(`${apiUrl}${adminPath}`, {
         method: 'POST',
-        headers: buildNxctlHeaders(null, true),
-      })
+        headers: buildNxctlHeaders(request, null, true),
+      }, apiUrl)
 
       return jsonResponse(result)
     }
@@ -336,8 +387,8 @@ export async function POST(request: Request) {
         : `/${action}/${servicePath(name)}`
     const result = await safeFetch(`${apiUrl}${upstreamPath}`, {
       method: 'POST',
-      headers: buildNxctlHeaders(challengeKey, isAdminAction),
-    })
+      headers: buildNxctlHeaders(request, challengeKey, isAdminAction),
+    }, apiUrl)
 
     return jsonResponse(result)
   } catch (err: any) {

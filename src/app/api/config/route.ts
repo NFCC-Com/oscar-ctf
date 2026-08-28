@@ -27,6 +27,7 @@ type SecretConfig = {
   supabaseAnonKey: string
   turnstileSiteKey: string
   turnstileSiteKeyEnabled: boolean
+  turnstileMode: 'custom' | 'normal' | 'invisible'
   nxctlEnabled: boolean
   nxctlApiUrl: string
   nxctlApiToken: string
@@ -127,15 +128,21 @@ function readSecretConfig(source: string): SecretConfig {
   const supabaseUrl = readEnvEntry(source, 'NEXT_PUBLIC_SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL || '')
   const supabaseAnonKey = readEnvEntry(source, 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '')
   const turnstileSiteKey = readEnvEntry(source, 'NEXT_PUBLIC_TURNSTILE_SITE_KEY', process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '')
+  const turnstileMode = readEnvEntry(source, 'NEXT_PUBLIC_TURNSTILE_MODE', process.env.NEXT_PUBLIC_TURNSTILE_MODE || 'custom')
   const nxctlApiUrl = readEnvEntry(source, 'NXCTL_API_URL', process.env.NXCTL_API_URL || '')
   const nxctlApiToken = readEnvEntry(source, 'NXCTL_API_TOKEN', process.env.NXCTL_API_TOKEN || '')
   const nxctlApiAdminSecret = readEnvEntry(source, 'NXCTL_API_ADMIN_SECRET', process.env.NXCTL_API_ADMIN_SECRET || '')
+
+  const rawMode = (turnstileMode.value || 'custom').toLowerCase()
+  const validMode: 'custom' | 'normal' | 'invisible' =
+    rawMode === 'normal' || rawMode === 'invisible' ? rawMode : 'custom'
 
   return {
     supabaseUrl: supabaseUrl.value,
     supabaseAnonKey: supabaseAnonKey.value,
     turnstileSiteKey: turnstileSiteKey.value,
     turnstileSiteKeyEnabled: turnstileSiteKey.enabled,
+    turnstileMode: validMode,
     nxctlEnabled: nxctlApiUrl.enabled || nxctlApiToken.enabled || nxctlApiAdminSecret.enabled,
     nxctlApiUrl: nxctlApiUrl.value,
     nxctlApiToken: nxctlApiToken.value,
@@ -222,6 +229,8 @@ function updateSecret(source: string, secret: SecretConfig) {
   updateIfExists('NEXT_PUBLIC_SUPABASE_URL', secret.supabaseUrl, true)
   updateIfExists('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', secret.supabaseAnonKey, true)
   updateIfExists('NEXT_PUBLIC_TURNSTILE_SITE_KEY', secret.turnstileSiteKey, secret.turnstileSiteKeyEnabled)
+  updateIfExists('NEXT_PUBLIC_TURNSTILE_MODE', secret.turnstileMode || 'custom', secret.turnstileSiteKeyEnabled)
+
   // Ensure NXCTL entries are explicitly set or commented when toggled.
   // Preserve existing values if the client payload doesn't include them (avoid erasing real values).
   const existingNxctlUrl = readEnvEntry(updated, 'NXCTL_API_URL').value
@@ -255,11 +264,16 @@ function normalizeConfig(input: Partial<SetupConfig>): SetupConfig {
 }
 
 function normalizeSecret(input: Partial<SecretConfig>): SecretConfig {
+  const rawMode = String(input.turnstileMode || 'custom').toLowerCase()
+  const validMode: 'custom' | 'normal' | 'invisible' =
+    rawMode === 'normal' || rawMode === 'invisible' ? rawMode : 'custom'
+
   return {
     supabaseUrl: input.supabaseUrl?.trim() || '',
     supabaseAnonKey: input.supabaseAnonKey?.trim() || '',
     turnstileSiteKey: input.turnstileSiteKey?.trim() || '',
     turnstileSiteKeyEnabled: input.turnstileSiteKeyEnabled ?? Boolean(input.turnstileSiteKey?.trim()),
+    turnstileMode: validMode,
     nxctlEnabled: input.nxctlEnabled ?? Boolean(input.nxctlApiUrl?.trim() || input.nxctlApiToken?.trim() || input.nxctlApiAdminSecret?.trim()),
     nxctlApiUrl: input.nxctlApiUrl?.trim() || '',
     nxctlApiToken: input.nxctlApiToken?.trim() || '',

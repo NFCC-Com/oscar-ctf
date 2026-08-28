@@ -26,6 +26,10 @@ const NavbarLogsButton = dynamic(() => import('./components/NavbarLogsButton'), 
   ssr: false,
 })
 
+const NavbarSystemStatus = dynamic(() => import('./components/NavbarSystemStatus'), {
+  ssr: false,
+})
+
 const NavbarNotifications = dynamic(() => import('@/widgets/notifications/NavbarNotifications'), {
   ssr: false,
 })
@@ -150,6 +154,9 @@ export default function Navbar() {
               {authReady && user && (
                 <NavbarLogsButton key="logs" theme={theme} pathname={pathname} />
               )}
+
+              {/* System & NXCTL Status Telemetry */}
+              <NavbarSystemStatus key="system-status" />
 
               {/* Dev Config Widget */}
               <DevConfig key="dev-config" />

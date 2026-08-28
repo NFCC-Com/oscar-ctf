@@ -44,6 +44,7 @@ type SecretConfig = {
   supabaseAnonKey: string
   turnstileSiteKey: string
   turnstileSiteKeyEnabled: boolean
+  turnstileMode: 'custom' | 'normal' | 'invisible'
   nxctlEnabled: boolean
   nxctlApiUrl: string
   nxctlApiToken: string
@@ -81,6 +82,7 @@ const emptySecret: SecretConfig = {
   supabaseAnonKey: '',
   turnstileSiteKey: '',
   turnstileSiteKeyEnabled: false,
+  turnstileMode: 'custom',
   nxctlEnabled: false,
   nxctlApiUrl: '',
   nxctlApiToken: '',
@@ -409,12 +411,44 @@ export default function DevConfigDialog({ open, onOpenChange }: DevConfigDialogP
                 </div>
               </Section>
 
-              <Section title="Security" description="Captcha and anti-bot protection.">
+              <Section title="Security & Captcha" description="Anti-bot protection and Turnstile verification mode.">
                 <div className="space-y-4">
-                  <ToggleItem title="Cloudflare Turnstile" desc="Verify users are human." checked={secret.turnstileSiteKeyEnabled} onToggle={() => toggleSecretField('turnstileSiteKeyEnabled')} />
-                  <ConfigField label="Site Key" className={cn("transition-all duration-300", !secret.turnstileSiteKeyEnabled && "pointer-events-none opacity-40")}>
-                    <Input value={secret.turnstileSiteKey} onChange={(e) => updateSecretField('turnstileSiteKey', e.target.value)} className={MONO_INPUT_CLASS} />
-                  </ConfigField>
+                  <ToggleItem title="Cloudflare Turnstile" desc="Verify users are human during login & registration." checked={secret.turnstileSiteKeyEnabled} onToggle={() => toggleSecretField('turnstileSiteKeyEnabled')} />
+                  
+                  <div className={cn("space-y-4 transition-all duration-300", !secret.turnstileSiteKeyEnabled && "pointer-events-none opacity-40")}>
+                    <ConfigField label="Site Key">
+                      <Input value={secret.turnstileSiteKey} onChange={(e) => updateSecretField('turnstileSiteKey', e.target.value)} className={MONO_INPUT_CLASS} placeholder="0x4AAAAAA..." />
+                    </ConfigField>
+
+                    <ConfigField label="Turnstile Mode">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {([
+                          { value: 'custom', label: 'Custom (HashPoW)', desc: 'RSCTF Laser & Rotating Triangle' },
+                          { value: 'normal', label: 'Normal Box', desc: 'Standard Cloudflare Checkbox' },
+                          { value: 'invisible', label: 'Invisible', desc: 'Background automatic check' },
+                        ] as const).map((item) => (
+                          <button
+                            key={item.value}
+                            type="button"
+                            onClick={() => updateSecretField('turnstileMode', item.value)}
+                            className={cn(
+                              'flex flex-col items-start p-2.5 rounded-xl border text-left transition-all duration-200',
+                              (secret.turnstileMode || 'custom') === item.value
+                                ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 dark:border-blue-500/60 shadow-sm'
+                                : 'border-gray-200/80 bg-white/50 hover:border-gray-300 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-white/20'
+                            )}
+                          >
+                            <span className="text-xs font-bold text-gray-900 dark:text-white">
+                              {item.label}
+                            </span>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                              {item.desc}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </ConfigField>
+                  </div>
                 </div>
               </Section>
             </div>

@@ -37,12 +37,14 @@ export type NxctlEndpointInfo = {
 
 type NamedService = Pick<NxctlServiceEntry, 'name' | 'key'>
 
+import { appendCustomNxctlHeaders } from '@/shared/lib/nxctl-node-config'
+
 export function buildNxctlHeaders(serviceKey?: string, json = false, accessToken?: string | null) {
   const headers: Record<string, string> = {}
   if (json) headers['Content-Type'] = 'application/json'
   if (serviceKey) headers[CHALLENGE_KEY_HEADER] = serviceKey
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`
-  return headers
+  return appendCustomNxctlHeaders(headers)
 }
 
 export function buildNxctlServiceHeaders(service: Pick<NxctlServiceEntry, 'key'>, json = false) {
@@ -56,8 +58,11 @@ export function buildNxctlStatusHeaders(services: NamedService[]): Record<string
       .filter((key): key is string => Boolean(key))
   ))
 
-  if (keys.length === 0) return {}
-  return { [CHALLENGE_KEY_HEADER]: keys.join(',') }
+  const headers: Record<string, string> = {}
+  if (keys.length > 0) {
+    headers[CHALLENGE_KEY_HEADER] = keys.join(',')
+  }
+  return appendCustomNxctlHeaders(headers)
 }
 
 export function buildNxctlStatusUrl(services: NamedService[]) {
