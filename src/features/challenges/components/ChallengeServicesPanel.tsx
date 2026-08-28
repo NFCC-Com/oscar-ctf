@@ -74,23 +74,31 @@ const ChallengeServicesPanel: React.FC<ChallengeServicesPanelProps> = ({
   if (visibleServices.length === 0) return null
 
   return (
-    <div>
-      <p className="select-none text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-1.5 opacity-90">
-        <Server className="h-3.5 w-3.5 text-indigo-500/70 shrink-0" />
-        <span>NXCTL Services</span>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between select-none text-[11px] font-mono font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+        <div className="flex items-center gap-2">
+          <span className="flex h-5 w-5 items-center justify-center rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <Server className="h-3 w-3" />
+          </span>
+          <span className="text-gray-700 dark:text-gray-300 font-bold">Dynamic Services / Instances</span>
+        </div>
+
         {lastGlobalFetchTime > 0 && (() => {
           const elapsedMs = nowTick - lastGlobalFetchTime
           const remainingMs = Math.max(0, STATUS_REFRESH_INTERVAL_MS - elapsedMs)
           const remainingSec = Math.ceil(remainingMs / 1000)
           return (
-            <span className="ml-auto flex items-center gap-1 text-[10px] font-medium tabular-nums text-gray-500 dark:text-gray-600 opacity-80" title="Next refresh in">
-              <RefreshCcw size={9} className={`shrink-0 ${remainingSec <= 1 ? 'animate-spin' : ''}`} />
-              {remainingSec}s
+            <span
+              className="flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-gray-500 dark:bg-gray-800/80 dark:text-gray-400"
+              title="Next sync check"
+            >
+              <RefreshCcw size={9} className={remainingSec <= 1 ? 'animate-spin' : ''} />
+              <span>Sync {remainingSec}s</span>
             </span>
           )
         })()}
-      </p>
-      <div className="grid grid-cols-1 gap-2">
+      </div>
+      <div className="grid grid-cols-1 gap-2.5">
         {visibleServices.map((service, idx) => {
           const details = serviceDetails[service.name]
           const errorMessage = serviceDetailsError[service.name]

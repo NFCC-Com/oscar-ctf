@@ -40,7 +40,7 @@ import type {
   SubChallengeMode,
   SubChallengeQuestion,
 } from '../types'
-import { getCategoryDetails, getDifficultyStyle, getChallengeFeatureType } from '../lib'
+import { getCategoryDetails, getDifficultyStyle, getChallengeFeatureType, getAttachmentDownloadCommand } from '../lib'
 import type { MutableRefObject } from 'react'
 
 const ChallengeDescription = React.memo(function ChallengeDescription({ description }: { description: string }) {
@@ -182,9 +182,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
       fileAttachments.map((a, idx) => {
         const absUrl = getAbsoluteUrl(a.url)
         const filename = a.name || absUrl.split('/').pop() || `file-${idx}`
-        const escUrl = absUrl.replace(/'/g, "'\\'\'")
-        const escName = filename.replace(/'/g, "'\\'\'")
-        return `wget '${escUrl}' -O '${escName}'`
+        return getAttachmentDownloadCommand(absUrl, filename)
       }).join(' && ') +
       '\n```'
       : ''
@@ -466,7 +464,7 @@ ${links || '- (No links)'}
               </div>
 
               {/* Links, Tasks, and Hints at the Bottom (before flag form) */}
-              <div className="mt-5 space-y-6">
+              <div className="mt-3.5 space-y-3.5">
                 <ChallengeServicesPanel open={open} services={services} />
 
                 <ChallengeAttachments

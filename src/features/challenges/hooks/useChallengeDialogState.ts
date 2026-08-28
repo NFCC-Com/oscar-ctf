@@ -7,7 +7,9 @@ import {
 } from '@/shared/lib'
 import type { Attachment, ChallengeWithSolve } from '@/shared/types'
 import {
+  getDirectDownloadUrl,
   getStoredSelectedChallengeId,
+  isGoogleDriveUrl,
   normalizeChallengeHints,
   persistSelectedChallenge,
 } from '../lib'
@@ -173,6 +175,11 @@ export function useChallengeDialogState({
 
     try {
       if (attachment.type === 'file') {
+        if (isGoogleDriveUrl(attachment.url)) {
+          window.open(getDirectDownloadUrl(attachment.url), '_blank')
+          return
+        }
+
         const response = await fetch(attachment.url)
         if (!response.ok) throw new Error('Failed to fetch file')
         const blob = await response.blob()
@@ -189,7 +196,7 @@ export function useChallengeDialogState({
       }
     } catch (error) {
       console.error('Download failed:', error)
-      window.open(attachment.url, '_blank')
+      window.open(getDirectDownloadUrl(attachment.url), '_blank')
     } finally {
       setDownloading((prev) => ({ ...prev, [attachmentKey]: false }))
     }

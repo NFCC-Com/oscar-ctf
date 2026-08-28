@@ -1,10 +1,9 @@
-'use client'
-
 import { useState } from 'react'
 import { ClipboardCopy, Download, ExternalLink, FileText, Link as LinkIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Attachment, ChallengeWithSolve } from '@/shared/types'
 import type { KeyedBooleanMap } from '../../types'
+import { getAttachmentDownloadCommand, isGoogleDriveUrl } from '../../lib/attachment-utils'
 
 const WGET_BUTTON_CLASS =
   "flex select-none items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 dark:hover:bg-emerald-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-0"
@@ -30,9 +29,12 @@ export default function ChallengeAttachments({
 
   if (!challenge.attachments || challenge.attachments.length === 0) return null
 
+  const fileAttachments = challenge.attachments.filter((attachment) => attachment.type === 'file' && (attachment.url || attachment.name))
+  const hasGdrive = fileAttachments.some((attachment) => isGoogleDriveUrl(attachment.url))
+
   return (
     <div className="space-y-4">
-      {challenge.attachments.some((attachment) => attachment.type === 'file') && (
+      {fileAttachments.length > 0 && (
         <div>
           <p className="select-none text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-1.5 opacity-90">
             <FileText className="h-3.5 w-3.5 text-emerald-500/70" />
@@ -42,18 +44,15 @@ export default function ChallengeAttachments({
             <button
               key="copy-wget-all"
               type="button"
-              title="Copy wget commands for all files"
+              title={hasGdrive ? "Copy wget & gdown commands" : "Copy wget commands for all files"}
               className={WGET_BUTTON_CLASS}
               onClick={(event) => {
                 event.stopPropagation()
-                const fileAttachments = challenge.attachments!.filter((attachment) => attachment.type === 'file' && (attachment.url || attachment.name))
                 if (!fileAttachments.length) return
                 const commands = fileAttachments.map((attachment, idx) => {
                   const url = attachment.url || ''
                   const filename = (attachment.name && attachment.name.trim()) || url.split('/').pop() || `file-${idx}`
-                  const escUrl = url.replace(/'/g, "'\\'\'")
-                  const escName = filename.replace(/'/g, "'\\'\'")
-                  return `wget '${escUrl}' -O '${escName}'`
+                  return getAttachmentDownloadCommand(url, filename)
                 })
                 const joined = commands.join(' && ')
                 if (!navigator.clipboard) {
@@ -64,7 +63,7 @@ export default function ChallengeAttachments({
                   const key = `${challenge.id}-copied`
                   setCopiedAll((prev) => ({ ...prev, [key]: true }))
                   setTimeout(() => setCopiedAll((prev) => ({ ...prev, [key]: false })), 2000)
-                  toast.success('Copied wget commands to clipboard')
+                  toast.success(hasGdrive ? 'Copied download command (with gdown)' : 'Copied wget commands to clipboard')
                 }).catch((error) => {
                   console.error('Copy failed', error)
                   toast.error('Failed to copy to clipboard')
@@ -73,7 +72,7 @@ export default function ChallengeAttachments({
             >
               <ClipboardCopy className="h-3.5 w-3.5" />
               <span className="font-mono text-xs uppercase tracking-wider">
-                {copiedAll[`${challenge.id}-copied`] ? 'Copied!' : 'copy wget'}
+                {copiedAll[`${challenge.id}-copied`] ? 'Copied!' : hasGdrive ? 'copy wget/gdown' : 'copy wget'}
               </span>
             </button>
 
