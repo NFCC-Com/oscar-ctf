@@ -14,8 +14,9 @@ import { DIALOG_FORM_CONTENT_CLASS } from '@/shared/styles'
 import { cn } from '@/shared/lib/utils'
 import { Challenge, Event, AdminChallengeEventId, PortableChallenge, ImportResult } from '../types'
 import { parseImportInput, executeImportChallenges } from '../lib'
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Trash2, Check, RefreshCw } from 'lucide-react'
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Trash2, Check, RefreshCw, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ImportChallengePreviewDialog from './ImportChallengePreviewDialog'
 
 interface ImportChallengesDialogProps {
   open: boolean
@@ -38,6 +39,7 @@ export const ImportChallengesDialog: React.FC<ImportChallengesDialogProps> = ({
   const [rawText, setRawText] = useState('')
   const [parsedList, setParsedList] = useState<PortableChallenge[]>([])
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
+  const [previewChallenge, setPreviewChallenge] = useState<PortableChallenge | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
   const [targetEventId, setTargetEventId] = useState<string | null>(null)
   const [skipExisting, setSkipExisting] = useState(true)
@@ -397,9 +399,20 @@ export const ImportChallengesDialog: React.FC<ImportChallengesDialogProps> = ({
                             {c.sub_challenges.length} Sub-Quests
                           </span>
                         )}
-                        <span className="font-bold text-amber-600 dark:text-amber-400">
+                        <span className="font-bold text-amber-600 dark:text-amber-400 mr-1">
                           {c.points} pts
                         </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPreviewChallenge(c)
+                          }}
+                          className="p-1 rounded-md text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                          title="Preview Challenge Details"
+                        >
+                          <Eye size={14} />
+                        </button>
                       </div>
                     </div>
                   )
@@ -464,6 +477,14 @@ export const ImportChallengesDialog: React.FC<ImportChallengesDialogProps> = ({
           )}
         </DialogFooter>
       </DialogContent>
+
+      <ImportChallengePreviewDialog
+        open={!!previewChallenge}
+        onOpenChange={(open) => {
+          if (!open) setPreviewChallenge(null)
+        }}
+        challenge={previewChallenge}
+      />
     </Dialog>
   )
 }
