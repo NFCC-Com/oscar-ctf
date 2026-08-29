@@ -60,19 +60,19 @@ function CodeBlockWrapper({ children, isDark = true }: { children: React.ReactNo
 
   return (
     <div className="relative mt-2 mb-3 group/code">
-      {hasOverflow && (
-        <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-70 hover:opacity-100 md:opacity-0 md:group-hover/code:opacity-100 md:focus-within:opacity-100 transition-all duration-200">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className={`select-none p-1.5 rounded transition-colors ${isDark
-              ? 'bg-gray-800 hover:bg-gray-700 text-blue-300'
-              : 'bg-gray-200 hover:bg-gray-300 text-blue-600'
-              }`}
-            title={copied ? 'Copied!' : 'Copy'}
-          >
-            {copied ? <Check size={16} /> : <Copy size={16} />}
-          </button>
+      <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-70 hover:opacity-100 md:opacity-0 md:group-hover/code:opacity-100 md:focus-within:opacity-100 transition-all duration-200">
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={`select-none p-1.5 rounded transition-colors ${isDark
+            ? 'bg-gray-800 hover:bg-gray-700 text-blue-300'
+            : 'bg-gray-200 hover:bg-gray-300 text-blue-600'
+            }`}
+          title={copied ? 'Copied!' : 'Copy'}
+        >
+          {copied ? <Check size={16} /> : <Copy size={16} />}
+        </button>
+        {hasOverflow && (
           <button
             type="button"
             onClick={() => setIsWrapped(!isWrapped)}
@@ -84,8 +84,8 @@ function CodeBlockWrapper({ children, isDark = true }: { children: React.ReactNo
           >
             {isWrapped ? <ChevronsRight size={16} /> : <ChevronsDown size={16} />}
           </button>
-        </div>
-      )}
+        )}
+      </div>
       {modifiedChild}
     </div>
   )
@@ -233,44 +233,43 @@ export function MarkdownRenderer({ content, className = '', onCommentsExtracted,
 
   if (variant === 'compact') {
     return (
-      <div className={`max-w-none text-gray-300 text-[11px] sm:text-xs leading-relaxed ${className}`.trim()}>
+      <div className={`max-w-none text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs leading-relaxed ${className}`.trim()}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkBreaks]}
           components={{
-            h1: ({ ...props }) => <h1 className="text-sm font-bold text-blue-400 border-b border-gray-800 pb-0.5 mb-1.5" {...props} />,
-            h2: ({ ...props }) => <h2 className="text-xs font-semibold text-blue-300 mb-1.5" {...props} />,
-            h3: ({ ...props }) => <h3 className="text-[11px] font-semibold text-blue-200 mb-1.5" {...props} />,
+            h1: ({ ...props }) => <h1 className="text-sm font-bold text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-gray-800 pb-0.5 mb-1.5" {...props} />,
+            h2: ({ ...props }) => <h2 className="text-xs font-semibold text-blue-600 dark:text-blue-300 mb-1.5" {...props} />,
+            h3: ({ ...props }) => <h3 className="text-[11px] font-semibold text-blue-600 dark:text-blue-200 mb-1.5" {...props} />,
             p: ({ ...props }) => <div className="mb-1.5 leading-relaxed" {...props} />,
             ul: ({ ...props }) => <ul className="mb-1.5 list-disc list-outside pl-4 space-y-0.5" {...props} />,
             ol: ({ ...props }) => <ol className="mb-1.5 list-decimal list-outside pl-4 space-y-0.5" {...props} />,
             li: ({ ...props }) => <li className="list-item" {...props} />,
-            strong: ({ ...props }) => <strong className="font-bold text-blue-300/90" {...props} />,
-            em: ({ ...props }) => <em className="italic opacity-80" {...props} />,
+            strong: ({ ...props }) => <strong className="font-bold text-gray-950 dark:text-white" {...props} />,
+            em: ({ ...props }) => <em className="italic text-gray-800 dark:text-gray-200" {...props} />,
+            del: ({ ...props }) => <del className="line-through text-gray-400 dark:text-gray-500 opacity-80" {...props} />,
             a: ({ ...props }) => (
               <a
-                className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 underline underline-offset-2 transition-colors font-medium"
                 target="_blank"
                 rel="noopener noreferrer"
                 {...props}
               />
             ),
-            code: ({ inline, children, ...props }: any) =>
-              inline ? (
-                <code
-                  className="bg-gray-800 text-blue-300 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium"
-                  {...props}
-                >
+            pre: ({ children, ...props }: any) => (
+              <CodeBlockWrapper isDark={false}>
+                <pre className="bg-gray-900 p-2 rounded-lg text-[11px] leading-snug font-mono max-w-full border border-gray-800 overflow-x-auto mb-1.5 [&>code]:bg-transparent [&>code]:border-0 [&>code]:p-0 [&>code]:text-gray-200 [&>code]:font-normal [&>code]:inline [&>code]:mx-0" {...props}>
                   {children}
-                </code>
-              ) : (
-                <CodeBlockWrapper isDark={false}>
-                  <pre className="bg-gray-900 p-2 rounded-lg text-[11px] leading-snug font-mono max-w-full border border-gray-800 overflow-x-auto mb-1.5">
-                    <code className="text-gray-200" {...props}>
-                      {children}
-                    </code>
-                  </pre>
-                </CodeBlockWrapper>
-              ),
+                </pre>
+              </CodeBlockWrapper>
+            ),
+            code: ({ className, children, ...props }: any) => (
+              <code
+                className="inline-block align-baseline bg-blue-500/10 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/25 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold tracking-tight mx-0.5 select-all"
+                {...props}
+              >
+                {children}
+              </code>
+            ),
             blockquote: ({ ...props }) => (
               <blockquote
                 className="border-l-2 border-blue-500/50 bg-blue-500/5 pl-2.5 pr-1.5 py-0.5 text-[11px] opacity-90 mb-1.5 rounded-r-sm [&>p]:mb-0 [&>div]:mb-0"
@@ -286,32 +285,45 @@ export function MarkdownRenderer({ content, className = '', onCommentsExtracted,
   }
 
   return (
-    <div className={`max-w-none text-gray-300 text-sm leading-relaxed ${className}`}>
+    <div className={`max-w-none text-gray-700 dark:text-gray-300 text-sm leading-relaxed ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
           h1: ({ ...props }) => (
-            <h1 className="text-lg font-bold mb-2 text-blue-400 border-b border-gray-800 pb-1 tracking-tight" {...props} />
+            <h1 className="text-lg font-bold mb-2 text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-gray-800 pb-1 tracking-tight" {...props} />
           ),
-          h2: ({ ...props }) => <h2 className="text-base font-semibold mb-2 text-blue-300 tracking-tight" {...props} />,
-          h3: ({ ...props }) => <h3 className="text-sm font-semibold mb-2 text-blue-200" {...props} />,
-          p: ({ ...props }) => <div className="mb-2 leading-relaxed text-gray-300" {...props} />,
+          h2: ({ ...props }) => <h2 className="text-base font-semibold mb-2 text-blue-600 dark:text-blue-300 tracking-tight" {...props} />,
+          h3: ({ ...props }) => <h3 className="text-sm font-semibold mb-2 text-blue-600 dark:text-blue-200" {...props} />,
+          p: ({ ...props }) => <div className="mb-2 leading-relaxed text-gray-700 dark:text-gray-300" {...props} />,
           ul: ({ ...props }) => <ul className="mb-3 space-y-1 list-disc list-outside pl-5" {...props} />,
           ol: ({ ...props }) => <ol className="mb-3 space-y-1 list-decimal list-outside pl-5" {...props} />,
           li: ({ ...props }) => <li className="mb-1" {...props} />,
-          code: ({ inline, children, ...props }: any) =>
-            inline ? (
-              <code className="bg-gray-800 px-2 py-0.5 rounded text-xs font-mono text-blue-300 font-medium" {...props}>
+          strong: ({ ...props }) => <strong className="font-bold text-gray-950 dark:text-white" {...props} />,
+          em: ({ ...props }) => <em className="italic text-gray-800 dark:text-gray-200" {...props} />,
+          del: ({ ...props }) => <del className="line-through text-gray-400 dark:text-gray-500 opacity-80" {...props} />,
+          pre: ({ children, ...props }: any) => (
+            <CodeBlockWrapper isDark>
+              <pre className="bg-gray-900 px-3 py-2 rounded-lg text-xs font-mono max-w-full border border-gray-800 shadow-sm mb-2 overflow-x-auto text-gray-200 [&>code]:bg-transparent [&>code]:border-0 [&>code]:p-0 [&>code]:text-gray-200 [&>code]:font-normal [&>code]:inline [&>code]:mx-0" {...props}>
                 {children}
-              </code>
-            ) : (
-              <CodeBlockWrapper isDark>
-                <pre className="bg-gray-900 px-3 py-1.5 rounded-lg text-xs font-mono max-w-full border border-gray-800 shadow-sm mb-2">
-                  <code className="max-w-full text-gray-200 leading-relaxed" {...props}>{children}</code>
-                </pre>
-              </CodeBlockWrapper>
-            ),
-          a: ({ ...props }) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 transition-colors font-medium" target="_blank" rel="noopener noreferrer" {...props} />,
+              </pre>
+            </CodeBlockWrapper>
+          ),
+          code: ({ className, children, ...props }: any) => (
+            <code
+              className="inline-block align-baseline bg-blue-500/10 text-blue-600 dark:bg-[#0c1220] dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/25 px-1.5 py-0.5 rounded-md text-[0.88em] font-mono font-semibold tracking-tight mx-0.5 select-all"
+              {...props}
+            >
+              {children}
+            </code>
+          ),
+          table: ({ ...props }) => (
+            <div className="overflow-x-auto my-3 rounded-lg border border-gray-200 dark:border-gray-800">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800 text-xs font-mono" {...props} />
+            </div>
+          ),
+          th: ({ ...props }) => <th className="bg-gray-50 dark:bg-gray-900/80 px-3 py-2 text-left font-bold text-gray-900 dark:text-white" {...props} />,
+          td: ({ ...props }) => <td className="px-3 py-2 text-gray-700 dark:text-gray-300 border-t border-gray-200/60 dark:border-gray-800/60" {...props} />,
+          a: ({ ...props }) => <a className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 underline underline-offset-4 transition-colors font-medium" target="_blank" rel="noopener noreferrer" {...props} />,
           img: ({ src, alt, title, width, height }) => (
             <MarkdownImage
               src={typeof src === 'string' ? src : undefined}
@@ -324,12 +336,12 @@ export function MarkdownRenderer({ content, className = '', onCommentsExtracted,
           blockquote: ({ ...props }) => (
             <BlockquoteWrapper isDark>
               <blockquote
-                className="border-l-4 border-blue-400 bg-blue-500/5 pl-2.5 pr-1 py-1 text-gray-300 rounded-md italic leading-relaxed [&>p]:mb-0 [&>div]:mb-0"
+                className="border-l-4 border-blue-500 bg-blue-500/5 pl-2.5 pr-1 py-1 text-gray-700 dark:text-gray-300 rounded-md italic leading-relaxed [&>p]:mb-0 [&>div]:mb-0"
                 {...props}
               />
             </BlockquoteWrapper>
           ),
-          hr: () => <hr className="mb-2 border-gray-800" />,
+          hr: () => <hr className="mb-2 border-gray-200 dark:border-gray-800" />,
         }}
       >
         {sanitizedContent}
@@ -358,21 +370,25 @@ export function RulesMarkdownRenderer({ content, className = '' }: MarkdownRende
           ul: ({ ...props }) => <ul className="mb-3 space-y-1 list-disc list-outside pl-5" {...props} />,
           ol: ({ ...props }) => <ol className="mb-3 space-y-1 list-decimal list-outside pl-5" {...props} />,
           li: ({ ...props }) => <li className="mb-1" {...props} />,
-          strong: ({ ...props }) => <strong className="font-bold text-gray-900 dark:text-blue-400" {...props} />,
+          strong: ({ ...props }) => <strong className="font-bold text-gray-950 dark:text-white" {...props} />,
           em: ({ ...props }) => <em className="italic text-gray-700 dark:text-gray-300" {...props} />,
+          del: ({ ...props }) => <del className="line-through text-gray-400 dark:text-gray-500 opacity-80" {...props} />,
           a: ({ ...props }) => <a className={`${THEME_PRIMARY_TEXT_CLASS} hover:text-blue-700 dark:hover:text-blue-300 underline font-medium transition-colors`} target="_blank" rel="noopener noreferrer" {...props} />,
-          code: ({ inline, children, ...props }: any) =>
-            inline ? (
-              <code className="bg-blue-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono text-blue-800 dark:text-blue-300 font-semibold" {...props}>
+          pre: ({ children, ...props }: any) => (
+            <CodeBlockWrapper isDark={false}>
+              <pre className="bg-gray-100 dark:bg-gray-900 p-2.5 rounded-lg text-sm font-mono max-w-full border border-gray-300 dark:border-gray-700 my-2 overflow-x-auto text-gray-900 dark:text-gray-100 [&>code]:bg-transparent [&>code]:border-0 [&>code]:p-0 [&>code]:font-normal [&>code]:inline [&>code]:mx-0" {...props}>
                 {children}
-              </code>
-            ) : (
-              <CodeBlockWrapper isDark={false}>
-                <pre className="bg-gray-100 dark:bg-gray-900 p-2 rounded-lg text-sm font-mono max-w-full border border-gray-300 dark:border-gray-700">
-                  <code className="text-gray-900 dark:text-gray-100" {...props}>{children}</code>
-                </pre>
-              </CodeBlockWrapper>
-            ),
+              </pre>
+            </CodeBlockWrapper>
+          ),
+          code: ({ className, children, ...props }: any) => (
+            <code
+              className="inline-block align-baseline bg-blue-500/10 text-blue-700 dark:bg-[#0c1220] dark:text-blue-300 border border-blue-500/20 dark:border-blue-400/25 px-1.5 py-0.5 rounded-md text-[0.88em] font-mono font-semibold tracking-tight mx-0.5 select-all"
+              {...props}
+            >
+              {children}
+            </code>
+          ),
         }}
       >
         {sanitizedContent}

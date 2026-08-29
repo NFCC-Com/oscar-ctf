@@ -184,7 +184,17 @@ export function useChallengeForm() {
         points: Number(formData.points) || 0,
         hint: (formData.hint && formData.hint.length > 0) ? formData.hint.filter(h => h.trim() !== '') : null,
         difficulty: (formData.difficulty || '').trim(),
-        attachments: (formData.attachments || []).filter((a) => (a.url || '').trim() !== ''),
+        attachments: (formData.attachments || [])
+          .filter((a) => (a.url || '').trim() !== '')
+          .map((a) => {
+            const url = (a.url || '').trim()
+            const filenameFromUrl = url.split('/').pop()?.split('?')[0] || (a.type === 'file' ? 'attachment' : 'link')
+            return {
+              ...a,
+              url,
+              name: (a.name || '').trim() || filenameFromUrl,
+            }
+          }),
         is_maintenance: !!formData.is_maintenance,
         event_id: (formData.event_id === '' || formData.event_id === 'main' || formData.event_id === null) ? null : formData.event_id,
         flag: (formData.flag || '').trim(),

@@ -3,6 +3,7 @@
 import type { useChallengesPageData } from '../../hooks/useChallengesPageData'
 import ChallengeDetailDialog from '../ChallengeDetailDialog'
 import JoinEventDialog from '../JoinEventDialog'
+import ExternalAttachmentDialog from '../challenge-detail/ExternalAttachmentDialog'
 
 type ChallengesPageData = ReturnType<typeof useChallengesPageData>
 
@@ -98,6 +99,15 @@ export default function ChallengeDialogs({ data }: ChallengeDialogsProps) {
           if (!data.selectedChallenge) return
           return data.resetSubChallengeAnswers(data.selectedChallenge.id)
         }}
+      />
+
+      <ExternalAttachmentDialog
+        open={!!data.externalAttachmentTarget}
+        onOpenChange={(open) => {
+          if (!open) data.setExternalAttachmentTarget(null)
+        }}
+        attachment={data.externalAttachmentTarget?.attachment || null}
+        url={data.externalAttachmentTarget?.url || ''}
       />
     </>
   )

@@ -151,6 +151,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   handleGeoSubmit = async () => false,
   handleGeoGuessChange = () => { },
 }) => {
+  const { settings } = useSystemSettings()
   const [solvesSortOrder, setSolvesSortOrder] = useState<'newest' | 'oldest'>('oldest')
   const [copiedMarkdown, setCopiedMarkdown] = useState(false)
   const contentScrollRef = React.useRef<HTMLDivElement | null>(null)
@@ -168,6 +169,7 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
     }
 
     const fileAttachments = (challenge.attachments || []).filter((a) => a.type === 'file')
+    const linkAttachments = (challenge.attachments || []).filter((a) => a.type !== 'file')
 
     const fileList = fileAttachments
       .map((a) => {
@@ -187,33 +189,38 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
       '\n```'
       : ''
 
-    const filesContent = fileList ? `${fileList}${wgetCommands}` : '- (No files)'
+    const filesContent = fileList ? `${fileList}${wgetCommands}` : ''
 
-    const links = (challenge.attachments || [])
-      .filter((a) => a.type !== 'file')
+    const linksContent = linkAttachments
       .map((a) => `- [${a.name || a.url || 'link'}](${getAbsoluteUrl(a.url)})`)
       .join('\n')
 
-    const flagPlaceholder = challenge.flag_placeholder && placeholders[challenge.id]
+    let attachmentSection = ''
+    if (filesContent && linksContent) {
+      attachmentSection = `## Attachment\n### Files\n${filesContent}\n\n### Url\n${linksContent}\n\n`
+    } else if (filesContent) {
+      attachmentSection = `## Attachment\n### Files\n${filesContent}\n\n`
+    } else if (linksContent) {
+      attachmentSection = `## Attachment\n### Url\n${linksContent}\n\n`
+    }
+
+    const resolvedFlagFormat = challenge.flag_placeholder && placeholders[challenge.id]
       ? placeholders[challenge.id]
-      : 'FormatFLAGnya'
+      : (settings?.flag_format || 'NXCTF{your_flag_here}')
+
+    const flagFormatted = resolvedFlagFormat.startsWith('{') && resolvedFlagFormat.endsWith('}')
+      ? resolvedFlagFormat
+      : (resolvedFlagFormat.includes('{') ? resolvedFlagFormat : `{${resolvedFlagFormat}}`)
 
     const markdownText = `# ${challenge.title}
 ## Description
 ${challenge.description || ''}
 
-## Attachment
-### Files
-${filesContent}
-
-### Url
-${links || '- (No links)'}
-
-## Solution
+${attachmentSection}## Solution
 -
 
 ## Flag
-{${flagPlaceholder}}`
+${flagFormatted}`
 
     if (!navigator.clipboard) {
       toast.error('Clipboard not available')
@@ -228,7 +235,7 @@ ${links || '- (No links)'}
       console.error('Failed to copy challenge markdown:', err)
       toast.error('Failed to copy to clipboard')
     })
-  }, [challenge, placeholders])
+  }, [challenge, placeholders, settings])
 
   const [geoRevealed, setGeoRevealed] = useState<Record<string, boolean>>({})
   const [geoTargets, setGeoTargets] = useState<Record<string, { lat: number; lng: number; radius_km: number; flag?: string }>>({})
@@ -270,7 +277,6 @@ ${links || '- (No links)'}
     contentScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' })
   }, [challenge?.id, challengeTab])
 
-  const { settings } = useSystemSettings()
   const { user } = useAuth()
   const showAverageRating = settings.enable_challenge_rating && (settings.show_rating_to_participants || user?.is_admin);
   const canRate = settings.enable_challenge_rating;

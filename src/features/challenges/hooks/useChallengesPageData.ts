@@ -58,6 +58,8 @@ export function useChallengesPageData() {
     downloadFile,
     fetchSolversForChallenge,
     scrollPositionRef,
+    externalAttachmentTarget,
+    setExternalAttachmentTarget,
   } = useChallengeDialogState({
     challenges,
     initialLoading,
@@ -245,5 +247,7 @@ export function useChallengesPageData() {
     formatRemaining,
     loadChallenges,
     scrollPositionRef,
+    externalAttachmentTarget,
+    setExternalAttachmentTarget,
   }
 }

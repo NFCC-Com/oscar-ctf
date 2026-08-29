@@ -20,3 +20,4 @@ export { getEvents } from '@/features/events/services/event.service'
 export { getAdminScope } from '@/features/admin/services/admin.service'
 
 export * from './admin-challenge-filters'
+export * from './challenge-import-export'

@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Upload, Download } from 'lucide-react'
 import { Button } from '@/shared/ui'
 import { AdminDataSurface, AdminEmptyState, AdminListSurface, AdminStickyToolbar } from '@/features/admin/ui'
 import AdminChallengesToolbar from './AdminChallengesToolbar'
@@ -29,6 +29,8 @@ interface ChallengeListPanelProps {
   onToggleMaintenance: (id: string, checked: boolean) => Promise<unknown>
   onRepost?: (challenge: Challenge) => void
   onSchedule?: (challenge: Challenge) => void
+  onExport?: () => void
+  onImport?: () => void
 }
 
 const ChallengeListPanel: React.FC<ChallengeListPanelProps> = ({
@@ -49,10 +51,42 @@ const ChallengeListPanel: React.FC<ChallengeListPanelProps> = ({
   onToggleMaintenance,
   onRepost,
   onSchedule,
+  onExport,
+  onImport,
   scheduledJobsMap,
 }) => {
   const headerActions = (
-    <Button onClick={onAdd} size="sm" className="rounded-xl">+ Add Challenge</Button>
+    <div className="flex items-center gap-1.5">
+      {onImport && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onImport}
+          className="rounded-xl text-xs gap-1.5 h-8 px-2.5 bg-white/50 dark:bg-gray-900/50 hover:bg-white dark:hover:bg-gray-900 shadow-2xs"
+          title="Import challenges from JSON file or raw text"
+        >
+          <Upload size={13} className="text-emerald-600 dark:text-emerald-400" />
+          <span className="hidden sm:inline">Import</span>
+        </Button>
+      )}
+      {onExport && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onExport}
+          className="rounded-xl text-xs gap-1.5 h-8 px-2.5 bg-white/50 dark:bg-gray-900/50 hover:bg-white dark:hover:bg-gray-900 shadow-2xs"
+          title="Export challenges to JSON or clipboard"
+        >
+          <Download size={13} className="text-blue-600 dark:text-blue-400" />
+          <span className="hidden sm:inline">Export</span>
+        </Button>
+      )}
+      <Button onClick={onAdd} size="sm" className="rounded-xl text-xs h-8 px-3">
+        + Add Challenge
+      </Button>
+    </div>
   )
 
   const syncStatus = isRefreshing ? (

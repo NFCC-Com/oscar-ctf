@@ -102,8 +102,7 @@ export const HintsAttachmentsSection: React.FC<
                   onChange={(event) =>
                     onUpdateAttachment(index, 'name', event.target.value)
                   }
-                  placeholder="File name / Label"
-                  required
+                  placeholder="Label (optional)"
                 />
                 <Input
                   className={`sm:col-span-6 ${ADMIN_MUTED_INPUT_CLASS}`}
@@ -111,7 +110,7 @@ export const HintsAttachmentsSection: React.FC<
                   onChange={(event) =>
                     onUpdateAttachment(index, 'url', event.target.value)
                   }
-                  placeholder="URL"
+                  placeholder="https://... URL"
                   required
                 />
                 <Select

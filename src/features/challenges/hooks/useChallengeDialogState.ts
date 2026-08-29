@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import {
   getChallengeDetail,
   getSolversByChallenge,
@@ -12,6 +13,8 @@ import {
   isGoogleDriveUrl,
   normalizeChallengeHints,
   persistSelectedChallenge,
+  downloadAttachmentSafely,
+  normalizeAttachmentUrl,
 } from '../lib'
 import type {
   ChallengeDialogTab,
@@ -170,33 +173,30 @@ export function useChallengeDialogState({
     })
   }, [challenges, selectedChallenge])
 
+  const [externalAttachmentTarget, setExternalAttachmentTarget] = useState<{ attachment: Attachment; url: string } | null>(null)
+
   const downloadFile = useCallback(async (attachment: Attachment, attachmentKey: string) => {
     setDownloading((prev) => ({ ...prev, [attachmentKey]: true }))
 
     try {
       if (attachment.type === 'file') {
-        if (isGoogleDriveUrl(attachment.url)) {
-          window.open(getDirectDownloadUrl(attachment.url), '_blank')
-          return
+        const res = await downloadAttachmentSafely(attachment)
+        if (!res.success) {
+          if (res.isExternalLink && res.directUrl) {
+            setExternalAttachmentTarget({ attachment, url: res.directUrl })
+          } else {
+            toast.error(res.message || 'Gagal mengunduh file attachment.')
+          }
         }
-
-        const response = await fetch(attachment.url)
-        if (!response.ok) throw new Error('Failed to fetch file')
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = attachment.name || 'download'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
       } else {
-        window.open(attachment.url, '_blank')
+        const targetUrl = attachment.url ? normalizeAttachmentUrl(attachment.url) : ''
+        if (targetUrl) {
+          window.open(targetUrl, '_blank', 'noopener,noreferrer')
+        }
       }
-    } catch (error) {
-      console.error('Download failed:', error)
-      window.open(getDirectDownloadUrl(attachment.url), '_blank')
+    } catch (error: any) {
+      console.error('Download error:', error)
+      toast.error('Terjadi kesalahan saat memproses unduhan.')
     } finally {
       setDownloading((prev) => ({ ...prev, [attachmentKey]: false }))
     }
@@ -217,5 +217,7 @@ export function useChallengeDialogState({
     downloadFile,
     fetchSolversForChallenge,
     scrollPositionRef,
+    externalAttachmentTarget,
+    setExternalAttachmentTarget,
   }
 }

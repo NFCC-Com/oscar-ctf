@@ -15,6 +15,8 @@ const ChallengeFormDialogHost = dynamic(() => import('./ChallengeFormDialogHost'
 const FlagPreviewDialog = dynamic(() => import('./FlagPreviewDialog').then(mod => mod.FlagPreviewDialog), { ssr: false })
 const RepostModal = dynamic(() => import('./RepostModal'), { ssr: false })
 const ScheduleModal = dynamic(() => import('./ScheduleModal'), { ssr: false })
+const ExportChallengesDialog = dynamic(() => import('./ExportChallengesDialog'), { ssr: false })
+const ImportChallengesDialog = dynamic(() => import('./ImportChallengesDialog'), { ssr: false })
 
 import ChallengeListPanel from './ChallengeListPanel'
 import { useAdminChallengesData } from '../hooks/useAdminChallengesData'
@@ -61,6 +63,8 @@ export default function AdminChallengesPage() {
 
   // Local Page State
   const [openForm, setOpenForm] = useState(false)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<Challenge | null>(null)
   const [repostTarget, setRepostTarget] = useState<Challenge | null>(null)
@@ -195,6 +199,8 @@ export default function AdminChallengesPage() {
             onToggleActive={toggleChallengeActive}
             onRepost={(c) => setRepostTarget(c)}
             onSchedule={(c) => setScheduleTarget(c)}
+            onExport={() => setExportDialogOpen(true)}
+            onImport={() => setImportDialogOpen(true)}
           />
         </div>
       </AdminPageShell>
@@ -207,6 +213,21 @@ export default function AdminChallengesPage() {
         events={events}
         hideMainEventOption={!isGlobalAdmin}
         onSubmitSuccess={() => { initAdminData(true) }}
+      />
+
+      <ExportChallengesDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        challenges={filteredChallenges.length > 0 ? filteredChallenges : challenges}
+      />
+
+      <ImportChallengesDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        events={events}
+        currentEventId={eventId}
+        existingChallenges={challenges}
+        onSuccess={() => initAdminData(true)}
       />
 
       <ConfirmDialog

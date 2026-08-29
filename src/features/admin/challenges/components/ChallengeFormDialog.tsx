@@ -131,6 +131,14 @@ const ChallengeFormDialog: React.FC<ChallengeFormDialogProps> = (props) => {
     })
   }, [events])
 
+  const selectedEvent = React.useMemo(() => {
+    if (!formData.event_id || !events) return null
+    return events.find((e) => String(e.id) === String(formData.event_id))
+  }, [formData.event_id, events])
+
+  const challengeDisplayTitle =
+    formData.title?.trim() || editing?.title?.trim() || (editing ? 'Untitled Challenge' : 'New Challenge')
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -142,7 +150,47 @@ const ChallengeFormDialog: React.FC<ChallengeFormDialogProps> = (props) => {
           }}
         >
           <DialogHeader className="pb-3 border-b dark:border-gray-800 shrink-0">
-            <DialogTitle className="text-base font-semibold text-gray-900 dark:text-gray-100">{editing ? 'Edit Challenge' : 'Add New Challenge'}</DialogTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              {/* Left: Action badge & Challenge Title */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span
+                  className={cn(
+                    "rounded-md px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 border",
+                    editing
+                      ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25"
+                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+                  )}
+                >
+                  {editing ? 'Edit Challenge' : 'Create Challenge'}
+                </span>
+
+                <DialogTitle className="text-base font-bold text-gray-900 dark:text-gray-100 truncate" title={challengeDisplayTitle}>
+                  {challengeDisplayTitle}
+                </DialogTitle>
+              </div>
+
+              {/* Right: Live Meta Pills */}
+              <div className="flex flex-wrap items-center gap-1.5 shrink-0 text-[11px] font-mono">
+                {formData.category && (
+                  <span className="rounded-md bg-gray-100 dark:bg-gray-800/80 px-2 py-0.5 text-gray-700 dark:text-gray-300 font-semibold border border-gray-200/80 dark:border-white/10">
+                    {formData.category}
+                  </span>
+                )}
+                {formData.points !== undefined && formData.points !== null && String(formData.points) !== '' && (
+                  <span className="rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 font-bold border border-amber-500/20">
+                    {formData.points} pts
+                  </span>
+                )}
+                {selectedEvent && (
+                  <span
+                    className="rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 px-2 py-0.5 font-medium border border-purple-500/20 truncate max-w-[140px]"
+                    title={selectedEvent.name}
+                  >
+                    {selectedEvent.name}
+                  </span>
+                )}
+              </div>
+            </div>
           </DialogHeader>
 
           <form onSubmit={onSubmit} className="flex flex-col flex-1 overflow-hidden space-y-4">
