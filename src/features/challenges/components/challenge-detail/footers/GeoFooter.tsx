@@ -35,7 +35,7 @@ export const GeoFooter: React.FC<GeoFooterProps> = ({
       <DialogFooterLayout>
         <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center font-mono text-xs font-bold text-amber-600 dark:text-amber-400">
           <Clock size={16} className="shrink-0 text-amber-500" />
-          <span>Event telah berakhir. Pengiriman jawaban ditutup.</span>
+          <span>Event has ended. Submissions are closed.</span>
         </div>
       </DialogFooterLayout>
     )

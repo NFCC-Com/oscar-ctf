@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await AuthService.signOut()
           setUser(null)
           const toast = (await import('react-hot-toast')).default
-          toast.error('Sesi Anda telah berakhir karena Anda masuk di perangkat lain.', {
+          toast.error('Your session has ended because you logged in on another device.', {
             id: 'session-expired-toast',
             duration: 6000,
           })

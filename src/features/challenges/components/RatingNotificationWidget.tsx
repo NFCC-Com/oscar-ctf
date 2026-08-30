@@ -191,7 +191,7 @@ export default function RatingNotificationWidget() {
               </div>
             </div>
             <DialogDescription className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed text-justify">
-              Berikan rating 1-5 bintang untuk challenge yang telah berhasil kamu selesaikan. Feedback rating kamu sangat membantu dalam meningkatkan kualitas soal di event berikutnya.
+              Rate solved challenges from 1 to 5 stars. Your feedback helps improve challenge quality for upcoming events.
             </DialogDescription>
           </DialogHeader>
 
@@ -221,9 +221,9 @@ export default function RatingNotificationWidget() {
                 unratedCount === 0 ? (
                   <div className="flex flex-col items-center justify-center flex-1 text-center p-6">
                     <CheckCircle2 className="h-12 w-12 text-emerald-500 opacity-80 mb-3 animate-bounce" />
-                    <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Semua Solved Challenge Sudah Kamu Rating!</h3>
+                    <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">All Solved Challenges Rated!</h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs leading-relaxed">
-                      Terima kasih banyak atas feedback yang telah kamu berikan. Kamu siap untuk menaklukkan tantangan lainnya!
+                      Thank you for your valuable feedback. Keep up the good work and conquer more challenges!
                     </p>
                   </div>
                 ) : (
@@ -240,9 +240,9 @@ export default function RatingNotificationWidget() {
               ) : ratedList.length === 0 ? (
                 <div className="flex flex-col items-center justify-center flex-1 text-center p-6">
                   <Award className="h-12 w-12 text-gray-400 dark:text-gray-600 opacity-60 mb-3" />
-                  <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500">Belum ada rating yang dibuat</h3>
+                  <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500">No ratings submitted yet</h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs leading-relaxed">
-                    Selesaikan challenge dan berikan rating bintangmu untuk melihat daftarnya di sini.
+                    Solve challenges and rate them to see your history here.
                   </p>
                 </div>
               ) : (
@@ -270,7 +270,7 @@ export default function RatingNotificationWidget() {
               onClick={() => setIsOpen(false)}
               className="px-4 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer"
             >
-              Tutup
+              Close
             </button>
           </div>
         </DialogContent>

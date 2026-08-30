@@ -189,7 +189,7 @@ export async function downloadAttachmentSafely(
       return {
         success: false,
         status: 404,
-        message: 'File attachment tidak ditemukan di server (404 Not Found). Silakan hubungi admin atau author soal.',
+        message: 'Attachment file not found on server (404 Not Found). Please contact the admin or challenge author.',
       }
     }
 
@@ -197,7 +197,7 @@ export async function downloadAttachmentSafely(
       return {
         success: false,
         status: 403,
-        message: 'Akses ke file attachment ditolak (403 Forbidden).',
+        message: 'Access to attachment file forbidden (403 Forbidden).',
       }
     }
 
@@ -205,7 +205,7 @@ export async function downloadAttachmentSafely(
       return {
         success: false,
         status: response.status,
-        message: `Server file sedang mengalami gangguan (HTTP ${response.status}).`,
+        message: `File server error (HTTP ${response.status}).`,
       }
     }
 
@@ -213,7 +213,7 @@ export async function downloadAttachmentSafely(
       return {
         success: false,
         status: response.status,
-        message: `Gagal mengunduh file (HTTP ${response.status} ${response.statusText}).`,
+        message: `Failed to download file (HTTP ${response.status} ${response.statusText}).`,
       }
     }
 
@@ -230,7 +230,7 @@ export async function downloadAttachmentSafely(
 
     return {
       success: true,
-      message: 'Download file berhasil dimulai!',
+      message: 'Download started successfully!',
     }
   } catch (error: any) {
     // Network / CORS block fallback:
