@@ -115,7 +115,7 @@ function ScoreboardExportSnapshotView({
           </div>
           <div className="text-right">
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
-              {hasDateFilter ? 'Periode Data / Cutoff' : 'Exported at'}
+              {hasDateFilter ? 'Cutoff / Period' : 'Exported at'}
             </div>
             <div className="mt-2 text-base font-black text-gray-950 dark:text-white">
               {snapshot.dateRangeLabel || `${formatExportDate(snapshot.exportedAt)} WIB`}
@@ -204,7 +204,7 @@ export default function ScoreboardExportActions({
         })
 
       if (!freshSnapshot || !freshSnapshot.tableEntries || freshSnapshot.tableEntries.length === 0) {
-        toast.error('Tidak ada data scoreboard untuk diekspor')
+        toast.error('No scoreboard data found for the selected period')
         return
       }
 
@@ -242,11 +242,11 @@ export default function ScoreboardExportActions({
       }
 
       downloadDataUrl(dataUrl, createScoreboardExportFilename(freshSnapshot))
-      toast.success(`Scoreboard ${freshSnapshot.scope === 'team' ? 'Tim' : 'Individu'} berhasil diekspor!`)
+      toast.success(`${freshSnapshot.scope === 'team' ? 'Team' : 'Individual'} scoreboard exported successfully!`)
       setIsSettingsOpen(false)
     } catch (err: any) {
       console.error('Scoreboard export failed:', err)
-      toast.error(err?.message || 'Gagal mengekspor scoreboard PNG')
+      toast.error(err?.message || 'Failed to export scoreboard PNG')
     } finally {
       setIsExporting(false)
     }
@@ -327,16 +327,16 @@ export default function ScoreboardExportActions({
             <div className="rounded-xl border border-blue-200/70 bg-blue-50/60 p-3 dark:border-blue-900/40 dark:bg-blue-950/20">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                  Periode Data Export
+                  Export Data Period
                 </span>
                 {(effectiveStartDate || effectiveEndDate) && (
                   <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[9px] font-bold uppercase text-blue-700 dark:text-blue-300">
-                    Filter Aktif
+                    Filter Active
                   </span>
                 )}
               </div>
               <div className="mt-1 text-xs font-semibold text-gray-800 dark:text-gray-200">
-                {activePeriodLabel || 'Semua Waktu (All Time)'}
+                {activePeriodLabel || 'All Time'}
               </div>
             </div>
 

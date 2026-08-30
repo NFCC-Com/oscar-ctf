@@ -256,6 +256,7 @@ DECLARE
   v_min_points INTEGER;
   v_decay_per_solve INTEGER;
   v_event_id UUID;
+  v_event_end TIMESTAMPTZ;
   v_solver_count INTEGER;
   v_awarded_points INTEGER;
   v_existing INT;
@@ -296,11 +297,19 @@ BEGIN
     END;
   END IF;
 
-  SELECT cf.flag, c.points, c.max_points, c.is_dynamic, c.min_points, c.decay_per_solve, c.event_id
-  INTO v_flag, v_points, v_max_points, v_is_dynamic, v_min_points, v_decay_per_solve, v_event_id
+  SELECT cf.flag, c.points, c.max_points, c.is_dynamic, c.min_points, c.decay_per_solve, c.event_id, e.end_time
+  INTO v_flag, v_points, v_max_points, v_is_dynamic, v_min_points, v_decay_per_solve, v_event_id, v_event_end
   FROM public.challenge_flags cf
   JOIN public.challenges c ON c.id = cf.challenge_id
+  LEFT JOIN public.events e ON e.id = c.event_id
   WHERE cf.challenge_id = p_challenge_id;
+
+  -- Block flag submissions if event has ended (for non-admins)
+  IF NOT v_is_admin_override AND v_event_id IS NOT NULL THEN
+    IF v_event_end IS NOT NULL AND now() > v_event_end THEN
+      RETURN json_build_object('success', false, 'message', 'Event has ended. Flag submissions are closed.');
+    END IF;
+  END IF;
 
   -- Intercept GeoGuessr flag check
   IF public.is_geo_flag(v_flag) THEN

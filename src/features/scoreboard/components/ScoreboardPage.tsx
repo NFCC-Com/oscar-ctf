@@ -214,7 +214,7 @@ export default function ScoreboardPage() {
                     title={isDateFiltered ? 'No challenges solved in this period.' : 'No challenges solved yet.'}
                     description={
                       isDateFiltered ? (
-                        <>Tidak ada solve yang ditemukan pada rentang waktu yang dipilih. Coba atur ulang filter tanggal.</>
+                        <>No challenge solves found within the selected date range. Try adjusting or resetting the date filter.</>
                       ) : (
                         <>
                           No submissions yet for this event. Start solving challenges and claim the top spot.
@@ -234,7 +234,7 @@ export default function ScoreboardPage() {
                           }}
                           className="rounded-xl"
                         >
-                          Reset Filter Tanggal
+                          Reset Date Filter
                         </Button>
                       ) : (
                         <Link

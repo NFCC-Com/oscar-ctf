@@ -75,7 +75,7 @@ interface ChallengeDetailDialogProps {
   downloadFile: (attachment: Attachment, attachmentKey: string) => void
   showHintModal: HintModalState
   setShowHintModal: (modal: HintModalState) => void
-  events?: { id: string; name: string }[]
+  events?: { id: string; name: string; start_time?: string | null; end_time?: string | null }[]
   subChallengeLoaded: boolean
   subChallengeLoading: boolean
   subChallengeSubmitting: boolean
@@ -152,9 +152,17 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   handleGeoGuessChange = () => { },
 }) => {
   const { settings } = useSystemSettings()
+  const { user } = useAuth()
   const [solvesSortOrder, setSolvesSortOrder] = useState<'newest' | 'oldest'>('oldest')
   const [copiedMarkdown, setCopiedMarkdown] = useState(false)
   const contentScrollRef = React.useRef<HTMLDivElement | null>(null)
+
+  const challengeEvent = challenge?.event_id
+    ? events?.find((e) => e.id === challenge.event_id)
+    : null
+  const isEventEnded = Boolean(
+    challengeEvent?.end_time && new Date(challengeEvent.end_time).getTime() < Date.now()
+  ) && !user?.is_admin
 
   const handleCopyChallengeMarkdown = React.useCallback(() => {
     if (!challenge) return
@@ -277,7 +285,6 @@ ${flagFormatted}`
     contentScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' })
   }, [challenge?.id, challengeTab])
 
-  const { user } = useAuth()
   const showAverageRating = settings.enable_challenge_rating && (settings.show_rating_to_participants || user?.is_admin);
   const canRate = settings.enable_challenge_rating;
 
@@ -559,6 +566,7 @@ ${flagFormatted}`
             handleFlagSubmit={handleFlagSubmit}
             submissionsRemaining={submissionsRemaining}
             cooldownSeconds={cooldownSeconds}
+            isEventEnded={isEventEnded}
           />
         )}
 
@@ -579,6 +587,7 @@ ${flagFormatted}`
             isRevealed={!!geoRevealed[challenge.id]}
             isRevealCardOpen={!!geoRevealCardOpen[challenge.id]}
             target={geoTargets[challenge.id] || null}
+            isEventEnded={isEventEnded}
             onSubmit={async () => {
               const currentGuess = geoGuesses[challenge.id]
               if (currentGuess) {
@@ -597,6 +606,7 @@ ${flagFormatted}`
           <QuestionFooter
             subChallengeCompleted={subChallengeCompleted}
             subChallengeFlag={subChallengeFlag}
+            isEventEnded={isEventEnded}
             onReset={onSubChallengeReset}
             onSubmitFlag={subChallengeFlag ? async () => {
               setChallengeTab('challenge', challenge.id)

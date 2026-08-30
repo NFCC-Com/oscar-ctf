@@ -31,9 +31,9 @@ export default function ChallengeEmptyState({
   }
 
   const getTitle = () => {
-    if (typeof eventId === 'string' && selectedEventNotStarted) return 'Event belum mulai'
-    if (typeof eventId === 'string' && selectedEventEnded) return 'Event telah berakhir'
-    if (typeof eventId === 'string' && eventId !== 'all' && !selectedEventObj) return 'Event tidak ditemukan'
+    if (typeof eventId === 'string' && selectedEventNotStarted) return 'Event has not started yet'
+    if (typeof eventId === 'string' && selectedEventEnded) return 'Event has ended'
+    if (typeof eventId === 'string' && eventId !== 'all' && !selectedEventObj) return 'Event not found'
     return challengesCount === 0 ? 'No challenges available' : 'No challenges match your filters'
   }
 
@@ -42,10 +42,10 @@ export default function ChallengeEmptyState({
       return `Starts in ${formatRemaining(selectedEventStart!.getTime() - nowDate.getTime())}`
     }
     if (typeof eventId === 'string' && selectedEventEnded) {
-      return 'Challenge untuk event ini sudah tidak tersedia.'
+      return 'Challenges for this event are no longer active.'
     }
     if (typeof eventId === 'string' && eventId !== 'all' && !selectedEventObj) {
-      return 'Silakan pilih event lain.'
+      return 'Please choose another event.'
     }
     return challengesCount === 0 ? 'Check back later for new challenges' : 'Try adjusting your filter criteria'
   }

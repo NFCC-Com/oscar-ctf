@@ -404,7 +404,7 @@ export default function TeamScoreboardPage() {
                 title={isDateFiltered ? 'No teams solved in this period.' : 'No teams on the board yet.'}
                 description={
                   isDateFiltered ? (
-                    <>Tidak ada submission tim yang ditemukan pada rentang tanggal yang dipilih.</>
+                    <>No team submissions found within the selected date range. Try adjusting or resetting the date filter.</>
                   ) : (
                     <>
                       No team submissions yet for this event. Start solving challenges with your team!
@@ -424,7 +424,7 @@ export default function TeamScoreboardPage() {
                       }}
                       className="rounded-xl"
                     >
-                      Reset Filter Tanggal
+                      Reset Date Filter
                     </Button>
                   ) : undefined
                 }

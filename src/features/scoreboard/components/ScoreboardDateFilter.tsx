@@ -30,7 +30,7 @@ function formatShortBadgeDate(value: string) {
     const d = new Date(value)
     if (Number.isNaN(d.getTime())) return value
     const day = d.getDate()
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     return `${day} ${months[d.getMonth()]}`
   } catch {
     return value
@@ -115,12 +115,12 @@ export default function ScoreboardDateFilter({
       return `${formatShortBadgeDate(startDate)} - ${formatShortBadgeDate(endDate)}`
     }
     if (endDate) {
-      return `s.d. ${formatShortBadgeDate(endDate)}`
+      return `Until ${formatShortBadgeDate(endDate)}`
     }
     if (startDate) {
-      return `Sejak ${formatShortBadgeDate(startDate)}`
+      return `From ${formatShortBadgeDate(startDate)}`
     }
-    return 'Filter Tanggal'
+    return 'Date Filter'
   }
 
   return (
@@ -165,7 +165,7 @@ export default function ScoreboardDateFilter({
             <div className="flex items-center justify-between border-b pb-2 dark:border-gray-800">
               <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-200">
                 <Clock className="h-3.5 w-3.5 text-blue-500" />
-                <span>Filter Tanggal Scoreboard</span>
+                <span>Scoreboard Date Filter</span>
               </div>
               {isActive && (
                 <button
@@ -181,7 +181,7 @@ export default function ScoreboardDateFilter({
             {/* Quick Presets */}
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Preset Cepat
+                Quick Presets
               </Label>
               <div className="mt-1.5 grid grid-cols-3 gap-1.5">
                 <button
@@ -189,42 +189,42 @@ export default function ScoreboardDateFilter({
                   onClick={() => handlePreset('today')}
                   className="rounded-xl border border-gray-200 px-2 py-1.5 text-xs font-medium text-gray-700 hover:border-blue-500 hover:bg-blue-500/10 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-900/50"
                 >
-                  Hari Ini
+                  Today
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePreset('24h')}
                   className="rounded-xl border border-gray-200 px-2 py-1.5 text-xs font-medium text-gray-700 hover:border-blue-500 hover:bg-blue-500/10 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-900/50"
                 >
-                  24 Jam
+                  24 Hours
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePreset('7d')}
                   className="rounded-xl border border-gray-200 px-2 py-1.5 text-xs font-medium text-gray-700 hover:border-blue-500 hover:bg-blue-500/10 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-900/50"
                 >
-                  7 Hari
+                  7 Days
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePreset('30d')}
                   className="rounded-xl border border-gray-200 px-2 py-1.5 text-xs font-medium text-gray-700 hover:border-blue-500 hover:bg-blue-500/10 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-900/50"
                 >
-                  1 Bulan
+                  30 Days
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePreset('90d')}
                   className="rounded-xl border border-gray-200 px-2 py-1.5 text-xs font-medium text-gray-700 hover:border-blue-500 hover:bg-blue-500/10 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-900/50"
                 >
-                  3 Bulan
+                  90 Days
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePreset('1y')}
                   className="rounded-xl border border-gray-200 px-2 py-1.5 text-xs font-medium text-gray-700 hover:border-blue-500 hover:bg-blue-500/10 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-900/50"
                 >
-                  1 Tahun
+                  1 Year
                 </button>
               </div>
             </div>
@@ -233,7 +233,7 @@ export default function ScoreboardDateFilter({
             <div className="space-y-2.5 pt-1">
               <div>
                 <Label className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
-                  Dari (Mulai)
+                  From (Start)
                 </Label>
                 <Input
                   type="datetime-local"
@@ -245,7 +245,7 @@ export default function ScoreboardDateFilter({
 
               <div>
                 <Label className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
-                  Sampai / Cutoff (Akhir)
+                  To / Cutoff (End)
                 </Label>
                 <Input
                   type="datetime-local"
@@ -264,7 +264,7 @@ export default function ScoreboardDateFilter({
                 onClick={() => setIsOpen(false)}
                 className="h-8 rounded-xl px-3 text-xs"
               >
-                Batal
+                Cancel
               </Button>
               <Button
                 type="button"
@@ -272,7 +272,7 @@ export default function ScoreboardDateFilter({
                 onClick={handleApply}
                 className="h-8 rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-4 text-xs font-bold flex items-center gap-1"
               >
-                <Check className="h-3.5 w-3.5" /> Terapkan
+                <Check className="h-3.5 w-3.5" /> Apply
               </Button>
             </div>
           </div>

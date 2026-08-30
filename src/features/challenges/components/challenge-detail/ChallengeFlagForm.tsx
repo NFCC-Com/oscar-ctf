@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { Clock } from 'lucide-react'
 import type { ChallengeWithSolve } from '@/shared/types'
 import { SURFACE_GLASS_CARD_COMPACT_CLASS } from '@/shared/styles'
 import { formatSmartFlag } from '../../lib/flag-formatting'
@@ -16,6 +17,7 @@ type ChallengeFlagFormProps = {
   handleFlagSubmit: (challengeId: string) => void | Promise<unknown>
   submissionsRemaining?: number
   cooldownSeconds?: number
+  isEventEnded?: boolean
 }
 
 export default function ChallengeFlagForm({
@@ -28,6 +30,7 @@ export default function ChallengeFlagForm({
   handleFlagSubmit,
   submissionsRemaining = 10,
   cooldownSeconds = 0,
+  isEventEnded = false,
 }: ChallengeFlagFormProps) {
   const overlayRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -38,6 +41,15 @@ export default function ChallengeFlagForm({
       inputRef.current?.focus({ preventScroll: true })
     })
   }, [challenge.id])
+
+  if (isEventEnded && !challenge.is_solved) {
+    return (
+      <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-center font-mono text-xs font-bold text-amber-600 dark:text-amber-400">
+        <Clock size={16} className="shrink-0 text-amber-500" />
+        <span>Event telah berakhir. Pengiriman flag ditutup.</span>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col relative w-full">
