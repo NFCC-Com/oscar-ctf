@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { CalendarClock, Eye, KeyRound, Lock, Unlock } from 'lucide-react'
+import { CalendarClock, Eye, Flame, KeyRound, Lock, Unlock } from 'lucide-react'
 import Image from 'next/image'
 import APP from '@/config'
 import { Button } from '@/shared/ui'
@@ -126,6 +126,12 @@ function EventListItem({
               <AdminStatusBadge tone="info" className="inline-flex items-center gap-1.5">
                 <Eye className="h-3 w-3" />
                 Always visible
+              </AdminStatusBadge>
+            )}
+            {event.allow_practice_mode && (
+              <AdminStatusBadge tone="success" className="inline-flex items-center gap-1.5">
+                <Flame className="h-3 w-3" />
+                Practice mode
               </AdminStatusBadge>
             )}
           </div>

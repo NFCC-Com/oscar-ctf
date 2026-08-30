@@ -36,6 +36,7 @@ export async function addEvent(payload: {
   start_time?: string | null
   end_time?: string | null
   always_show_challenges?: boolean | null
+  allow_practice_mode?: boolean | null
   image_url?: string | null
   join_mode?: 'open' | 'request' | 'key' | null
   join_key?: string | null
@@ -46,6 +47,7 @@ export async function addEvent(payload: {
     p_start_time: payload.start_time ?? null,
     p_end_time: payload.end_time ?? null,
     p_always_show_challenges: payload.always_show_challenges ?? false,
+    p_allow_practice_mode: payload.allow_practice_mode ?? false,
     p_image_url: payload.image_url ?? null,
     p_join_mode: payload.join_mode ?? 'open',
     p_join_key: payload.join_mode === 'key' ? payload.join_key ?? null : null,
@@ -65,6 +67,7 @@ export async function updateEvent(eventId: string, payload: {
   start_time?: string | null
   end_time?: string | null
   always_show_challenges?: boolean | null
+  allow_practice_mode?: boolean | null
   image_url?: string | null
   join_mode?: 'open' | 'request' | 'key' | null
   join_key?: string | null
@@ -76,6 +79,7 @@ export async function updateEvent(eventId: string, payload: {
     p_start_time: payload.start_time ?? null,
     p_end_time: payload.end_time ?? null,
     p_always_show_challenges: payload.always_show_challenges ?? null,
+    p_allow_practice_mode: payload.allow_practice_mode ?? null,
     p_image_url: payload.image_url ?? null,
     p_join_mode: payload.join_mode ?? null,
     p_join_key: payload.join_mode === 'key' ? payload.join_key ?? null : null,

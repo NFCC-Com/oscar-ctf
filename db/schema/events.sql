@@ -11,6 +11,7 @@ CREATE TABLE public.events (
   start_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   end_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   always_show_challenges BOOLEAN DEFAULT false,
+  allow_practice_mode BOOLEAN DEFAULT false,
   image_url VARCHAR(2048) DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()

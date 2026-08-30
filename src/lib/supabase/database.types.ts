@@ -378,6 +378,7 @@ export type Database = {
       }
       events: {
         Row: {
+          allow_practice_mode: boolean | null
           always_show_challenges: boolean | null
           created_at: string | null
           description: string | null
@@ -391,6 +392,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          allow_practice_mode?: boolean | null
           always_show_challenges?: boolean | null
           created_at?: string | null
           description?: string | null
@@ -404,6 +406,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          allow_practice_mode?: boolean | null
           always_show_challenges?: boolean | null
           created_at?: string | null
           description?: string | null
@@ -874,6 +877,7 @@ export type Database = {
       }
       add_event: {
         Args: {
+          p_allow_practice_mode?: boolean
           p_always_show_challenges?: boolean
           p_description?: string
           p_end_time?: string
@@ -1712,6 +1716,7 @@ export type Database = {
       }
       update_event: {
         Args: {
+          p_allow_practice_mode?: boolean
           p_always_show_challenges?: boolean
           p_description?: string
           p_end_time?: string

@@ -27,6 +27,7 @@ export interface Event {
   start_time?: string | null
   end_time?: string | null
   always_show_challenges?: boolean | null
+  allow_practice_mode?: boolean | null
   image_url?: string | null
   created_at?: string
   updated_at?: string

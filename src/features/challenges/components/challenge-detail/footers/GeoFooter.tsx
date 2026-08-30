@@ -1,6 +1,6 @@
 import React from 'react'
 import { DialogFooterLayout } from './DialogFooterLayout'
-import { Clock, MapPin } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import type { GeoCoordinates } from '../../../types'
 
 interface GeoFooterProps {
@@ -14,7 +14,6 @@ interface GeoFooterProps {
   isRevealCardOpen: boolean
   target: { lat: number; lng: number; radius_km: number; flag?: string } | null
   onSubmit: () => void
-  isEventEnded?: boolean
 }
 
 export const GeoFooter: React.FC<GeoFooterProps> = ({
@@ -28,18 +27,7 @@ export const GeoFooter: React.FC<GeoFooterProps> = ({
   isRevealCardOpen,
   target,
   onSubmit,
-  isEventEnded = false,
 }) => {
-  if (isEventEnded && !isSolved && !isTeamSolved) {
-    return (
-      <DialogFooterLayout>
-        <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center font-mono text-xs font-bold text-amber-600 dark:text-amber-400">
-          <Clock size={16} className="shrink-0 text-amber-500" />
-          <span>Event has ended. Submissions are closed.</span>
-        </div>
-      </DialogFooterLayout>
-    )
-  }
   return (
     <DialogFooterLayout>
       <div className="flex items-center justify-between gap-4 w-full">

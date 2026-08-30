@@ -157,13 +157,6 @@ const ChallengeDetailDialog: React.FC<ChallengeDetailDialogProps> = ({
   const [copiedMarkdown, setCopiedMarkdown] = useState(false)
   const contentScrollRef = React.useRef<HTMLDivElement | null>(null)
 
-  const challengeEvent = challenge?.event_id
-    ? events?.find((e) => e.id === challenge.event_id)
-    : null
-  const isEventEnded = Boolean(
-    challengeEvent?.end_time && new Date(challengeEvent.end_time).getTime() < Date.now()
-  ) && !user?.is_admin
-
   const handleCopyChallengeMarkdown = React.useCallback(() => {
     if (!challenge) return
 
@@ -566,7 +559,6 @@ ${flagFormatted}`
             handleFlagSubmit={handleFlagSubmit}
             submissionsRemaining={submissionsRemaining}
             cooldownSeconds={cooldownSeconds}
-            isEventEnded={isEventEnded}
           />
         )}
 
@@ -587,7 +579,6 @@ ${flagFormatted}`
             isRevealed={!!geoRevealed[challenge.id]}
             isRevealCardOpen={!!geoRevealCardOpen[challenge.id]}
             target={geoTargets[challenge.id] || null}
-            isEventEnded={isEventEnded}
             onSubmit={async () => {
               const currentGuess = geoGuesses[challenge.id]
               if (currentGuess) {
@@ -606,7 +597,6 @@ ${flagFormatted}`
           <QuestionFooter
             subChallengeCompleted={subChallengeCompleted}
             subChallengeFlag={subChallengeFlag}
-            isEventEnded={isEventEnded}
             onReset={onSubChallengeReset}
             onSubmitFlag={subChallengeFlag ? async () => {
               setChallengeTab('challenge', challenge.id)

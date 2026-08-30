@@ -8,6 +8,7 @@ export const EMPTY_EVENT_FORM: EventFormData = {
   start_time: '',
   end_time: '',
   always_show_challenges: false,
+  allow_practice_mode: false,
   image_url: '',
 }
 

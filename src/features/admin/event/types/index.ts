@@ -37,5 +37,6 @@ export type EventFormData = {
   start_time: string
   end_time: string
   always_show_challenges: boolean
+  allow_practice_mode: boolean
   image_url: string
 }

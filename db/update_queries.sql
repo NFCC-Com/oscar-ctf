@@ -2735,6 +2735,7 @@ CREATE OR REPLACE FUNCTION add_event(
   p_start_time TIMESTAMPTZ DEFAULT NULL,
   p_end_time TIMESTAMPTZ DEFAULT NULL,
   p_always_show_challenges BOOLEAN DEFAULT FALSE,
+  p_allow_practice_mode BOOLEAN DEFAULT FALSE,
   p_image_url TEXT DEFAULT NULL,
   p_join_mode TEXT DEFAULT 'open',
   p_join_key TEXT DEFAULT NULL
@@ -2757,13 +2758,14 @@ BEGIN
   IF EXISTS (SELECT 1 FROM public.events WHERE LOWER(name) = LOWER(p_name)) THEN
     RAISE EXCEPTION 'Event with this name already exists';
   END IF;
-  INSERT INTO public.events(name, description, start_time, end_time, always_show_challenges, image_url, join_mode, join_key)
+  INSERT INTO public.events(name, description, start_time, end_time, always_show_challenges, allow_practice_mode, image_url, join_mode, join_key)
   VALUES (
     p_name,
     COALESCE(p_description, ''),
     p_start_time,
     p_end_time,
     COALESCE(p_always_show_challenges, FALSE),
+    COALESCE(p_allow_practice_mode, FALSE),
     p_image_url,
     v_join_mode,
     CASE WHEN v_join_mode = 'key' THEN v_join_key ELSE NULL END
@@ -2780,6 +2782,7 @@ BEGIN
       'start_time', p_start_time,
       'end_time', p_end_time,
       'always_show_challenges', COALESCE(p_always_show_challenges, FALSE),
+      'allow_practice_mode', COALESCE(p_allow_practice_mode, FALSE),
       'image_url', p_image_url,
       'join_mode', v_join_mode,
       'has_join_key', (v_join_mode = 'key')
@@ -2790,7 +2793,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public, auth, extensions;
-GRANT EXECUTE ON FUNCTION add_event(TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION add_event(TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, BOOLEAN, TEXT, TEXT, TEXT) TO authenticated;
+DROP FUNCTION IF EXISTS update_event(UUID, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS update_event(UUID, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, BOOLEAN, TEXT, TEXT, TEXT);
 -- UPDATE
 CREATE OR REPLACE FUNCTION update_event(
   p_event_id UUID,
@@ -2799,6 +2804,7 @@ CREATE OR REPLACE FUNCTION update_event(
   p_start_time TIMESTAMPTZ DEFAULT NULL,
   p_end_time TIMESTAMPTZ DEFAULT NULL,
   p_always_show_challenges BOOLEAN DEFAULT NULL,
+  p_allow_practice_mode BOOLEAN DEFAULT NULL,
   p_image_url TEXT DEFAULT NULL,
   p_join_mode TEXT DEFAULT NULL,
   p_join_key TEXT DEFAULT NULL
@@ -2832,6 +2838,7 @@ BEGIN
     'start_time', e.start_time,
     'end_time', e.end_time,
     'always_show_challenges', e.always_show_challenges,
+    'allow_practice_mode', e.allow_practice_mode,
     'image_url', e.image_url,
     'join_mode', e.join_mode,
     'has_join_key', e.join_key IS NOT NULL
@@ -2845,6 +2852,7 @@ BEGIN
       start_time = p_start_time,
       end_time = p_end_time,
       always_show_challenges = COALESCE(p_always_show_challenges, always_show_challenges),
+      allow_practice_mode = COALESCE(p_allow_practice_mode, allow_practice_mode),
       image_url = COALESCE(p_image_url, image_url),
       join_mode = CASE WHEN v_join_mode <> '' THEN v_join_mode ELSE join_mode END,
       join_key = CASE
@@ -2859,6 +2867,7 @@ BEGIN
     'start_time', e.start_time,
     'end_time', e.end_time,
     'always_show_challenges', e.always_show_challenges,
+    'allow_practice_mode', e.allow_practice_mode,
     'image_url', e.image_url,
     'join_mode', e.join_mode,
     'has_join_key', e.join_key IS NOT NULL
@@ -2878,7 +2887,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public, auth, extensions;
-GRANT EXECUTE ON FUNCTION update_event(UUID, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_event(UUID, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, BOOLEAN, TEXT, TEXT, TEXT) TO authenticated;
 -- DELETE
 CREATE OR REPLACE FUNCTION delete_event(
   p_event_id UUID
@@ -3156,6 +3165,9 @@ DECLARE
   v_decay_per_solve INTEGER;
   v_event_id UUID;
   v_event_end TIMESTAMPTZ;
+  v_allow_practice_mode BOOLEAN := FALSE;
+  v_is_ended BOOLEAN := FALSE;
+  v_is_practice BOOLEAN := FALSE;
   v_solver_count INTEGER;
   v_awarded_points INTEGER;
   v_existing INT;
@@ -3192,17 +3204,17 @@ BEGIN
       END IF;
     END;
   END IF;
-  SELECT cf.flag, c.points, c.max_points, c.is_dynamic, c.min_points, c.decay_per_solve, c.event_id, e.end_time
-  INTO v_flag, v_points, v_max_points, v_is_dynamic, v_min_points, v_decay_per_solve, v_event_id, v_event_end
+  SELECT cf.flag, c.points, c.max_points, c.is_dynamic, c.min_points, c.decay_per_solve, c.event_id, e.end_time, COALESCE(e.allow_practice_mode, FALSE)
+  INTO v_flag, v_points, v_max_points, v_is_dynamic, v_min_points, v_decay_per_solve, v_event_id, v_event_end, v_allow_practice_mode
   FROM public.challenge_flags cf
   JOIN public.challenges c ON c.id = cf.challenge_id
   LEFT JOIN public.events e ON e.id = c.event_id
   WHERE cf.challenge_id = p_challenge_id;
-  -- Block flag submissions if event has ended (for non-admins)
-  IF NOT v_is_admin_override AND v_event_id IS NOT NULL THEN
-    IF v_event_end IS NOT NULL AND now() > v_event_end THEN
-      RETURN json_build_object('success', false, 'message', 'Event has ended. Flag submissions are closed.');
-    END IF;
+  v_is_ended := (v_event_id IS NOT NULL AND v_event_end IS NOT NULL AND now() > v_event_end);
+  v_is_practice := (v_is_ended AND v_allow_practice_mode);
+  -- Block flag submissions if event has ended and practice mode is disabled (for non-admins)
+  IF NOT v_is_admin_override AND v_is_ended AND NOT v_is_practice THEN
+    RETURN json_build_object('success', false, 'message', 'Event has ended. Flag submissions are closed.');
   END IF;
   -- Intercept GeoGuessr flag check
   IF public.is_geo_flag(v_flag) THEN
@@ -3279,6 +3291,9 @@ BEGIN
   END IF;
   IF v_is_admin_override THEN
     RETURN json_build_object('success', true, 'message', 'Correct (admin). No points awarded.');
+  END IF;
+  IF v_is_practice THEN
+    RETURN json_build_object('success', true, 'message', 'Correct! (Practice Mode - No points awarded).');
   END IF;
   IF v_is_dynamic THEN
     SELECT points INTO v_awarded_points FROM public.challenges WHERE id = p_challenge_id;

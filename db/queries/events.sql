@@ -10,6 +10,7 @@ CREATE OR REPLACE FUNCTION add_event(
   p_start_time TIMESTAMPTZ DEFAULT NULL,
   p_end_time TIMESTAMPTZ DEFAULT NULL,
   p_always_show_challenges BOOLEAN DEFAULT FALSE,
+  p_allow_practice_mode BOOLEAN DEFAULT FALSE,
   p_image_url TEXT DEFAULT NULL,
   p_join_mode TEXT DEFAULT 'open',
   p_join_key TEXT DEFAULT NULL
@@ -36,13 +37,14 @@ BEGIN
     RAISE EXCEPTION 'Event with this name already exists';
   END IF;
 
-  INSERT INTO public.events(name, description, start_time, end_time, always_show_challenges, image_url, join_mode, join_key)
+  INSERT INTO public.events(name, description, start_time, end_time, always_show_challenges, allow_practice_mode, image_url, join_mode, join_key)
   VALUES (
     p_name,
     COALESCE(p_description, ''),
     p_start_time,
     p_end_time,
     COALESCE(p_always_show_challenges, FALSE),
+    COALESCE(p_allow_practice_mode, FALSE),
     p_image_url,
     v_join_mode,
     CASE WHEN v_join_mode = 'key' THEN v_join_key ELSE NULL END
@@ -60,6 +62,7 @@ BEGIN
       'start_time', p_start_time,
       'end_time', p_end_time,
       'always_show_challenges', COALESCE(p_always_show_challenges, FALSE),
+      'allow_practice_mode', COALESCE(p_allow_practice_mode, FALSE),
       'image_url', p_image_url,
       'join_mode', v_join_mode,
       'has_join_key', (v_join_mode = 'key')
@@ -72,7 +75,10 @@ END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public, auth, extensions;
 
-GRANT EXECUTE ON FUNCTION add_event(TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION add_event(TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, BOOLEAN, TEXT, TEXT, TEXT) TO authenticated;
+
+DROP FUNCTION IF EXISTS update_event(UUID, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS update_event(UUID, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, BOOLEAN, TEXT, TEXT, TEXT);
 
 -- UPDATE
 CREATE OR REPLACE FUNCTION update_event(
@@ -82,6 +88,7 @@ CREATE OR REPLACE FUNCTION update_event(
   p_start_time TIMESTAMPTZ DEFAULT NULL,
   p_end_time TIMESTAMPTZ DEFAULT NULL,
   p_always_show_challenges BOOLEAN DEFAULT NULL,
+  p_allow_practice_mode BOOLEAN DEFAULT NULL,
   p_image_url TEXT DEFAULT NULL,
   p_join_mode TEXT DEFAULT NULL,
   p_join_key TEXT DEFAULT NULL
@@ -119,6 +126,7 @@ BEGIN
     'start_time', e.start_time,
     'end_time', e.end_time,
     'always_show_challenges', e.always_show_challenges,
+    'allow_practice_mode', e.allow_practice_mode,
     'image_url', e.image_url,
     'join_mode', e.join_mode,
     'has_join_key', e.join_key IS NOT NULL
@@ -133,11 +141,12 @@ BEGIN
       start_time = p_start_time,
       end_time = p_end_time,
       always_show_challenges = COALESCE(p_always_show_challenges, always_show_challenges),
+      allow_practice_mode = COALESCE(p_allow_practice_mode, allow_practice_mode),
       image_url = COALESCE(p_image_url, image_url),
       join_mode = CASE WHEN v_join_mode <> '' THEN v_join_mode ELSE join_mode END,
-      join_key = CASE 
+      join_key = CASE
         WHEN (v_join_mode = 'key' OR (v_join_mode = '' AND join_mode = 'key')) THEN COALESCE(v_join_key, join_key)
-        ELSE NULL 
+        ELSE NULL
       END,
       updated_at = now()
   WHERE id = p_event_id;
@@ -148,6 +157,7 @@ BEGIN
     'start_time', e.start_time,
     'end_time', e.end_time,
     'always_show_challenges', e.always_show_challenges,
+    'allow_practice_mode', e.allow_practice_mode,
     'image_url', e.image_url,
     'join_mode', e.join_mode,
     'has_join_key', e.join_key IS NOT NULL
@@ -170,7 +180,7 @@ END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public, auth, extensions;
 
-GRANT EXECUTE ON FUNCTION update_event(UUID, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_event(UUID, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, BOOLEAN, BOOLEAN, TEXT, TEXT, TEXT) TO authenticated;
 
 -- DELETE
 CREATE OR REPLACE FUNCTION delete_event(

@@ -257,6 +257,9 @@ DECLARE
   v_decay_per_solve INTEGER;
   v_event_id UUID;
   v_event_end TIMESTAMPTZ;
+  v_allow_practice_mode BOOLEAN := FALSE;
+  v_is_ended BOOLEAN := FALSE;
+  v_is_practice BOOLEAN := FALSE;
   v_solver_count INTEGER;
   v_awarded_points INTEGER;
   v_existing INT;
@@ -297,18 +300,19 @@ BEGIN
     END;
   END IF;
 
-  SELECT cf.flag, c.points, c.max_points, c.is_dynamic, c.min_points, c.decay_per_solve, c.event_id, e.end_time
-  INTO v_flag, v_points, v_max_points, v_is_dynamic, v_min_points, v_decay_per_solve, v_event_id, v_event_end
+  SELECT cf.flag, c.points, c.max_points, c.is_dynamic, c.min_points, c.decay_per_solve, c.event_id, e.end_time, COALESCE(e.allow_practice_mode, FALSE)
+  INTO v_flag, v_points, v_max_points, v_is_dynamic, v_min_points, v_decay_per_solve, v_event_id, v_event_end, v_allow_practice_mode
   FROM public.challenge_flags cf
   JOIN public.challenges c ON c.id = cf.challenge_id
   LEFT JOIN public.events e ON e.id = c.event_id
   WHERE cf.challenge_id = p_challenge_id;
 
-  -- Block flag submissions if event has ended (for non-admins)
-  IF NOT v_is_admin_override AND v_event_id IS NOT NULL THEN
-    IF v_event_end IS NOT NULL AND now() > v_event_end THEN
-      RETURN json_build_object('success', false, 'message', 'Event has ended. Flag submissions are closed.');
-    END IF;
+  v_is_ended := (v_event_id IS NOT NULL AND v_event_end IS NOT NULL AND now() > v_event_end);
+  v_is_practice := (v_is_ended AND v_allow_practice_mode);
+
+  -- Block flag submissions if event has ended and practice mode is disabled (for non-admins)
+  IF NOT v_is_admin_override AND v_is_ended AND NOT v_is_practice THEN
+    RETURN json_build_object('success', false, 'message', 'Event has ended. Flag submissions are closed.');
   END IF;
 
   -- Intercept GeoGuessr flag check
@@ -393,6 +397,10 @@ BEGIN
 
   IF v_is_admin_override THEN
     RETURN json_build_object('success', true, 'message', 'Correct (admin). No points awarded.');
+  END IF;
+
+  IF v_is_practice THEN
+    RETURN json_build_object('success', true, 'message', 'Correct! (Practice Mode - No points awarded).');
   END IF;
 
   IF v_is_dynamic THEN

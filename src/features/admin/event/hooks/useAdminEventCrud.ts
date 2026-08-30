@@ -57,6 +57,7 @@ export function useAdminEventCrud({ onEventsLoaded }: UseAdminEventCrudOptions =
       start_time: toEventInputValue(evt.start_time || null),
       end_time: toEventInputValue(evt.end_time || null),
       always_show_challenges: Boolean(evt.always_show_challenges),
+      allow_practice_mode: Boolean(evt.allow_practice_mode),
       image_url: evt.image_url || '',
     })
     setOpenForm(true)
@@ -77,6 +78,7 @@ export function useAdminEventCrud({ onEventsLoaded }: UseAdminEventCrudOptions =
         start_time: fromEventInputValue(formData.start_time),
         end_time: fromEventInputValue(formData.end_time),
         always_show_challenges: formData.always_show_challenges,
+        allow_practice_mode: formData.allow_practice_mode,
         image_url: formData.image_url?.trim() || null,
         join_mode: formData.join_mode,
         join_key: formData.join_mode === 'key' ? formData.join_key.trim() : null,

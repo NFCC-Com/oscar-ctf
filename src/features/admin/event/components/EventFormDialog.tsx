@@ -231,6 +231,17 @@ const EventFormDialog: React.FC<EventFormDialogProps> = ({
                     onCheckedChange={(checked) => onChange({ ...formData, always_show_challenges: checked })}
                   />
                 </div>
+
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-200/80 bg-gray-50/70 px-3 py-2 dark:border-gray-800 dark:bg-gray-900/40 md:col-span-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Allow practice mode after event ends</p>
+                    <p className={ADMIN_FORM_HELPER_CLASS}>Allow participants to submit flags and verify solutions after event ends without awarding scoreboard points.</p>
+                  </div>
+                  <Switch
+                    checked={formData.allow_practice_mode}
+                    onCheckedChange={(checked) => onChange({ ...formData, allow_practice_mode: checked })}
+                  />
+                </div>
               </div>
             </section>
           </div>

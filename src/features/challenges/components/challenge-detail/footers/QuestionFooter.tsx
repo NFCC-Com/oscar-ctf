@@ -10,7 +10,6 @@ export interface QuestionFooterProps {
   onReset: () => void | Promise<unknown>
   onSubmitFlag?: () => void | Promise<unknown>
   submittingFlag?: boolean
-  isEventEnded?: boolean
 }
 
 export const QuestionFooter: React.FC<QuestionFooterProps> = ({
@@ -19,7 +18,6 @@ export const QuestionFooter: React.FC<QuestionFooterProps> = ({
   onReset,
   onSubmitFlag,
   submittingFlag = false,
-  isEventEnded = false,
 }) => {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
 
@@ -63,7 +61,7 @@ export const QuestionFooter: React.FC<QuestionFooterProps> = ({
 
           {/* Right Side: Action Buttons (Submit Flag & Reset) */}
           <div className="flex items-center gap-3 shrink-0">
-            {subChallengeCompleted && subChallengeFlag && onSubmitFlag && !isEventEnded && (
+            {subChallengeCompleted && subChallengeFlag && onSubmitFlag && (
               <button
                 type="button"
                 disabled={submittingFlag}
