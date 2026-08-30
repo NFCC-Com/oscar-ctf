@@ -12,7 +12,7 @@ import PageLoader from '@/shared/components/PageLoader'
 import PageBackground from '@/shared/components/PageBackground'
 import EventSelect from '@/features/events/components/EventSelect'
 import { getActiveUserTags } from '@/shared/lib'
-import { AppTabs, Card, CardContent, FilterSelect } from '@/shared/ui'
+import { AppTabs, Card, CardContent, FilterSelect, Button } from '@/shared/ui'
 import {
   PAGE_MAIN_CONTAINER_6XL,
   SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS,
@@ -30,8 +30,12 @@ import TeamScoreboardTable from './TeamScoreboardTable'
 import { useTeamScoreboard } from '../hooks/useTeamScoreboard'
 import ScoreboardExportActions from '@/features/scoreboard/components/ScoreboardExportActions'
 import ScoreboardScopeTabs from '@/features/scoreboard/components/ScoreboardScopeTabs'
+import ScoreboardDateFilter from '@/features/scoreboard/components/ScoreboardDateFilter'
 import { buildScoreboard, getOrderedProgressSeries } from '@/features/scoreboard/lib/build-scoreboard'
-import type { ScoreboardExportSnapshot } from '@/features/scoreboard/lib/scoreboard-export-data'
+import {
+  createDateRangeLabel,
+  type ScoreboardExportSnapshot,
+} from '@/features/scoreboard/lib/scoreboard-export-data'
 import {
   getTeamScoreboard,
   getTopTeamProgressByNames,
@@ -49,6 +53,8 @@ export default function TeamScoreboardPage() {
   const { startedEvents, selectedEvent, setSelectedEvent } = useEventContext()
   const [solvedEventIds, setSolvedEventIds] = useState<string[] | null>(null)
   const [activeTags, setActiveTags] = useState<string[]>([])
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   const categoryOptions = useMemo(() => [
     { value: 'all', label: 'All Categories' },
@@ -126,6 +132,50 @@ export default function TeamScoreboardPage() {
 
   const { loading, entries, series, currentTeamName } = useTeamScoreboard(user, showTotalScore, selectedEvent, view, selectedTag)
 
+  const isDateFiltered = Boolean(startDate || endDate)
+  const currentEntries = useMemo(() => {
+    if (!isDateFiltered) return entries
+    const startIso = startDate ? new Date(startDate).toISOString() : null
+    const endIso = endDate ? new Date(endDate).toISOString() : null
+
+    return entries
+      .map((entry) => {
+        const teamSeries = series.find((s) => s.team_name === entry.team_name)
+        const history = (teamSeries?.history || []).filter((p) => {
+          if (endIso && p.date > endIso) return false
+          if (startIso && p.date < startIso) return false
+          return true
+        })
+        const recalculatedScore = history.length > 0 ? (history.at(-1)?.score ?? 0) : 0
+        return {
+          ...entry,
+          [showTotalScore ? 'total_score' : 'unique_score']: recalculatedScore,
+        }
+      })
+      .filter((entry) => (showTotalScore ? entry.total_score : entry.unique_score) > 0)
+      .sort((a, b) => {
+        const scoreA = showTotalScore ? a.total_score : a.unique_score
+        const scoreB = showTotalScore ? b.total_score : b.unique_score
+        return scoreB - scoreA
+      })
+      .map((entry, index) => ({ ...entry, rank: index + 1 }))
+  }, [entries, series, startDate, endDate, isDateFiltered, showTotalScore])
+
+  const currentSeries = useMemo(() => {
+    if (!isDateFiltered) return series
+    const startIso = startDate ? new Date(startDate).toISOString() : null
+    const endIso = endDate ? new Date(endDate).toISOString() : null
+
+    return series.map((s) => ({
+      ...s,
+      history: s.history.filter((p) => {
+        if (endIso && p.date > endIso) return false
+        if (startIso && p.date < startIso) return false
+        return true
+      }),
+    }))
+  }, [series, startDate, endDate, isDateFiltered])
+
   const isDark = theme === 'dark'
   const scoreLabel = showTotalScore ? 'Total Score' : 'Unique Score'
   const selectedScoreboardEvent = selectedEvent === 'all' || selectedEvent === 'main'
@@ -142,11 +192,18 @@ export default function TeamScoreboardPage() {
     fromRank,
     toRank,
     sourceUrl,
+    startDate: customStart,
+    endDate: customEnd,
   }: {
     fromRank: number
     toRank: number
     sourceUrl: string
+    startDate?: string | null
+    endDate?: string | null
   }): Promise<ScoreboardExportSnapshot> => {
+    const effectiveStart = customStart ?? (startDate || null)
+    const effectiveEnd = customEnd ?? (endDate || null)
+
     const p_event_id = (selectedEvent === 'all' || selectedEvent === 'main') ? null : String(selectedEvent)
     const p_event_mode = selectedEvent === 'all' ? 'any' : selectedEvent === 'main' ? 'main' : 'event'
     const safeFromRank = Math.max(1, Math.floor(fromRank))
@@ -154,14 +211,53 @@ export default function TeamScoreboardPage() {
     const fetchLimit = Math.max(10, safeToRank)
     const scoreKey = showTotalScore ? 'total_score' : 'unique_score'
     const { entries: data } = await getTeamScoreboard(fetchLimit, 0, p_event_id, p_event_mode, selectedTag || null)
-    const result = buildScoreboard(data || [], {
+
+    const endIso = effectiveEnd ? new Date(effectiveEnd).toISOString() : null
+    const startIso = effectiveStart ? new Date(effectiveStart).toISOString() : null
+    const exportedAt = endIso || new Date().toISOString()
+    const dateRangeLabel = createDateRangeLabel(effectiveStart, effectiveEnd)
+
+    const rawNames = (data || []).map((item) => item.team_name).filter(Boolean)
+    const rawProgressData = showTotalScore
+      ? await getTopTeamProgressByNames(rawNames, p_event_id, p_event_mode)
+      : await getTopTeamUniqueProgressByNames(rawNames, p_event_id, p_event_mode)
+
+    const effectiveProgressData: typeof rawProgressData = {}
+    if (endIso || startIso) {
+      for (const [tname, tdata] of Object.entries(rawProgressData)) {
+        const filteredHistory = (tdata.history || []).filter((p) => {
+          if (endIso && p.date > endIso) return false
+          if (startIso && p.date < startIso) return false
+          return true
+        })
+        effectiveProgressData[tname] = {
+          ...tdata,
+          history: filteredHistory,
+        }
+      }
+    } else {
+      Object.assign(effectiveProgressData, rawProgressData)
+    }
+
+    const effectiveData = (endIso || startIso)
+      ? (data || []).map((team) => {
+        const history = effectiveProgressData[team.team_name]?.history || []
+        const recalculatedScore = history.length > 0 ? (history.at(-1)?.score ?? 0) : 0
+        return {
+          ...team,
+          [scoreKey]: recalculatedScore,
+        }
+      })
+      : (data || [])
+
+    const result = buildScoreboard(effectiveData, {
       nameKey: 'team_name',
       scoreKey,
       filterZero: true,
       limit: fetchLimit,
     })
     const teamEntries: TeamScoreboardEntry[] = result.entries.map((entry) => {
-      const original = (data || []).find((item) => item.team_name === entry.username)
+      const original = effectiveData.find((item) => item.team_name === entry.username)
       return {
         ...original,
         team_id: entry.id,
@@ -169,14 +265,11 @@ export default function TeamScoreboardPage() {
         [scoreKey]: entry.score,
       } as TeamScoreboardEntry
     })
-    const progressData = showTotalScore
-      ? await getTopTeamProgressByNames(result.topNames, p_event_id, p_event_mode)
-      : await getTopTeamUniqueProgressByNames(result.topNames, p_event_id, p_event_mode)
 
     return {
       tableEntries: teamEntries.slice(safeFromRank - 1, safeToRank),
-      chartEntries: getOrderedProgressSeries(result.topNames, progressData) as TeamProgressSeries[],
-      exportedAt: new Date().toISOString(),
+      chartEntries: getOrderedProgressSeries(result.topNames, effectiveProgressData) as TeamProgressSeries[],
+      exportedAt,
       mode: 'points',
       eventLabel: exportEventLabel,
       sourceUrl,
@@ -184,8 +277,11 @@ export default function TeamScoreboardPage() {
       fileType: exportType,
       fromRank: safeFromRank,
       toRank: safeToRank,
+      startDate: effectiveStart,
+      endDate: effectiveEnd,
+      dateRangeLabel,
     }
-  }, [exportEventLabel, exportType, selectedEvent, showTotalScore, selectedTag])
+  }, [exportEventLabel, exportType, selectedEvent, showTotalScore, selectedTag, startDate, endDate])
 
   if (authLoading) {
     return <Loader fullscreen color="text-blue-500" />
@@ -230,12 +326,27 @@ export default function TeamScoreboardPage() {
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <ScoreboardDateFilter
+            startDate={startDate}
+            endDate={endDate}
+            onApply={(start, end) => {
+              setStartDate(start)
+              setEndDate(end)
+            }}
+            onReset={() => {
+              setStartDate('')
+              setEndDate('')
+            }}
+          />
+
           {entries.length > 0 && (
             <ScoreboardExportActions
               selectedEvent={selectedEvent}
               eventLabel={exportEventLabel}
               mode="points"
               modeLabel={scoreLabel}
+              startDate={startDate}
+              endDate={endDate}
               fetchSnapshot={fetchTeamExportSnapshot}
               renderChart={(snapshot) => (
                 <TeamScoreboardChart
@@ -272,38 +383,57 @@ export default function TeamScoreboardPage() {
       </div>
 
       <div
-        key={`${showTotalScore}-${selectedEvent}`}
+        key={`${showTotalScore}-${selectedEvent}-${startDate}-${endDate}`}
         className="space-y-6"
       >
-        {series.length > 0 && !showTotalScore && view !== 'all' && (
+        {currentSeries.length > 0 && !showTotalScore && view !== 'all' && (
           <TeamScoreboardChart
-            series={series}
+            series={currentSeries}
             isDark={isDark}
             scoreLabel={scoreLabel}
           />
         )}
 
-        {loading && entries.length === 0 ? (
+        {loading && currentEntries.length === 0 ? (
           <PageLoader />
-        ) : entries.length === 0 ? (
+        ) : currentEntries.length === 0 ? (
           <Card className={SURFACE_GLASS_CARD_INTERACTIVE_BLUE_CLASS}>
             <CardContent>
               <EmptyState
                 icon={<Trophy className="w-full h-full text-blue-500" />}
-                title="No teams on the board yet."
+                title={isDateFiltered ? 'No teams solved in this period.' : 'No teams on the board yet.'}
                 description={
-                  <>
-                    No team submissions yet for this event. Start solving challenges with your team!
-                    <Rocket size={14} className="inline-block ml-1 text-blue-400/70" />
-                  </>
+                  isDateFiltered ? (
+                    <>Tidak ada submission tim yang ditemukan pada rentang tanggal yang dipilih.</>
+                  ) : (
+                    <>
+                      No team submissions yet for this event. Start solving challenges with your team!
+                      <Rocket size={14} className="inline-block ml-1 text-blue-400/70" />
+                    </>
+                  )
                 }
                 containerHeight="py-12"
+                action={
+                  isDateFiltered ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setStartDate('')
+                        setEndDate('')
+                      }}
+                      className="rounded-xl"
+                    >
+                      Reset Filter Tanggal
+                    </Button>
+                  ) : undefined
+                }
               />
             </CardContent>
           </Card>
         ) : (
           <TeamScoreboardTable
-            entries={entries}
+            entries={currentEntries}
             showTotalScore={showTotalScore}
             currentTeamName={currentTeamName}
           />

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Download, Loader2 } from 'lucide-react'
 import { toPng } from 'html-to-image'
+import toast from 'react-hot-toast'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -13,6 +14,7 @@ import ScoreboardChart from './ScoreboardChart'
 import ScoreboardTable from './ScoreboardTable'
 import {
   createScoreboardExportFilename,
+  createDateRangeLabel,
   fetchScoreboardExportSnapshot,
   type ScoreboardExportMode,
   type ScoreboardExportSnapshot,
@@ -25,8 +27,10 @@ type ScoreboardExportActionsProps = {
   selectedEvent: string | number
   eventLabel: string
   mode: ScoreboardExportMode
-  fetchSnapshot?: (options: ExportRange & { sourceUrl: string }) => Promise<ScoreboardExportSnapshot>
+  fetchSnapshot?: (options: ExportRange & { sourceUrl: string; startDate?: string | null; endDate?: string | null }) => Promise<ScoreboardExportSnapshot>
   modeLabel?: string
+  startDate?: string | null
+  endDate?: string | null
   renderChart?: (snapshot: ScoreboardExportSnapshot) => React.ReactNode
   renderTable?: (snapshot: ScoreboardExportSnapshot) => React.ReactNode
 }
@@ -92,18 +96,30 @@ function ScoreboardExportSnapshotView({
   const displayedToRank = Math.min(snapshot.toRank, snapshot.fromRank + snapshot.tableEntries.length - 1)
   const platformName = APP.fullName || APP.shortName || 'NXCTF'
   const exportDescription = `Top ${modeLabel} Rank ${snapshot.fromRank}-${displayedToRank}`
+  const hasDateFilter = Boolean(snapshot.startDate || snapshot.endDate)
 
   return (
     <div className="w-[1180px] bg-gray-50 p-6 text-gray-950 dark:bg-[#060912] dark:text-gray-100">
       <div className="mb-4 rounded-2xl border border-gray-200/80 bg-white/90 px-6 py-5 shadow-sm dark:border-gray-800/80 dark:bg-[#0b0f19]/95">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(300px,auto)] gap-x-8 gap-y-3">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(380px,auto)] gap-x-8 gap-y-3">
           <div className="min-w-0">
-            <div className="text-[11px] font-black uppercase tracking-[0.28em] text-blue-600 dark:text-blue-400">{platformName}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.28em] text-blue-600 dark:text-blue-400">{platformName}</span>
+              {hasDateFilter && (
+                <span className="rounded-md bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400">
+                  Custom Period
+                </span>
+              )}
+            </div>
             <h1 className="mt-2 truncate text-3xl font-black tracking-tight text-gray-950 dark:text-white">{snapshot.eventLabel}</h1>
           </div>
           <div className="text-right">
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">Exported at</div>
-            <div className="mt-2 text-lg font-black text-gray-950 dark:text-white">{formatExportDate(snapshot.exportedAt)} WIB</div>
+            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+              {hasDateFilter ? 'Periode Data / Cutoff' : 'Exported at'}
+            </div>
+            <div className="mt-2 text-base font-black text-gray-950 dark:text-white">
+              {snapshot.dateRangeLabel || `${formatExportDate(snapshot.exportedAt)} WIB`}
+            </div>
           </div>
 
           <div className="min-w-0">
@@ -139,6 +155,8 @@ export default function ScoreboardExportActions({
   mode,
   fetchSnapshot,
   modeLabel,
+  startDate: pageStartDate,
+  endDate: pageEndDate,
   renderChart,
   renderTable,
 }: ScoreboardExportActionsProps) {
@@ -154,14 +172,25 @@ export default function ScoreboardExportActions({
   const { from, to } = getPresetRange(rankPreset, customFrom, customTo)
   const canIncludeChart = from === 1
 
+  const effectiveStartDate = pageStartDate || null
+  const effectiveEndDate = pageEndDate || null
+  const activePeriodLabel = createDateRangeLabel(effectiveStartDate, effectiveEndDate)
+
   const handleExportPng = async () => {
     if (isExporting) return
 
     setIsExporting(true)
     try {
       const sourceUrl = window.location.href
+
       const freshSnapshot = fetchSnapshot
-        ? await fetchSnapshot({ fromRank: from, toRank: to, sourceUrl })
+        ? await fetchSnapshot({
+          fromRank: from,
+          toRank: to,
+          sourceUrl,
+          startDate: effectiveStartDate,
+          endDate: effectiveEndDate,
+        })
         : await fetchScoreboardExportSnapshot({
           selectedEvent,
           eventLabel,
@@ -170,22 +199,54 @@ export default function ScoreboardExportActions({
           mode,
           fromRank: from,
           toRank: to,
+          startDate: effectiveStartDate,
+          endDate: effectiveEndDate,
         })
+
+      if (!freshSnapshot || !freshSnapshot.tableEntries || freshSnapshot.tableEntries.length === 0) {
+        toast.error('Tidak ada data scoreboard untuk diekspor')
+        return
+      }
 
       flushSync(() => setSnapshot(freshSnapshot))
       await new Promise((resolve) => window.requestAnimationFrame(() => requestAnimationFrame(resolve)))
       if (includeChart && canIncludeChart) {
         await new Promise((resolve) => window.setTimeout(resolve, 800))
       }
-      if (!exportRef.current) return
+      if (!exportRef.current) {
+        throw new Error('Export container not found')
+      }
 
-      const dataUrl = await toPng(exportRef.current, {
-        pixelRatio: 2,
-        cacheBust: true,
-        backgroundColor: document.documentElement.classList.contains('dark') ? '#060912' : '#f9fafb',
-      })
+      const isDark = document.documentElement.classList.contains('dark')
+      const backgroundColor = isDark ? '#060912' : '#f9fafb'
+      const imagePlaceholder = 'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="%2394a3b8" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/><path d="M6 20c0-3.31 2.69-6 6-6s6 2.69 6 6"/></svg>'
+
+      let dataUrl: string
+      try {
+        dataUrl = await toPng(exportRef.current, {
+          pixelRatio: 2,
+          cacheBust: true,
+          skipFonts: true,
+          backgroundColor,
+          imagePlaceholder,
+        })
+      } catch (pngError) {
+        console.warn('High-res toPng export failed, retrying standard resolution...', pngError)
+        dataUrl = await toPng(exportRef.current, {
+          pixelRatio: 1,
+          cacheBust: false,
+          skipFonts: true,
+          backgroundColor,
+          imagePlaceholder,
+        })
+      }
+
       downloadDataUrl(dataUrl, createScoreboardExportFilename(freshSnapshot))
+      toast.success(`Scoreboard ${freshSnapshot.scope === 'team' ? 'Tim' : 'Individu'} berhasil diekspor!`)
       setIsSettingsOpen(false)
+    } catch (err: any) {
+      console.error('Scoreboard export failed:', err)
+      toast.error(err?.message || 'Gagal mengekspor scoreboard PNG')
     } finally {
       setIsExporting(false)
     }
@@ -206,7 +267,7 @@ export default function ScoreboardExportActions({
       </Button>
 
       {isSettingsOpen && (
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-[min(92vw,360px)] rounded-2xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-800 dark:bg-[#0b0f19]">
+        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-[min(94vw,340px)] rounded-2xl border border-gray-200 bg-white p-4 shadow-xl dark:border-gray-800 dark:bg-[#0b0f19]">
           <div className="space-y-4">
             <div>
               <Label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Rank range</Label>
@@ -262,6 +323,23 @@ export default function ScoreboardExportActions({
               <Switch checked={includeChart && canIncludeChart} onCheckedChange={setIncludeChart} disabled={!canIncludeChart} />
             </div>
 
+            {/* Active Export Period Card */}
+            <div className="rounded-xl border border-blue-200/70 bg-blue-50/60 p-3 dark:border-blue-900/40 dark:bg-blue-950/20">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                  Periode Data Export
+                </span>
+                {(effectiveStartDate || effectiveEndDate) && (
+                  <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[9px] font-bold uppercase text-blue-700 dark:text-blue-300">
+                    Filter Aktif
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 text-xs font-semibold text-gray-800 dark:text-gray-200">
+                {activePeriodLabel || 'Semua Waktu (All Time)'}
+              </div>
+            </div>
+
             <Button
               type="button"
               onClick={handleExportPng}
@@ -269,7 +347,7 @@ export default function ScoreboardExportActions({
               className="w-full rounded-xl"
             >
               {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              {isExporting ? 'Exporting...' : 'Export PNG'}
+              {isExporting ? 'Export PNG' : 'Export PNG'}
             </Button>
           </div>
         </div>
