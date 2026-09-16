@@ -8,6 +8,9 @@ export const dynamic = 'force-dynamic'
 const configFilePath = path.join(process.cwd(), 'src/config.ts')
 const envFilePath = path.join(process.cwd(), '.env.local')
 const isProduction = process.env.NODE_ENV === 'production'
+const turnstileSiteKeyEnvKey = 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'
+// Compatibility with the variable name emitted by older setup screens.
+const legacyTurnstileSiteKeyEnvKey = 'NEXT_PUBLIC_TURNSTILE_SITEKEY'
 
 type SetupConfig = {
   shortName: string
@@ -119,6 +122,11 @@ function setEnvKey(source: string, key: string, value: string, enabled: boolean)
   return `${cleaned}${cleaned ? '\n' : ''}${nextLine}\n`
 }
 
+function removeEnvKey(source: string, key: string) {
+  const linePattern = new RegExp(`^\\s*#?\\s*${escapeRegExp(key)}\\s*=.*(?:\\r?\\n|$)`, 'gm')
+  return source.replace(linePattern, '').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n'
+}
+
 function hasEnvKey(source: string, key: string) {
   const pattern = new RegExp(`^\\s*#?\\s*${escapeRegExp(key)}\\s*=`, 'm')
   return pattern.test(source)
@@ -127,7 +135,9 @@ function hasEnvKey(source: string, key: string) {
 function readSecretConfig(source: string): SecretConfig {
   const supabaseUrl = readEnvEntry(source, 'NEXT_PUBLIC_SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL || '')
   const supabaseAnonKey = readEnvEntry(source, 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '')
-  const turnstileSiteKey = readEnvEntry(source, 'NEXT_PUBLIC_TURNSTILE_SITE_KEY', process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '')
+  const turnstileSiteKey = hasEnvKey(source, turnstileSiteKeyEnvKey)
+    ? readEnvEntry(source, turnstileSiteKeyEnvKey, process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '')
+    : readEnvEntry(source, legacyTurnstileSiteKeyEnvKey, process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '')
   const turnstileMode = readEnvEntry(source, 'NEXT_PUBLIC_TURNSTILE_MODE', process.env.NEXT_PUBLIC_TURNSTILE_MODE || 'custom')
   const nxctlApiUrl = readEnvEntry(source, 'NXCTL_API_URL', process.env.NXCTL_API_URL || '')
   const nxctlApiToken = readEnvEntry(source, 'NXCTL_API_TOKEN', process.env.NXCTL_API_TOKEN || '')
@@ -141,7 +151,7 @@ function readSecretConfig(source: string): SecretConfig {
     supabaseUrl: supabaseUrl.value,
     supabaseAnonKey: supabaseAnonKey.value,
     turnstileSiteKey: turnstileSiteKey.value,
-    turnstileSiteKeyEnabled: turnstileSiteKey.enabled,
+    turnstileSiteKeyEnabled: turnstileSiteKey.enabled && Boolean(turnstileSiteKey.value),
     turnstileMode: validMode,
     nxctlEnabled: nxctlApiUrl.enabled || nxctlApiToken.enabled || nxctlApiAdminSecret.enabled,
     nxctlApiUrl: nxctlApiUrl.value,
@@ -228,8 +238,11 @@ function updateSecret(source: string, secret: SecretConfig) {
 
   updateIfExists('NEXT_PUBLIC_SUPABASE_URL', secret.supabaseUrl, true)
   updateIfExists('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', secret.supabaseAnonKey, true)
-  updateIfExists('NEXT_PUBLIC_TURNSTILE_SITE_KEY', secret.turnstileSiteKey, secret.turnstileSiteKeyEnabled)
-  updateIfExists('NEXT_PUBLIC_TURNSTILE_MODE', secret.turnstileMode || 'custom', secret.turnstileSiteKeyEnabled)
+  // Turnstile can be enabled from an absent env entry, so use canonical writes
+  // instead of the credential fields' replace-only behaviour.
+  updated = removeEnvKey(updated, legacyTurnstileSiteKeyEnvKey)
+  updated = setEnvKey(updated, turnstileSiteKeyEnvKey, secret.turnstileSiteKey, secret.turnstileSiteKeyEnabled)
+  updated = setEnvKey(updated, 'NEXT_PUBLIC_TURNSTILE_MODE', secret.turnstileMode || 'custom', secret.turnstileSiteKeyEnabled)
 
   // Ensure NXCTL entries are explicitly set or commented when toggled.
   // Preserve existing values if the client payload doesn't include them (avoid erasing real values).
@@ -354,6 +367,10 @@ export async function PUT(request: Request) {
 
     const config = hasConfigPayload ? normalizeConfig({ ...currentConfig, ...configInput }) : currentConfig
     const secret = hasSecretPayload ? normalizeSecret({ ...currentSecret, ...secretInput }) : currentSecret
+
+    if (secret.turnstileSiteKeyEnabled && !secret.turnstileSiteKey) {
+      return NextResponse.json({ ok: false, error: 'A Turnstile Site Key is required when Turnstile is enabled.' }, { status: 400 })
+    }
 
     // Merge secret updates into env (only updates existing env keys)
     const updatedEnv = updateSecret(envSource, secret)
