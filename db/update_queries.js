@@ -9,7 +9,10 @@ const orderedFiles = [
   // 1) Reset first
   "schema/_reset_function.sql",
 
-  // 2) Query/functions (core first)
+  // 2) Core authorization helpers before policies/functions that use them
+  "schema/auth_helpers.sql",
+
+  // 3) Query/functions (core first)
   "queries/users.sql",
   "queries/categories.sql",
   "queries/admin_batch_create_users.sql",
